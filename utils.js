@@ -454,21 +454,6 @@ async function pushSettings(localKBData, KBData, kbToken) {
     await makePostRequest(KB_API_URL, params);
 }
 
-async function uploadIcon(kbId, kbToken) {
-    // Read and encode the icon file
-    const iconFile = await fs.readFile('./icon.png');
-    const fileData = `data:image/png;base64,${iconFile.toString('base64')}`;
-
-    // Prepare parameters for updating only the icon
-    const params = {
-        fileData,
-        token: kbToken,
-        action: 'updateIcon'
-    };
-
-    await makePostRequest(KB_API_URL, params);
-}
-
 async function uploadFiles(namespaces, kbId, kbToken, targetFile) {
     const localDir = path.join(process.cwd(), 'src');
     const filesMap = await buildLocalFilesMap(localDir, namespaces);
@@ -514,6 +499,5 @@ async function buildLocalFilesMap(localDir, namespaces) {
 
 module.exports = {
     KB_API_URL, AUTH_API_URL, decryptKBFields, fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload,
-    listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, pushSettings, uploadIcon,
-    uploadFiles
+    listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, pushSettings, uploadFiles
 }

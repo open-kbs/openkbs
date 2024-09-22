@@ -8,7 +8,7 @@ const { exec } = require('child_process');
 const packageJson = require('./package.json');
 const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
-    fetchAndSaveSettings, downloadFiles, downloadIcon, pushSettings, uploadIcon, uploadFiles
+    fetchAndSaveSettings, downloadFiles, downloadIcon, pushSettings, uploadFiles
 } = require("./utils");
 
 const jwtPath = path.join(os.homedir(), '.openkbs', 'clientJWT');
@@ -132,6 +132,8 @@ program
         try {
             targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
 
+            if (targetFile === 'icon.png') return console.error(`Try the following command instead:\n\nopenkbs push settings.json\n`);
+
             console.log('Initiating Knowledge Base Update...');
             const localKBData = await fetchLocalKBData();
             const kbId = localKBData?.kbId;
@@ -140,15 +142,11 @@ program
 
             if (!targetFile) {
                 await pushSettings(localKBData, KBData, kbToken);
-                await uploadIcon(kbId, kbToken);
                 await uploadFiles(['functions', 'frontend'], kbId, kbToken);
                 console.log('Knowledge Base Update Complete: All changes have been successfully pushed!');
             } else if (targetFile === 'settings.json') {
                 await pushSettings(localKBData, KBData, kbToken);
                 console.log('Configuration Settings Updated Successfully.');
-            } else if (targetFile === 'icon.png') {
-                await uploadIcon(kbId, kbToken);
-                console.log('Icon Updated Successfully.');
             } else {
                 const fileUploaded = await uploadFiles(['functions', 'frontend'], kbId, kbToken, targetFile);
                 if (fileUploaded) {
