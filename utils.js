@@ -331,10 +331,189 @@ async function walkDirectory(dir) {
     return files;
 }
 
+async function getKB(kbJWT) {
+    try {
+        const response = await makePostRequest(KB_API_URL, { token: kbJWT, action: 'getKB' });
+        return response;
+    } catch (error) {
+        console.error('API request error:', error);
+        throw error;
+    }
+}
+
+async function fetchAndSaveSettings(localKBData, kbId, kbToken) {
+    const KBData = await getKB(kbToken);
+    const {
+        chatVendor, kbDescription, kbTitle, model, kbInstructions, inputTools,
+        installation,
+        itemTypes,
+        embeddingModel, embeddingDimension, searchEngine
+    } = decryptKBFields(KBData);
+
+    const params = {
+        ...localKBData,
+        chatVendor,
+        kbDescription,
+        kbInstructions,
+        kbTitle,
+        model,
+        inputTools,
+        installation,
+    }
+
+    if (embeddingModel && embeddingDimension && searchEngine) {
+        params.embeddingModel = embeddingModel;
+        params.embeddingDimension = embeddingDimension;
+        params.searchEngine = searchEngine;
+    }
+
+    if (itemTypes) params.itemTypes = itemTypes;
+
+    await saveLocalKBData(params);
+    console.log('Configuration Settings Fetched Successfully.');
+}
+
+async function downloadIcon(kbId) {
+    console.log(`Downloading: icon.png`);
+    await downloadPublicFile(`https://file.openkbs.com/kb-image/${kbId}.png`, path.join(process.cwd(), 'icon.png'));
+}
+
+async function downloadFiles(namespaces, kbId, kbToken, targetFile) {
+    const localDir = path.join(process.cwd(), 'src');
+    const filesMap = await buildFilesMap(namespaces, kbId, kbToken);
+    let filesToDownload = [];
+
+    if (targetFile) {
+        if (filesMap[targetFile]) {
+            filesToDownload.push({ ...filesMap[targetFile], fileName: targetFile });
+        } else {
+            return false; // File not found
+        }
+    } else {
+        // No target file, download all files
+        filesToDownload = Object.keys(filesMap).map(fileName => {
+            return { ...filesMap[fileName], fileName };
+        });
+    }
+
+    for (const { namespace, file, fileName } of filesToDownload) {
+        const presignedURL = await getPresignedURL(namespace, kbId, fileName, 'getObject', kbToken);
+        const fileContent = await downloadFile(presignedURL);
+        const localFilePath = path.join(localDir, fileName);
+        await fs.ensureDir(path.dirname(localFilePath));
+        console.log(`Downloading: ${fileName}`);
+        await fs.writeFile(localFilePath, fileContent);
+    }
+    return true; // Files downloaded successfully
+}
+
+async function buildFilesMap(namespaces, kbId, kbToken) {
+    const filesMap = {};
+    for (const namespace of namespaces) {
+        const files = await listFiles(namespace, kbId, kbToken);
+        for (const file of files) {
+            const fileName = file?.Key?.split('/')?.slice(2)?.join('/'); // Relative file name
+            filesMap[fileName] = { namespace, file };
+        }
+    }
+    return filesMap;
+}
+
+async function pushSettings(localKBData, KBData, kbToken) {
+    const {
+        kbId, chatVendor, kbDescription, kbTitle, model, kbInstructions, inputTools, installation,
+        itemTypes, embeddingModel, embeddingDimension, searchEngine
+    } = localKBData;
+
+    // Read and encode the icon file
+    const iconFile = await fs.readFile('./icon.png');
+    const fileData = `data:image/png;base64,${iconFile.toString('base64')}`;
+
+    const params = {
+        fileData,
+        token: kbToken,
+        action: 'update',
+        kbTitle: encrypt(kbTitle, KBData.key),
+        kbDescription: encrypt(kbDescription, KBData.key),
+        kbInstructions: encrypt(kbInstructions, KBData.key),
+        inputTools,
+        installation,
+        chatVendor,
+        model,
+        pwaName: kbTitle
+    };
+
+    if (itemTypes) params.itemTypes = itemTypes;
+
+    if (embeddingModel && embeddingDimension && searchEngine) {
+        params.embeddingModel = embeddingModel;
+        params.embeddingDimension = embeddingDimension;
+        params.searchEngine = searchEngine;
+    }
+
+    await makePostRequest(KB_API_URL, params);
+}
+
+async function uploadIcon(kbId, kbToken) {
+    // Read and encode the icon file
+    const iconFile = await fs.readFile('./icon.png');
+    const fileData = `data:image/png;base64,${iconFile.toString('base64')}`;
+
+    // Prepare parameters for updating only the icon
+    const params = {
+        fileData,
+        token: kbToken,
+        action: 'updateIcon'
+    };
+
+    await makePostRequest(KB_API_URL, params);
+}
+
+async function uploadFiles(namespaces, kbId, kbToken, targetFile) {
+    const localDir = path.join(process.cwd(), 'src');
+    const filesMap = await buildLocalFilesMap(localDir, namespaces);
+    let filesToUpload = [];
+
+    if (targetFile) {
+        if (filesMap[targetFile]) {
+            filesToUpload.push({ ...filesMap[targetFile], fileName: targetFile });
+        } else {
+            return false; // File not found locally
+        }
+    } else {
+        // No target file, upload all files
+        filesToUpload = Object.keys(filesMap).map(fileName => {
+            return { ...filesMap[fileName], fileName };
+        });
+    }
+
+    for (const { namespace, filePath, fileName } of filesToUpload) {
+        const presignedURL = await getPresignedURL(namespace, kbId, fileName, 'putObject', kbToken);
+        const fileContent = await fs.readFile(filePath);
+        console.log(`Uploading: ${fileName}`);
+        await fetch(presignedURL, { method: 'PUT', body: fileContent });
+    }
+    return true; // Files uploaded successfully
+}
+
+async function buildLocalFilesMap(localDir, namespaces) {
+    const filesMap = {};
+    const files = await walkDirectory(localDir);
+    for (const file of files) {
+        const filePath = path.join(localDir, file);
+        const relativePath = path.relative(localDir, filePath).replace(/\\/g, '/');
+        const namespace = relativePath.startsWith('frontend/') || relativePath.startsWith('Frontend/') ? 'frontend' : 'functions';
+        if (namespaces.includes(namespace)) {
+            filesMap[relativePath] = { namespace, filePath };
+        }
+    }
+    return filesMap;
+}
+
 
 
 module.exports = {
-    makePostRequest, KB_API_URL, AUTH_API_URL, encrypt, decrypt, decryptKBFields, fetchLocalKBData, saveLocalKBData,
-    fetchKBJWT, createAccountIdFromPublicKey, signPayload, getPresignedURL, downloadFile, walkDirectory, listFiles,
-    downloadPublicFile, getUserProfile
+    KB_API_URL, AUTH_API_URL, decryptKBFields, fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload,
+    listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, pushSettings, uploadIcon,
+    uploadFiles
 }
