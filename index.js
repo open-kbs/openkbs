@@ -127,7 +127,7 @@ program
 
 program
     .command('push [targetFile]')
-    .description('Push app details and files from settings.json and local files to update the KB.')
+    .description('Push app details and files from settings.json and local files to update remote KB app.')
     .action(async (targetFile) => {
         try {
             targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
