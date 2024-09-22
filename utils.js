@@ -5,6 +5,14 @@ const crypto = require('crypto');
 const path = require("path");
 const fs = require("fs-extra");
 const os = require("os");
+const { generateMnemonic } = require('bip39');
+
+const reset = "\x1b[0m";
+const bold = "\x1b[1m";
+const red = "\x1b[31m";
+const yellow = "\x1b[33m";
+const green = "\x1b[32m";
+const cyan = "\x1b[36m";
 
 const decryptKBItem = (item, AESKey) => {
     if (item === undefined) return item;
@@ -168,9 +176,13 @@ async function fetchLocalKBData() {
     return {kbId, ...settings, kbInstructions}
 }
 
+async function getClientJWT() {
+    return await fs.readFile(jwtPath, 'utf-8');
+}
+
 async function getUserProfile() {
     try {
-        const token = await fs.readFile(jwtPath, 'utf-8');
+        const token = await getClientJWT();
         return await makePostRequest(AUTH_API_URL + 'getUserProfile', { token });
     } catch (error) {
         console.error('API request error:', error);
@@ -191,7 +203,7 @@ async function saveLocalKBData(data) {
 const jwtPath = path.join(os.homedir(), '.openkbs', 'clientJWT');
 
 async function fetchKBJWT(kbId) {
-    const token = await fs.readFile(jwtPath, 'utf-8');
+    const token = await getClientJWT();
     try {
         return await makePostRequest(AUTH_API_URL + 'fetchKBJWT', { token, kbId });
     } catch (error) {
@@ -370,7 +382,7 @@ async function fetchAndSaveSettings(localKBData, kbId, kbToken) {
     if (itemTypes) params.itemTypes = itemTypes;
 
     await saveLocalKBData(params);
-    console.log('Configuration Settings Fetched Successfully.');
+    console.log('Settings Updated');
 }
 
 async function downloadIcon(kbId) {
@@ -419,7 +431,44 @@ async function buildFilesMap(namespaces, kbId, kbToken) {
     return filesMap;
 }
 
-async function pushSettings(localKBData, KBData, kbToken) {
+async function createKB(localKBData, AESKey, clientJWT, isSelfManagedKey = false) {
+    const {
+        kbId, chatVendor, kbDescription, kbTitle, model, kbInstructions, inputTools, installation,
+        itemTypes, embeddingModel, embeddingDimension, searchEngine
+    } = localKBData;
+
+    // Read and encode the icon file
+    const iconFile = await fs.readFile('./icon.png');
+    const fileData = `data:image/png;base64,${iconFile.toString('base64')}`;
+
+    const params = {
+        fileData,
+        token: clientJWT,
+        action: 'create',
+        kbTitle: encrypt(kbTitle, AESKey),
+        kbDescription: encrypt(kbDescription, AESKey),
+        kbInstructions: encrypt(kbInstructions, AESKey),
+        inputTools,
+        installation,
+        chatVendor,
+        model,
+        pwaName: kbTitle
+    };
+
+    if (!isSelfManagedKey) params.key = AESKey;
+
+    if (itemTypes) params.itemTypes = itemTypes;
+
+    if (embeddingModel !== undefined && embeddingDimension !== undefined && searchEngine !== undefined) {
+        params.embeddingModel = embeddingModel;
+        params.embeddingDimension = embeddingDimension;
+        params.searchEngine = searchEngine;
+    }
+
+    return await makePostRequest(KB_API_URL, params);
+}
+
+async function updateKB(localKBData, KBData, kbToken) {
     const {
         kbId, chatVendor, kbDescription, kbTitle, model, kbInstructions, inputTools, installation,
         itemTypes, embeddingModel, embeddingDimension, searchEngine
@@ -495,9 +544,19 @@ async function buildLocalFilesMap(localDir, namespaces) {
     return filesMap;
 }
 
-
+const generateKey = (passphrase) => {
+    const salt = 'salt';
+    const iterations = 1000;
+    const keySize = 32;
+    const digest = 'sha256';
+    const passphraseBuffer = Buffer.from(passphrase, 'latin1');
+    const saltBuffer = Buffer.from(salt, 'latin1');
+    const key = crypto.pbkdf2Sync(passphraseBuffer, saltBuffer, iterations, keySize, digest);
+    return key.toString('hex');
+};
 
 module.exports = {
     KB_API_URL, AUTH_API_URL, decryptKBFields, fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload,
-    listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, pushSettings, uploadFiles
+    listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, updateKB, uploadFiles, generateKey,
+    generateMnemonic, reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData
 }

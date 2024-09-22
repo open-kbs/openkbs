@@ -6,9 +6,11 @@ const path = require('path');
 const express = require('express');
 const { exec } = require('child_process');
 const packageJson = require('./package.json');
+
 const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
-    fetchAndSaveSettings, downloadFiles, downloadIcon, pushSettings, uploadFiles
+    fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
+    reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData
 } = require("./utils");
 
 const jwtPath = path.join(os.homedir(), '.openkbs', 'clientJWT');
@@ -92,7 +94,7 @@ program
 
 program
     .command('pull [targetFile]')
-    .description('Pull app details and files using kbId from app/settings.json')
+    .description('Pull KB app details and files using kbId from app/settings.json')
     .action(async (targetFile) => {
         try {
             targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
@@ -127,7 +129,7 @@ program
 
 program
     .command('push [targetFile]')
-    .description('Push app details and files from settings.json and local files to update remote KB app.')
+    .description('Push app details and files from settings.json and local files to update remote KB.')
     .action(async (targetFile) => {
         try {
             targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
@@ -137,16 +139,24 @@ program
             console.log('Initiating Knowledge Base Update...');
             const localKBData = await fetchLocalKBData();
             const kbId = localKBData?.kbId;
-            const { kbToken } = await fetchKBJWT(kbId);
+            const res = await fetchKBJWT(kbId);
+
+            if (!res?.kbToken) {
+                console.log(`${bold}${red}KB app ${kbId} stored in settings.json does not exist on remote.${reset}`);
+                console.log(`${bold}${yellow}Delete "kbId" key from settings.json and create a new KB using "openkbs create"${reset}`);
+                return;
+            }
+
+            const kbToken = res?.kbToken
             const KBData = await getKB(kbToken);
 
             if (!targetFile) {
-                await pushSettings(localKBData, KBData, kbToken);
+                await updateKB(localKBData, KBData, kbToken);
                 await uploadFiles(['functions', 'frontend'], kbId, kbToken);
                 console.log('Knowledge Base Update Complete: All changes have been successfully pushed!');
             } else if (targetFile === 'settings.json') {
-                await pushSettings(localKBData, KBData, kbToken);
-                console.log('Configuration Settings Updated Successfully.');
+                await updateKB(localKBData, KBData, kbToken);
+                console.log('Settings Updated');
             } else {
                 const fileUploaded = await uploadFiles(['functions', 'frontend'], kbId, kbToken, targetFile);
                 if (fileUploaded) {
@@ -160,4 +170,68 @@ program
         }
     });
 
+program
+    .command('clone <kbId>')
+    .description('Clone existing KB app locally by provided kbId')
+    .action(async (kbId) => {
+        try {
+            const localKBData = await fetchLocalKBData();
+
+            if (localKBData?.kbId) {
+                console.log(`${yellow}KB app ${green}${localKBData?.kbId}${reset}${yellow} already saved in settings.json.${reset}`);
+                console.log(`${bold}${yellow}To pull the changes from OpenKBS remote use "openkbs pull"${reset}`);
+                return;
+            }
+
+            console.log('Initiating Knowledge Base Cloning...');
+            const { kbToken } = await fetchKBJWT(kbId);
+            if (!fs.existsSync('app')) fs.mkdirSync('app');
+            await fetchAndSaveSettings({ kbId }, kbId, kbToken);
+            await downloadIcon(kbId);
+            await downloadFiles(['functions', 'frontend'], kbId, kbToken);
+            console.log('Cloning Complete!');
+        } catch (error) {
+            console.error('Error during clone operation:', error.message);
+        }
+    });
+
+program
+    .command('create')
+    .description('Create new KB app')
+    .option('-s, --self-managed-keys', 'Enable self-managed keys mode')
+    .action(async (options) => {
+        try {
+            const mnemonic = generateMnemonic(128);
+            const AESKey = generateKey(mnemonic);
+
+            if (options?.selfManagedKeys) {
+                console.log(`${bold}${red}*** Please store the mnemonic phrase securely and create a backup. ***`);
+                console.log(`${bold}${yellow}\nYour mnemonic phrase:${reset}`);
+                console.log(`${green}\n${mnemonic}\n${reset}`);
+                console.log(`${bold}${yellow}\nIMPORTANT SECURITY INFORMATION:${reset}`);
+                console.log(`${yellow}\nAll KB instructions, chat messages, database entries, and user-related data are encrypted client-side using your AES-256 key and stored securely in OpenKBS utilizing zero-knowledge architecture. By choosing the --self-managed-keys option, you are responsible for managing your own keys. Loss of your mnemonic phrase will result in permanent inaccessibility to your encrypted content, as we implement full end-to-end encryption without key escrow. This cryptographic approach ensures data integrity and confidentiality, mitigating risks of unauthorized access or data breaches at the server level.\n${reset}`);
+            }
+
+            const localKBData = await fetchLocalKBData();
+
+            if (localKBData?.kbId) {
+                console.log(`${yellow}KB app ${green}${localKBData?.kbId}${reset}${yellow} saved in settings.json.${reset}`);
+                console.log(`${bold}${yellow}To push the changes to OpenKBS remote use "openkbs push"${reset}`);
+                return;
+            }
+
+            console.log('Initiating Knowledge Base Creation...');
+            const token = await getClientJWT();
+            const {kbId} = await createKB(localKBData, AESKey, token, options?.selfManagedKeys)
+
+            console.log(`KB app ${green}${kbId}${reset} created!`);
+
+            await saveLocalKBData({...localKBData, kbId});
+
+            // const res = createKB()
+
+        } catch (error) {
+            console.error(`${bold}${red}Error during create operation:${reset}`, error.message);
+        }
+    });
 program.parse(process.argv);
