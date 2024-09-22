@@ -445,7 +445,7 @@ async function pushSettings(localKBData, KBData, kbToken) {
 
     if (itemTypes) params.itemTypes = itemTypes;
 
-    if (embeddingModel && embeddingDimension && searchEngine) {
+    if (embeddingModel !== undefined && embeddingDimension !== undefined && searchEngine !== undefined) {
         params.embeddingModel = embeddingModel;
         params.embeddingDimension = embeddingDimension;
         params.searchEngine = searchEngine;
