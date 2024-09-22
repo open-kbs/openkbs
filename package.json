@@ -1,0 +1,36 @@
+{
+  "name": "openkbs-cli",
+  "version": "1.0.11",
+  "description": "OpenKBS - Command Line Interface",
+  "main": "index.js",
+  "scripts": {
+    "build": "pkg .",
+    "deploy": "npm run build && npm run deploy:linux && npm run deploy:macos && npm run deploy:win",
+    "deploy:linux": "aws s3 cp build/openkbs-cli-linux s3://openkbs-downloads/cli/linux/openkbs",
+    "deploy:macos": "aws s3 cp build/openkbs-cli-macos s3://openkbs-downloads/cli/macos/openkbs",
+    "deploy:win": "aws s3 cp build/openkbs-cli-win.exe s3://openkbs-downloads/cli/windows/openkbs.exe",
+    "postinstall": "node install.js"
+  },
+  "bin": {
+    "openkbs": "./index.js"
+  },
+  "pkg": {
+    "targets": [
+      "node18-linux-x64",
+      "node18-macos-x64",
+      "node18-win-x64"
+    ],
+    "outputPath": "build/"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^12.0.0",
+    "express": "^4.21.0",
+    "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  }
+}
