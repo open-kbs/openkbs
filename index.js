@@ -73,17 +73,17 @@ program
             if (clientJWT) {
                 await fs.ensureDir(path.dirname(jwtPath));
                 await fs.writeFile(jwtPath, clientJWT, 'utf8');
-                res.send('ok');
+                res.send('Login successful!');
                 console.log('Login successful!');
                 server.close();
             } else {
-                res.send('failed');
+                res.send('Login failed. No token received.');
                 console.log('Login failed. No token received.');
             }
         });
 
         const server = app.listen(port, async () => {
-            console.log(`Waiting to complete the login...`);
+            console.log('Waiting to complete the login...');
             const start = (process.platform === 'darwin' ? 'open' :
                 process.platform === 'win32' ? 'start' :
                     'xdg-open');
@@ -99,7 +99,7 @@ program
         try {
             targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
 
-            console.log('Initiating Knowledge Base Synchronization...');
+            console.log('Initiating Knowledge Base synchronization...');
             const localKBData = await fetchLocalKBData();
             const { kbId } = localKBData;
             const { kbToken } = await fetchKBJWT(kbId);
@@ -108,7 +108,7 @@ program
                 await fetchAndSaveSettings(localKBData, kbId, kbToken);
                 await downloadIcon(kbId);
                 await downloadFiles(['functions', 'frontend'], kbId, kbToken);
-                console.log('Synchronization Complete: All changes have been successfully pulled!');
+                console.log('Synchronization complete: All changes have been successfully pulled!');
             } else if (targetFile === 'settings.json') {
                 await fetchAndSaveSettings(localKBData, kbId, kbToken);
             } else if (targetFile === 'icon.png') {
@@ -136,7 +136,7 @@ program
 
             if (targetFile === 'icon.png') return console.error(`Try the following command instead:\n\nopenkbs push settings.json\n`);
 
-            console.log('Initiating Knowledge Base Update...');
+            console.log('Initiating Knowledge Base update...');
             const localKBData = await fetchLocalKBData();
             const kbId = localKBData?.kbId;
             const res = await fetchKBJWT(kbId);
@@ -153,10 +153,10 @@ program
             if (!targetFile) {
                 await updateKB(localKBData, KBData, kbToken);
                 await uploadFiles(['functions', 'frontend'], kbId, kbToken);
-                console.log('Knowledge Base Update Complete: All changes have been successfully pushed!');
+                console.log('Knowledge Base update complete: All changes have been successfully pushed!');
             } else if (targetFile === 'settings.json') {
                 await updateKB(localKBData, KBData, kbToken);
-                console.log('Settings Updated');
+                console.log('Settings updated.');
             } else {
                 const fileUploaded = await uploadFiles(['functions', 'frontend'], kbId, kbToken, targetFile);
                 if (fileUploaded) {
@@ -183,13 +183,13 @@ program
                 return;
             }
 
-            console.log('Initiating Knowledge Base Cloning...');
+            console.log('Initiating Knowledge Base cloning...');
             const { kbToken } = await fetchKBJWT(kbId);
             if (!fs.existsSync('app')) fs.mkdirSync('app');
             await fetchAndSaveSettings({ kbId }, kbId, kbToken);
             await downloadIcon(kbId);
             await downloadFiles(['functions', 'frontend'], kbId, kbToken);
-            console.log('Cloning Complete!');
+            console.log('Cloning complete!');
         } catch (error) {
             console.error('Error during clone operation:', error.message);
         }
@@ -220,16 +220,12 @@ program
                 return;
             }
 
-            console.log('Initiating Knowledge Base Creation...');
+            console.log('Initiating Knowledge Base creation...');
             const token = await getClientJWT();
             const {kbId} = await createKB(localKBData, AESKey, token, options?.selfManagedKeys)
 
-            console.log(`KB app ${green}${kbId}${reset} created!`);
-
             await saveLocalKBData({...localKBData, kbId});
-
-            // const res = createKB()
-
+            console.log(`KB app ${green}${kbId}${reset} created!`);
         } catch (error) {
             console.error(`${bold}${red}Error during create operation:${reset}`, error.message);
         }
