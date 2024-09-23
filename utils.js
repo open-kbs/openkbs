@@ -16,7 +16,7 @@ const cyan = "\x1b[36m";
 
 console.red = (data) =>  console.log(`${red}${data}${reset}`)
 console.green = (data) =>  console.log(`${green}${data}${reset}`)
-console.yellow = (data) =>  console.log(`${yellow}${data}${reset}`)
+console.yellow = (data) =>  console.log(`${yellow}${bold}${data}${reset}`)
 
 const decryptKBItem = (item, AESKey) => {
     if (item === undefined) return item;
@@ -178,7 +178,8 @@ async function fetchLocalKBData() {
     const instructionsPath = path.join(process.cwd(), 'app', 'instructions.txt');
 
     if (!await fs.pathExists(settingsPath)) {
-        console.red('settings.json file not found in app directory.');
+        console.red('KB project found in the current directory.');
+        console.yellow('Use "openkbs init" to initialize a new KB project.');
         process.exit(1);
     }
 
