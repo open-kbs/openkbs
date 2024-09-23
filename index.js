@@ -95,14 +95,14 @@ program
 
 program
     .command('pull [targetFile]')
-    .description('Pull KB app details and files using kbId from app/settings.json')
+    .description('Pull KB details and files using kbId from app/settings.json')
     .action(async (targetFile) => {
         try {
             targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
 
-            console.log('Initiating Knowledge Base pull...');
             const localKBData = await fetchLocalKBData();
             const { kbId } = localKBData;
+            console.log(`Initiating KB ${kbId} pull...`);
             const { kbToken } = await fetchKBJWT(kbId);
 
             if (!targetFile) {
@@ -120,7 +120,7 @@ program
                 if (fileDownloaded) {
                     console.log(`File ${targetFile} synchronized successfully.`);
                 } else {
-                    console.error(`File ${targetFile} not found in the knowledge base.`);
+                    console.error(`File ${targetFile} not found in the KB.`);
                 }
             }
         } catch (error) {
@@ -130,20 +130,20 @@ program
 
 program
     .command('push [targetFile]')
-    .description('Push app details and files from settings.json and local files to update remote KB.')
+    .description('Push KB details and files from settings.json and local files to update remote KB.')
     .action(async (targetFile) => {
         try {
             targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
 
             if (targetFile === 'icon.png') return console.error(`Try the following command instead:\n\nopenkbs push settings.json\n`);
 
-            console.log('Initiating Knowledge Base push...');
             const localKBData = await fetchLocalKBData();
             const kbId = localKBData?.kbId;
+            console.log(`Initiating KB ${kbId} push...`);
             const res = await fetchKBJWT(kbId);
 
             if (!res?.kbToken) {
-                console.log(`${bold}${red}KB app ${kbId} stored in settings.json does not exist on remote.${reset}`);
+                console.log(`${bold}${red}KB ${kbId} stored in settings.json does not exist on remote.${reset}`);
                 console.log(`${bold}${yellow}Delete "kbId" key from settings.json and create a new KB using "openkbs create"${reset}`);
                 return;
             }
@@ -154,7 +154,7 @@ program
             if (!targetFile) {
                 await updateKB(localKBData, KBData, kbToken);
                 await uploadFiles(['functions', 'frontend'], kbId, kbToken);
-                console.log('Knowledge Base update complete: All changes have been successfully uploaded!');
+                console.log('KB update complete: All changes have been successfully uploaded!');
             } else if (targetFile === 'settings.json') {
                 await updateKB(localKBData, KBData, kbToken);
                 console.log('Settings updated.');
@@ -173,18 +173,18 @@ program
 
 program
     .command('clone <kbId>')
-    .description('Clone existing KB app locally by provided kbId')
+    .description('Clone existing KB locally by provided kbId')
     .action(async (kbId) => {
         try {
             const localKBData = await fetchLocalKBData();
 
             if (localKBData?.kbId) {
-                console.log(`${yellow}KB app ${green}${localKBData?.kbId}${reset}${yellow} already saved in settings.json.${reset}`);
+                console.log(`${yellow}KB ${green}${localKBData?.kbId}${reset}${yellow} already saved in settings.json.${reset}`);
                 console.log(`${bold}${yellow}To pull the changes from OpenKBS remote use "openkbs pull"${reset}`);
                 return;
             }
 
-            console.log('Initiating Knowledge Base cloning...');
+            console.log('Initiating KB cloning...');
             const { kbToken } = await fetchKBJWT(kbId);
             if (!fs.existsSync('app')) fs.mkdirSync('app');
             await fetchAndSaveSettings({ kbId }, kbId, kbToken);
@@ -197,8 +197,8 @@ program
     });
 
 program
-    .command('create app')
-    .description('Create new KB app')
+    .command('create kb')
+    .description('Create new KB')
     .option('-s, --self-managed-keys', 'Enable self-managed keys mode')
     .action(async (options) => {
         try {
@@ -216,26 +216,24 @@ program
             const localKBData = await fetchLocalKBData();
 
             if (localKBData?.kbId) {
-                console.log(`${yellow}KB app ${green}${localKBData?.kbId}${reset}${yellow} saved in settings.json.${reset}`);
+                console.log(`${yellow}KB ${green}${localKBData?.kbId}${reset}${yellow} saved in settings.json.${reset}`);
                 console.log(`${bold}${yellow}To push the changes to OpenKBS remote use "openkbs push"${reset}`);
                 return;
             }
 
-            console.log('Initiating Knowledge Base creation...');
+            console.log('Initiating KB creation...');
             const token = await getClientJWT();
             const {kbId} = await createKB(localKBData, AESKey, token, options?.selfManagedKeys)
 
             await saveLocalKBData({...localKBData, kbId});
-            console.log(`KB app ${green}${kbId}${reset} created!`);
+            console.log(`KB ${green}${kbId}${reset} created!`);
         } catch (error) {
             console.error(`${bold}${red}Error during create operation:${reset}`, error.message);
         }
     });
 
-const app = program.command('app').description('Manage KB apps');
-
-app.command('ls [kbId] [field]')
-    .description('List all KB apps or show detailed information for a specific KB by providing kbId')
+program.command('ls [kbId] [field]')
+    .description('List all KBs or show detailed information for a specific KB by providing kbId')
     .action(async (kbId, prop) => {
         try {
             const apps = await listKBs();
@@ -249,7 +247,7 @@ app.command('ls [kbId] [field]')
                         console.log(JSON.stringify(app, null, 2));
                     }
                 } else {
-                    console.log(`KB app with ID ${kbId} not found.`);
+                    console.log(`KB with ID ${kbId} not found.`);
                 }
             } else {
                 const maxTitleLength = Math.max(...apps.map(app => app.kbTitle.length));
@@ -264,39 +262,39 @@ app.command('ls [kbId] [field]')
         }
     });
 
-app.command('delete <kbId>')
-    .description('Delete a KB app by providing kbId')
+program.command('delete <kbId>')
+    .description('Delete a KB by providing kbId')
     .action(async (kbId) => {
         try {
             await deleteKB(kbId);
-            console.log(`KB app with ID ${kbId} has been deleted.`);
+            console.log(`KB with ID ${kbId} has been deleted.`);
         } catch (error) {
             console.error('Failed to delete KB');
         }
     });
 
-app.command('delete-file <kbId> <filePath>')
+program.command('delete-file <kbId> <filePath>')
     .description(`Delete a file inside the "src" folder by providing kbId and filePath (example: openkbs delete-file 1234567890ab Frontend/test.js)`)
     .action(async (kbId, filePath) => {
         try {
             const namespace = filePath.startsWith('Frontend/') ? 'frontend' : 'functions';
             await deleteKBFile(kbId, namespace, filePath);
-            console.log(`File ${filePath} in KB app with ID ${kbId} has been deleted.`);
+            console.log(`File ${filePath} in KB with ID ${kbId} has been deleted.`);
         } catch (error) {
             console.error('Failed to delete file!');
         }
     });
 
-app
+program
     .command('describe')
-    .description('Display the current local KB Application details')
+    .description('Display the current local KB details')
     .action(async () => {
         try {
             const localKBData = await fetchLocalKBData();
             const kbId = localKBData?.kbId;
-            console.log(kbId ? JSON.stringify(localKBData, null, 2) :  'No Knowledge Base')
+            console.log(kbId ? JSON.stringify(localKBData, null, 2) :  'No KB found')
         } catch (error) {
-            console.error('Error fetching the current Knowledge Base ID:', error.message);
+            console.error('Error fetching the current KB ID:', error.message);
         }
     });
 
