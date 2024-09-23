@@ -14,6 +14,10 @@ const yellow = "\x1b[33m";
 const green = "\x1b[32m";
 const cyan = "\x1b[36m";
 
+console.red = (data) =>  console.log(`${red}${data}${reset}`)
+console.green = (data) =>  console.log(`${green}${data}${reset}`)
+console.yellow = (data) =>  console.log(`${yellow}${data}${reset}`)
+
 const decryptKBItem = (item, AESKey) => {
     if (item === undefined) return item;
 
@@ -59,7 +63,7 @@ function makePostRequest(url, data) {
             });
             res.on('end', () => {
                 if (res.statusCode === 401) {
-                    console.error('It appears you are not logged in. Please use "openkbs login" to log in.');
+                    console.red('It appears you are not logged in. Please use "openkbs login" to log in.');
                     process.exit(1);
                 }
 
@@ -69,12 +73,12 @@ function makePostRequest(url, data) {
                 } else {
                     try {
                         if (JSON.parse(body).error) {
-                            console.log(JSON.parse(body).error);
+                            console.red(JSON.parse(body).error);
                         } else {
-                            console.error(`Invalid Request`);
+                            console.red(`Invalid Request`);
                         }
                     } catch (e) {
-                        console.error(`Invalid Request`);
+                        console.red(`Invalid Request`);
                     }
 
                     process.exit(1);
@@ -174,7 +178,7 @@ async function fetchLocalKBData() {
     const instructionsPath = path.join(process.cwd(), 'app', 'instructions.txt');
 
     if (!await fs.pathExists(settingsPath)) {
-        console.error('settings.json file not found in app directory.');
+        console.red('settings.json file not found in app directory.');
         process.exit(1);
     }
 
@@ -194,7 +198,7 @@ async function getUserProfile() {
         const token = await getClientJWT();
         return await makePostRequest(AUTH_API_URL + 'getUserProfile', { token });
     } catch (error) {
-        console.error('API request error:', error);
+        console.red('API request error:', error);
         throw error;
     }
 }

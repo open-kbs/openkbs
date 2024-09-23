@@ -21,7 +21,7 @@ async function signAction(options) {
         const accountId = createAccountIdFromPublicKey(publicKey);
 
         if (!publicKey || !privateKey) {
-            console.error('Public and private keys are required. Please login first.');
+            console.red('Public and private keys are required. Please login first.');
             process.exit(1);
         }
 
@@ -42,7 +42,7 @@ async function signAction(options) {
 
         console.log(await signPayload(payload, accountId, publicKey, privateKey, parseInt(options.expires)));
     } catch (error) {
-        console.error('Error:', error);
+        console.red('Error:', error);
     }
 }
 
@@ -56,11 +56,11 @@ async function loginAction() {
             await fs.ensureDir(path.dirname(jwtPath));
             await fs.writeFile(jwtPath, clientJWT, 'utf8');
             res.send('Login successful!');
-            console.log('Login successful!');
+            console.green('Login successful!');
             server.close();
         } else {
             res.send('Login failed. No token received.');
-            console.log('Login failed. No token received.');
+            console.red('Login failed. No token received.');
         }
     });
 
@@ -80,16 +80,16 @@ async function pullAction(targetFile) {
 
         const localKBData = await fetchLocalKBData();
         const { kbId } = localKBData;
-        console.log(`Initiating KB ${kbId} pull...`);
+        console.log(`Initiating KB ${kbId} download...`);
         const res = await fetchKBJWT(kbId);
 
-        if (!res?.kbToken) return console.log(`${red}KB ${kbId} does not exist on the remote service${reset} `);
+        if (!res?.kbToken) return console.red(`KB ${kbId} does not exist on the remote service`);
 
         if (!targetFile) {
             await fetchAndSaveSettings(localKBData, kbId, res.kbToken);
             await downloadIcon(kbId);
             await downloadFiles(['functions', 'frontend'], kbId, res.kbToken);
-            console.log('Synchronization complete: All changes have been successfully downloaded!');
+            console.green('Synchronization complete: All changes have been successfully downloaded!');
         } else if (targetFile === 'settings.json') {
             await fetchAndSaveSettings(localKBData, kbId, res.kbToken);
         } else if (targetFile === 'icon.png') {
@@ -97,13 +97,13 @@ async function pullAction(targetFile) {
         } else {
             const fileDownloaded = await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, targetFile);
             if (fileDownloaded) {
-                console.log(`File ${targetFile} synchronized successfully.`);
+                console.green(`File ${targetFile} synchronized successfully.`);
             } else {
-                console.error(`File ${targetFile} not found in the KB.`);
+                console.red(`File ${targetFile} not found in the KB.`);
             }
         }
     } catch (error) {
-        console.error('Error during pull operation:', error.message);
+        console.red('Error during pull operation:', error.message);
     }
 }
 
@@ -111,35 +111,35 @@ async function pushAction(targetFile) {
     try {
         targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
 
-        if (targetFile === 'icon.png') return console.error(`Try the following command instead:\n\nopenkbs push settings.json\n`);
+        if (targetFile === 'icon.png') return console.log(`Try the following command instead:\n\nopenkbs push settings.json\n`);
 
         const localKBData = await fetchLocalKBData();
         const kbId = localKBData?.kbId;
-        console.log(`Initiating KB ${kbId} push...`);
+        console.log(`Initiating KB ${kbId} upload...`);
         const res = await fetchKBJWT(kbId);
 
-        if (!res?.kbToken) return console.log(`${red}KB ${kbId} does not exist on the remote service${reset} `);
-            
+        if (!res?.kbToken) return console.red(`KB ${kbId} does not exist on the remote service`);
+
         const kbToken = res?.kbToken;
         const KBData = await getKB(kbToken);
 
         if (!targetFile) {
             await updateKB(localKBData, KBData, kbToken);
             await uploadFiles(['functions', 'frontend'], kbId, kbToken);
-            console.log('KB update complete: All changes have been successfully uploaded!');
+            console.green('KB update complete: All changes have been successfully uploaded!');
         } else if (targetFile === 'settings.json') {
             await updateKB(localKBData, KBData, kbToken);
             console.log('Settings updated.');
         } else {
             const fileUploaded = await uploadFiles(['functions', 'frontend'], kbId, kbToken, targetFile);
             if (fileUploaded) {
-                console.log(`File ${targetFile} uploaded successfully.`);
+                console.green(`File ${targetFile} uploaded successfully.`);
             } else {
-                console.error(`File ${targetFile} not found in the local directory.`);
+                console.red(`File ${targetFile} not found in the local directory.`);
             }
         }
     } catch (error) {
-        console.error('Error during push operation:', error.message);
+        console.red('Error during push operation:', error.message);
     }
 }
 
@@ -148,8 +148,8 @@ async function cloneAction(kbId) {
         const localKBData = await fetchLocalKBData();
 
         if (localKBData?.kbId) {
-            console.log(`${yellow}KB ${green}${localKBData?.kbId}${reset}${yellow} already saved in settings.json.${reset}`);
-            console.log(`${bold}${yellow}To pull the changes from OpenKBS remote use "openkbs pull"${reset}`);
+            console.red(`KB ${localKBData?.kbId} already saved in settings.json.`);
+            console.yellow(`To pull the changes from OpenKBS remote use "openkbs pull"`);
             return;
         }
 
@@ -159,13 +159,13 @@ async function cloneAction(kbId) {
         await fetchAndSaveSettings({ kbId }, kbId, kbToken);
         await downloadIcon(kbId);
         await downloadFiles(['functions', 'frontend'], kbId, kbToken);
-        console.log('Cloning complete!');
+        console.green('Cloning complete!');
     } catch (error) {
-        console.error('Error during clone operation:', error.message);
+        console.red('Error during clone operation:', error.message);
     }
 }
 
-async function createKBAction(options) {
+async function createKBAction(_, options) {
     try {
         const mnemonic = generateMnemonic(128);
         const AESKey = generateKey(mnemonic);
@@ -180,9 +180,10 @@ async function createKBAction(options) {
 
         const localKBData = await fetchLocalKBData();
 
-        if (localKBData?.kbId) {
+        if (localKBData?.kbId && !options?.force) {
             console.log(`${yellow}KB ${green}${localKBData?.kbId}${reset}${yellow} saved in settings.json.${reset}`);
             console.log(`${bold}${yellow}To push the changes to OpenKBS remote use "openkbs push"${reset}`);
+            console.log(`${bold}${yellow}To force-create a new app, use "openkbs create kb --force"${reset}`);
             return;
         }
 
@@ -191,9 +192,10 @@ async function createKBAction(options) {
         const { kbId } = await createKB(localKBData, AESKey, token, options?.selfManagedKeys);
 
         await saveLocalKBData({ ...localKBData, kbId });
-        console.log(`KB ${green}${kbId}${reset} created!`);
+        console.green(`KB ${kbId} created!`);
+        await pushAction();
     } catch (error) {
-        console.error(`${bold}${red}Error during create operation:${reset}`, error.message);
+        console.red(`Error during create operation:`, error.message);
     }
 }
 
@@ -204,13 +206,13 @@ async function lsAction(kbId, prop) {
             const app = apps.find(app => app.kbId === kbId);
             if (app) {
                 if (prop) {
-                    if (app[prop] === undefined) return console.log('Non existing property ' + prop);
+                    if (app[prop] === undefined) return console.red('Non existing property ' + prop);
                     console.log(['string'].includes(typeof app[prop]) ? app[prop] : JSON.stringify(app[prop], null, 2));
                 } else {
                     console.log(JSON.stringify(app, null, 2));
                 }
             } else {
-                console.log(`KB with ID ${kbId} not found.`);
+                console.red(`KB with ID ${kbId} not found.`);
             }
         } else {
             const maxTitleLength = Math.max(...apps.map(app => app.kbTitle.length));
@@ -221,16 +223,16 @@ async function lsAction(kbId, prop) {
             });
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.red('Error:', error);
     }
 }
 
 async function deleteKBAction(kbId) {
     try {
         await deleteKB(kbId);
-        console.log(`KB with ID ${kbId} has been deleted.`);
+        console.green(`KB with ID ${kbId} has been deleted.`);
     } catch (error) {
-        console.error('Failed to delete KB');
+        console.red('Failed to delete KB');
     }
 }
 
@@ -238,9 +240,9 @@ async function deleteFileAction(kbId, filePath) {
     try {
         const namespace = filePath.startsWith('Frontend/') ? 'frontend' : 'functions';
         await deleteKBFile(kbId, namespace, filePath);
-        console.log(`File ${filePath} in KB with ID ${kbId} has been deleted.`);
+        console.green(`File ${filePath} in KB with ID ${kbId} has been deleted.`);
     } catch (error) {
-        console.error('Failed to delete file!');
+        console.red('Failed to delete file!');
     }
 }
 
@@ -250,7 +252,7 @@ async function describeAction() {
         const kbId = localKBData?.kbId;
         console.log(kbId ? JSON.stringify(localKBData, null, 2) : 'No KB found');
     } catch (error) {
-        console.error('Error fetching the current KB ID:', error.message);
+        console.red('Error fetching the current KB ID:', error.message);
     }
 }
 

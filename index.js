@@ -40,6 +40,7 @@ program
     .command('create kb')
     .description('Create new KB')
     .option('-s, --self-managed-keys', 'Enable self-managed keys mode')
+    .option('-f, --force', 'Force KB creation')
     .action(createKBAction);
 
 program
