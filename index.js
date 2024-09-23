@@ -197,7 +197,7 @@ program
     });
 
 program
-    .command('create')
+    .command('create app')
     .description('Create new KB app')
     .option('-s, --self-managed-keys', 'Enable self-managed keys mode')
     .action(async (options) => {
@@ -232,9 +232,9 @@ program
         }
     });
 
-const apps = program.command('apps').description('Manage KB apps');
+const app = program.command('app').description('Manage KB apps');
 
-apps.command('ls [kbId] [field]')
+app.command('ls [kbId] [field]')
     .description('List all KB apps or show detailed information for a specific KB by providing kbId')
     .action(async (kbId, prop) => {
         try {
@@ -264,7 +264,7 @@ apps.command('ls [kbId] [field]')
         }
     });
 
-apps.command('delete <kbId>')
+app.command('delete <kbId>')
     .description('Delete a KB app by providing kbId')
     .action(async (kbId) => {
         try {
@@ -275,7 +275,7 @@ apps.command('delete <kbId>')
         }
     });
 
-apps.command('delete-file <kbId> <filePath>')
+app.command('delete-file <kbId> <filePath>')
     .description(`Delete a file inside the "src" folder by providing kbId and filePath (example: openkbs delete-file 1234567890ab Frontend/test.js)`)
     .action(async (kbId, filePath) => {
         try {
@@ -287,14 +287,14 @@ apps.command('delete-file <kbId> <filePath>')
         }
     });
 
-program
-    .command('app')
-    .description('Display the current KB Application ID')
+app
+    .command('describe')
+    .description('Display the current local KB Application details')
     .action(async () => {
         try {
             const localKBData = await fetchLocalKBData();
             const kbId = localKBData?.kbId;
-            console.log(kbId ? {kbId} :  'No Knowledge Base ID')
+            console.log(kbId ? JSON.stringify(localKBData, null, 2) :  'No Knowledge Base')
         } catch (error) {
             console.error('Error fetching the current Knowledge Base ID:', error.message);
         }
