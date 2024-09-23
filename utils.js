@@ -345,10 +345,47 @@ async function walkDirectory(dir) {
 
 async function getKB(kbJWT) {
     try {
-        const response = await makePostRequest(KB_API_URL, { token: kbJWT, action: 'getKB' });
-        return response;
+        return await makePostRequest(KB_API_URL, { token: kbJWT, action: 'getKB' });
     } catch (error) {
         console.error('API request error:', error);
+        throw error;
+    }
+}
+
+async function listKBs() {
+    try {
+        const clientJWT = await getClientJWT();
+        const encryptedKBData = await makePostRequest(KB_API_URL, { token: clientJWT, action: 'list' });
+        return encryptedKBData.map(KBData => decryptKBFields(KBData))
+    } catch (error) {
+        console.error('API request error:', error);
+        throw error;
+    }
+}
+
+// this is how the path looks like ${namespace}/${kbId}/${fileName}
+// namespace is "frontend" for filePaths that starts with (Frontend/*) - example: Frontend/path/toSomeFileName.ext
+// namespace is "functions" for any other filePaths
+export const deleteKBFile = async (kbId, namespace, filePath) => {
+    const { kbToken } = await fetchKBJWT(kbId);
+
+    const apiPayload = {
+        token: kbToken,
+        namespace,
+        action: 'deleteKBFile',
+        fileName: filePath,
+    };
+
+    return await makePostRequest(KB_API_URL, apiPayload);
+}
+
+async function deleteKB(kbId) {
+    try {
+        const { kbToken } = await fetchKBJWT(kbId);
+        return await makePostRequest(KB_API_URL, { token: kbToken, action: 'delete' });
+
+    } catch (error) {
+        console.error('Failed to delete KB:', error);
         throw error;
     }
 }
@@ -558,5 +595,6 @@ const generateKey = (passphrase) => {
 module.exports = {
     KB_API_URL, AUTH_API_URL, decryptKBFields, fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload,
     listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, updateKB, uploadFiles, generateKey,
-    generateMnemonic, reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData
+    generateMnemonic, reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData, listKBs, deleteKBFile,
+    deleteKB
 }

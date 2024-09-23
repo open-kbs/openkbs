@@ -10,7 +10,8 @@ const packageJson = require('./package.json');
 const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
     fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
-    reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData
+    reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData, listKBs, deleteKBFile,
+    deleteKB
 } = require("./utils");
 
 const jwtPath = path.join(os.homedir(), '.openkbs', 'clientJWT');
@@ -230,4 +231,37 @@ program
             console.error(`${bold}${red}Error during create operation:${reset}`, error.message);
         }
     });
+
+const apps = program.command('apps').description('Manage KB apps');
+
+apps.command('ls [kbId] [field]')
+    .description('List all KB apps or show detailed information for a specific KB by providing kbId')
+    .action(async (kbId, prop) => {
+        try {
+            const apps = await listKBs();
+            if (kbId) {
+                const app = apps.find(app => app.kbId === kbId);
+                if (app) {
+                    if (prop) {
+                        if (app[prop] === undefined) return console.log('Non existing property ' + prop)
+                        console.log(['string'].includes(typeof app[prop]) ? app[prop] : JSON.stringify(app[prop], null, 2));
+                    } else {
+                        console.log(JSON.stringify(app, null, 2));
+                    }
+                } else {
+                    console.log(`KB app with ID ${kbId} not found.`);
+                }
+            } else {
+                const maxTitleLength = Math.max(...apps.map(app => app.kbTitle.length));
+                apps.forEach(app => {
+                    const date = new Date(app.createdAt).toISOString().replace('T', ' ').replace(/\..+/, '');
+                    const paddedTitle = app.kbTitle.padEnd(maxTitleLength, ' ');
+                    console.log(`${date}  ${paddedTitle}  kbId: ${app.kbId}`);
+                });
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
+
 program.parse(process.argv);
