@@ -188,8 +188,7 @@ async function createKBAction(_, options) {
         }
 
         console.log('Initiating KB creation...');
-        const token = await getClientJWT();
-        const { kbId } = await createKB(localKBData, AESKey, token, options?.selfManagedKeys);
+        const { kbId } = await createKB(localKBData, AESKey, options?.selfManagedKeys);
 
         await saveLocalKBData({ ...localKBData, kbId });
         console.log(`KB ${kbId} created!`);
@@ -209,10 +208,10 @@ async function lsAction(kbId, prop) {
                     if (app[prop] === undefined) return console.red('Non existing property ' + prop);
                     console.log(['string'].includes(typeof app[prop]) ? app[prop] : JSON.stringify(app[prop], null, 2));
                 } else {
-                    console.log(JSON.stringify(app, null, 2));
+                    console.log(JSON.stringify({kbId: app.kbId, ...app}, null, 2));
                 }
             } else {
-                console.red(`KB with ID ${kbId} not found.`);
+                console.red(`KB with ID ${kbId} not found on the remote service.`);
             }
         } else {
             const maxTitleLength = Math.max(...apps.map(app => app.kbTitle.length));
@@ -248,9 +247,13 @@ async function deleteFileAction(kbId, filePath) {
 
 async function describeAction() {
     try {
-        const localKBData = await fetchLocalKBData();
-        const kbId = localKBData?.kbId;
-        console.log(kbId ? JSON.stringify(localKBData, null, 2) : 'No KB found');
+        const {kbId, kbTitle} = await fetchLocalKBData();
+
+        if (kbId) {
+            console.green(JSON.stringify({kbId, kbTitle}, null, 2))
+        } else {
+            console.red('No KB found');
+        }
     } catch (error) {
         console.red('Error fetching the current KB ID:', error.message);
     }

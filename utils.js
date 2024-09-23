@@ -193,9 +193,9 @@ async function getClientJWT() {
     return await fs.readFile(jwtPath, 'utf-8');
 }
 
-async function getUserProfile() {
+async function getUserProfile(token = null) {
     try {
-        const token = await getClientJWT();
+        if (!token) token = await getClientJWT();
         return await makePostRequest(AUTH_API_URL + 'getUserProfile', { token });
     } catch (error) {
         console.red('API request error:', error);
@@ -479,19 +479,30 @@ async function buildFilesMap(namespaces, kbId, kbToken) {
     return filesMap;
 }
 
-async function createKB(localKBData, AESKey, clientJWT, isSelfManagedKey = false) {
+async function createKB(localKBData, AESKey, isSelfManagedKey = false) {
     const {
         kbId, chatVendor, kbDescription, kbTitle, model, kbInstructions, inputTools, installation,
         itemTypes, embeddingModel, embeddingDimension, searchEngine
     } = localKBData;
 
-    // Read and encode the icon file
+    const token = await getClientJWT();
+    const userProfile = await getUserProfile(token)
+    const accountId = userProfile.accountId;
+
+    const encryptedWalletPrivateKey = encrypt(userProfile.walletPrivateKey, AESKey);
+    const walletPublicKey = userProfile.walletPublicKey;
+
+    if (!await fs.pathExists('./icon.png')) {
+        console.red('icon.png not found');
+        process.exit(1);
+    }
+
     const iconFile = await fs.readFile('./icon.png');
     const fileData = `data:image/png;base64,${iconFile.toString('base64')}`;
 
     const params = {
         fileData,
-        token: clientJWT,
+        token,
         action: 'create',
         kbTitle: encrypt(kbTitle, AESKey),
         kbDescription: encrypt(kbDescription, AESKey),
@@ -500,8 +511,11 @@ async function createKB(localKBData, AESKey, clientJWT, isSelfManagedKey = false
         installation,
         chatVendor,
         model,
+        accountId: accountId,
+        walletPublicKey: walletPublicKey,
+        walletPrivateKey: encryptedWalletPrivateKey,
         pwaName: kbTitle
-    };
+    }
 
     if (!isSelfManagedKey) params.key = AESKey;
 
