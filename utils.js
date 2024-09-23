@@ -67,7 +67,16 @@ function makePostRequest(url, data) {
                     const data = JSON.parse(body);
                     resolve(data);
                 } else {
-                    console.error(`Request failed with status code ${res.statusCode}`);
+                    try {
+                        if (JSON.parse(body).error) {
+                            console.log(JSON.parse(body).error);
+                        } else {
+                            console.error(`Invalid Request`);
+                        }
+                    } catch (e) {
+                        console.error(`Invalid Request`);
+                    }
+
                     process.exit(1);
                 }
             });
@@ -366,7 +375,7 @@ async function listKBs() {
 // this is how the path looks like ${namespace}/${kbId}/${fileName}
 // namespace is "frontend" for filePaths that starts with (Frontend/*) - example: Frontend/path/toSomeFileName.ext
 // namespace is "functions" for any other filePaths
-export const deleteKBFile = async (kbId, namespace, filePath) => {
+const deleteKBFile = async (kbId, namespace, filePath) => {
     const { kbToken } = await fetchKBJWT(kbId);
 
     const apiPayload = {
@@ -381,12 +390,10 @@ export const deleteKBFile = async (kbId, namespace, filePath) => {
 
 async function deleteKB(kbId) {
     try {
-        const { kbToken } = await fetchKBJWT(kbId);
-        return await makePostRequest(KB_API_URL, { token: kbToken, action: 'delete' });
-
+        const clientJWT = await getClientJWT();
+        return await makePostRequest(KB_API_URL, { token: clientJWT, kbId, action: 'delete' });
     } catch (error) {
-        console.error('Failed to delete KB:', error);
-        throw error;
+        console.error('Failed to delete KB');
     }
 }
 

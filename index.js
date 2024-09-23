@@ -264,4 +264,40 @@ apps.command('ls [kbId] [field]')
         }
     });
 
+apps.command('delete <kbId>')
+    .description('Delete a KB app by providing kbId')
+    .action(async (kbId) => {
+        try {
+            await deleteKB(kbId);
+            console.log(`KB app with ID ${kbId} has been deleted.`);
+        } catch (error) {
+            console.error('Failed to delete KB');
+        }
+    });
+
+apps.command('delete-file <kbId> <filePath>')
+    .description(`Delete a file inside the "src" folder by providing kbId and filePath (example: openkbs delete-file 1234567890ab Frontend/test.js)`)
+    .action(async (kbId, filePath) => {
+        try {
+            const namespace = filePath.startsWith('Frontend/') ? 'frontend' : 'functions';
+            await deleteKBFile(kbId, namespace, filePath);
+            console.log(`File ${filePath} in KB app with ID ${kbId} has been deleted.`);
+        } catch (error) {
+            console.error('Failed to delete file!');
+        }
+    });
+
+program
+    .command('app')
+    .description('Display the current KB Application ID')
+    .action(async () => {
+        try {
+            const localKBData = await fetchLocalKBData();
+            const kbId = localKBData?.kbId;
+            console.log(kbId ? {kbId} :  'No Knowledge Base ID')
+        } catch (error) {
+            console.error('Error fetching the current Knowledge Base ID:', error.message);
+        }
+    });
+
 program.parse(process.argv);
