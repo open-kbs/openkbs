@@ -183,7 +183,7 @@ async function createKBAction(_, options) {
         if (localKBData?.kbId && !options?.force) {
             console.log(`${yellow}KB ${green}${localKBData?.kbId}${reset}${yellow} saved in settings.json.${reset}`);
             console.log(`${bold}${yellow}To push the changes to OpenKBS remote use "openkbs push"${reset}`);
-            console.log(`${bold}${yellow}To force-create a new app, use "openkbs create kb --force"${reset}`);
+            console.log(`${bold}${yellow}To delete KB ${localKBData?.kbId} from settings.js and force-create a new app, use "openkbs create kb --force"${reset}`);
             return;
         }
 
@@ -192,7 +192,7 @@ async function createKBAction(_, options) {
         const { kbId } = await createKB(localKBData, AESKey, token, options?.selfManagedKeys);
 
         await saveLocalKBData({ ...localKBData, kbId });
-        console.green(`KB ${kbId} created!`);
+        console.log(`KB ${kbId} created!`);
         await pushAction();
     } catch (error) {
         console.red(`Error during create operation:`, error.message);
