@@ -74,7 +74,7 @@ async function loginAction() {
     });
 }
 
-async function pullAction(targetFile) {
+async function pullAction(location = 'origin', targetFile) {
     try {
         targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
 
@@ -88,14 +88,14 @@ async function pullAction(targetFile) {
         if (!targetFile) {
             await fetchAndSaveSettings(localKBData, kbId, res.kbToken);
             await downloadIcon(kbId);
-            await downloadFiles(['functions', 'frontend'], kbId, res.kbToken);
+            await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, location, targetFile);
             console.green('Synchronization complete: All changes have been successfully downloaded!');
         } else if (targetFile === 'settings.json') {
             await fetchAndSaveSettings(localKBData, kbId, res.kbToken);
         } else if (targetFile === 'icon.png') {
             await downloadIcon(kbId);
         } else {
-            const fileDownloaded = await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, targetFile);
+            const fileDownloaded = await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, location, targetFile);
             if (fileDownloaded) {
                 console.green(`File ${targetFile} synchronized successfully.`);
             } else {
@@ -107,7 +107,8 @@ async function pullAction(targetFile) {
     }
 }
 
-async function pushAction(targetFile) {
+async function pushAction(location = 'origin', targetFile) {
+    if (!['origin', 'localstack', 'aws'].includes(location)) return console.red(`Invalid location ${location} (valid options: 'origin', 'localstack', 'aws')`);
     try {
         targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
 
@@ -125,13 +126,13 @@ async function pushAction(targetFile) {
 
         if (!targetFile) {
             await updateKB(localKBData, KBData, kbToken);
-            await uploadFiles(['functions', 'frontend'], kbId, kbToken);
+            await uploadFiles(['functions', 'frontend'], kbId, kbToken, location, targetFile);
             console.green('KB update complete: All changes have been successfully uploaded!');
         } else if (targetFile === 'settings.json') {
             await updateKB(localKBData, KBData, kbToken);
             console.log('Settings updated.');
         } else {
-            const fileUploaded = await uploadFiles(['functions', 'frontend'], kbId, kbToken, targetFile);
+            const fileUploaded = await uploadFiles(['functions', 'frontend'], kbId, kbToken, location, targetFile);
             if (fileUploaded) {
                 console.green(`File ${targetFile} uploaded successfully.`);
             } else {

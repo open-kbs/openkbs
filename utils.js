@@ -6,7 +6,7 @@ const path = require("path");
 const fs = require("fs-extra");
 const os = require("os");
 const { generateMnemonic } = require('bip39');
-
+const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 const reset = "\x1b[0m";
 const bold = "\x1b[1m";
 const red = "\x1b[31m";
@@ -17,6 +17,12 @@ const cyan = "\x1b[36m";
 console.red = (data) =>  console.log(`${red}${data}${reset}`)
 console.green = (data) =>  console.log(`${green}${data}${reset}`)
 console.yellow = (data) =>  console.log(`${yellow}${bold}${data}${reset}`)
+
+const getS3Client = (location) => new S3Client({
+    region: 'us-east-1',
+    endpoint: location === 'localstack' ? 'http://localhost:4566' : undefined,
+    forcePathStyle: true
+});
 
 const decryptKBItem = (item, AESKey) => {
     if (item === undefined) return item;
@@ -439,7 +445,16 @@ async function downloadIcon(kbId) {
     await downloadPublicFile(`https://file.openkbs.com/kb-image/${kbId}.png`, path.join(process.cwd(), 'icon.png'));
 }
 
-async function downloadFiles(namespaces, kbId, kbToken, targetFile) {
+async function streamToBuffer(stream) {
+    return new Promise((resolve, reject) => {
+        const chunks = [];
+        stream.on('data', chunk => chunks.push(chunk));
+        stream.on('error', reject);
+        stream.on('end', () => resolve(Buffer.concat(chunks)));
+    });
+}
+
+async function downloadFiles(namespaces, kbId, kbToken, location = 'origin', targetFile) {
     const localDir = path.join(process.cwd(), 'src');
     const filesMap = await buildFilesMap(namespaces, kbId, kbToken);
     let filesToDownload = [];
@@ -458,8 +473,19 @@ async function downloadFiles(namespaces, kbId, kbToken, targetFile) {
     }
 
     for (const { namespace, file, fileName } of filesToDownload) {
-        const presignedURL = await getPresignedURL(namespace, kbId, fileName, 'getObject', kbToken);
-        const fileContent = await downloadFile(presignedURL);
+        let fileContent;
+        if (location === 'origin') {
+            const presignedURL = await getPresignedURL(namespace, kbId, fileName, 'getObject', kbToken);
+            fileContent = await downloadFile(presignedURL);
+        } else {
+            const response = await getS3Client(location).send(new GetObjectCommand({
+                Bucket: 'openkbs-files',
+                Key: `${namespace}/${kbId}/${fileName}`
+            }));
+
+            fileContent = await streamToBuffer(response.Body);
+        }
+
         const localFilePath = path.join(localDir, fileName);
         await fs.ensureDir(path.dirname(localFilePath));
         console.log(`Downloading: ${fileName}`);
@@ -566,7 +592,7 @@ async function updateKB(localKBData, KBData, kbToken) {
     await makePostRequest(KB_API_URL, params);
 }
 
-async function uploadFiles(namespaces, kbId, kbToken, targetFile) {
+async function uploadFiles(namespaces, kbId, kbToken, location = 'origin', targetFile) {
     const localDir = path.join(process.cwd(), 'src');
     const filesMap = await buildLocalFilesMap(localDir, namespaces);
     let filesToUpload = [];
@@ -585,10 +611,18 @@ async function uploadFiles(namespaces, kbId, kbToken, targetFile) {
     }
 
     for (const { namespace, filePath, fileName } of filesToUpload) {
-        const presignedURL = await getPresignedURL(namespace, kbId, fileName, 'putObject', kbToken);
         const fileContent = await fs.readFile(filePath);
         console.log(`Uploading: ${fileName}`);
-        await fetch(presignedURL, { method: 'PUT', body: fileContent });
+        if (location === 'origin') {
+            const presignedURL = await getPresignedURL(namespace, kbId, fileName, 'putObject', kbToken);
+            await fetch(presignedURL, { method: 'PUT', body: fileContent });
+        } else {
+            await getS3Client(location).send(new PutObjectCommand({
+                Bucket: 'openkbs-files',
+                Key: `${namespace}/${kbId}/${fileName}`,
+                Body: fileContent
+            }));
+        }
     }
     return true; // Files uploaded successfully
 }

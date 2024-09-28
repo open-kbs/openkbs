@@ -14,6 +14,20 @@ const {
     describeAction
 } = require('./actions');
 
+const getPushPullHelpText = (command) => `
+Examples:
+  $ openkbs ${command} origin
+  $ openkbs ${command} origin Events/onRequest.js
+
+Parameters:
+  location    The location where the files are ${command === 'push' ? 'uploaded' : 'pulled'}. Possible values are:
+              - origin: Use the OpenKBS cloud service for ${command === 'push' ? 'uploading' : 'pulling'} files.
+              - aws: Use AWS S3 (in your own AWS account) for ${command === 'push' ? 'uploading' : 'pulling'} files.
+              - localstack: Use LocalStack for local S3 emulation.
+
+  targetFile  (Optional) The specific file to ${command}. If not provided, all files will be ${command === 'push' ? 'pushed' : 'pulled'}.
+`;
+
 program.version(packageJson.version);
 
 program
@@ -22,14 +36,16 @@ program
     .action(loginAction);
 
 program
-    .command('pull [targetFile]')
+    .command('pull [location] [targetFile]')
     .description('Pull KB details and files using kbId from app/settings.json')
-    .action(pullAction);
+    .action(pullAction)
+    .addHelpText('after', getPushPullHelpText('pull'));
 
 program
-    .command('push [targetFile]')
+    .command('push [location] [targetFile]')
     .description('Push KB details and files from settings.json and local files to update remote KB.')
-    .action(pushAction);
+    .action(pushAction)
+    .addHelpText('after', getPushPullHelpText('push'));
 
 program
     .command('clone <kbId>')
