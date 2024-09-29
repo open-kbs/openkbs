@@ -7,7 +7,7 @@ const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
     fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
     reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB
+    deleteKB, buildPackage
 } = require("./utils");
 
 const jwtPath = path.join(os.homedir(), '.openkbs', 'clientJWT');
@@ -105,6 +105,18 @@ async function pullAction(location = 'origin', targetFile) {
     } catch (error) {
         console.red('Error during pull operation:', error.message);
     }
+}
+
+async function deployAction(moduleName) {
+    if (!['contentRender', 'onRequest', 'onResponse', 'onAddMessages'].includes(moduleName)) {
+        return console.red(`Invalid module name ${moduleName} (valid options: 'contentRender', 'onRequest', 'onResponse', 'onAddMessages')`);
+    }
+
+    const localKBData = await fetchLocalKBData();
+    const kbId = localKBData?.kbId;
+    const namespace = moduleName === 'contentRender' ? 'frontend' : 'functions';
+    const res = await buildPackage(namespace, kbId, moduleName)
+    console.log(res)
 }
 
 async function pushAction(location = 'origin', targetFile) {
@@ -270,5 +282,6 @@ module.exports = {
     lsAction,
     deleteKBAction,
     deleteFileAction,
-    describeAction
+    describeAction,
+    deployAction
 };

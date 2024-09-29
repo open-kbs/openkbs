@@ -293,6 +293,18 @@ async function signPayload(payload, accountId, publicKey, privateKey, expiresInS
     return `${encodedHeader}.${encodedPayload}.${encodedSignature}`;
 }
 
+const buildPackage = async (namespace, kbId, moduleName) => {
+    const token = await getClientJWT();
+
+    return await makePostRequest('https://kb.openkbs.com/', {
+        token,
+        kbId,
+        namespace,
+        moduleName,
+        action:  namespace === 'frontend' ? 'buildWebpackPackage' : 'buildNodePackage'
+    });
+}
+
 // Helper functions
 async function listFiles(namespace, kbId, kbJWT) {
     const response = await makePostRequest('https://kb.openkbs.com/', {
@@ -656,5 +668,5 @@ module.exports = {
     KB_API_URL, AUTH_API_URL, decryptKBFields, fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload,
     listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, updateKB, uploadFiles, generateKey,
     generateMnemonic, reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB
+    deleteKB, buildPackage
 }

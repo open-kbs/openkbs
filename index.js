@@ -11,7 +11,7 @@ const {
     lsAction,
     deleteKBAction,
     deleteFileAction,
-    describeAction
+    describeAction, deployAction
 } = require('./actions');
 
 const getPushPullHelpText = (command) => `
@@ -46,6 +46,18 @@ program
     .description('Push KB details and files from settings.json and local files to update remote KB.')
     .action(pushAction)
     .addHelpText('after', getPushPullHelpText('push'));
+
+program
+    .command('deploy [moduleName]')
+    .description('Builds and deploys a specified moduleName to OpenKBS Cloud "dist" module folder')
+    .action(deployAction)
+    .addHelpText('after', `
+Examples:
+  $ openkbs deploy onRequest
+  $ openkbs deploy onResponse
+  $ openkbs deploy onAddMessages
+  $ openkbs deploy contentRender
+`);
 
 program
     .command('clone <kbId>')
