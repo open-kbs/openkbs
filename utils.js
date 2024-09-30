@@ -472,14 +472,16 @@ async function downloadFiles(namespaces, kbId, kbToken, location = 'origin', tar
     let filesToDownload = [];
 
     if (targetFile) {
-        if (filesMap[targetFile]) {
+        if (filesMap[targetFile] && !targetFile.startsWith('Events/dist') && !targetFile.startsWith('Frontend/dist')) {
             filesToDownload.push({ ...filesMap[targetFile], fileName: targetFile });
         } else {
-            return false; // File not found
+            return false; // File not found or in dist folder
         }
     } else {
-        // No target file, download all files
-        filesToDownload = Object.keys(filesMap).map(fileName => {
+        // No target file, download all files except those in dist folders
+        filesToDownload = Object.keys(filesMap).filter(fileName =>
+            !fileName.startsWith('Events/dist') && !fileName.startsWith('Frontend/dist')
+        ).map(fileName => {
             return { ...filesMap[fileName], fileName };
         });
     }
@@ -610,14 +612,16 @@ async function uploadFiles(namespaces, kbId, kbToken, location = 'origin', targe
     let filesToUpload = [];
 
     if (targetFile) {
-        if (filesMap[targetFile]) {
+        if (filesMap[targetFile] && !targetFile.startsWith('Events/dist') && !targetFile.startsWith('Frontend/dist')) {
             filesToUpload.push({ ...filesMap[targetFile], fileName: targetFile });
         } else {
-            return false; // File not found locally
+            return false; // File not found locally or in dist folder
         }
     } else {
-        // No target file, upload all files
-        filesToUpload = Object.keys(filesMap).map(fileName => {
+        // No target file, upload all files except those in dist folders
+        filesToUpload = Object.keys(filesMap).filter(fileName =>
+            !fileName.startsWith('Events/dist') && !fileName.startsWith('Frontend/dist')
+        ).map(fileName => {
             return { ...filesMap[fileName], fileName };
         });
     }

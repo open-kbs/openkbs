@@ -80,12 +80,13 @@ async function pullAction(location = 'origin', targetFile) {
 
         const localKBData = await fetchLocalKBData();
         const { kbId } = localKBData;
+        if (!kbId)  return console.red('No KB ID found. Please create a KB first using "openkbs create kb".');
         console.log(`Initiating KB ${kbId} download...`);
         const res = await fetchKBJWT(kbId);
 
         if (!res?.kbToken) return console.red(`KB ${kbId} does not exist on the remote service`);
 
-        if (!targetFile) {
+        if (!targetFile || targetFile.endsWith('app/settings.json') || targetFile.endsWith('app/instructions.txt')) {
             await fetchAndSaveSettings(localKBData, kbId, res.kbToken);
             await downloadIcon(kbId);
             await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, location, targetFile);
@@ -98,8 +99,6 @@ async function pullAction(location = 'origin', targetFile) {
             const fileDownloaded = await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, location, targetFile);
             if (fileDownloaded) {
                 console.green(`File ${targetFile} synchronized successfully.`);
-            } else {
-                console.red(`File ${targetFile} not found in the KB.`);
             }
         }
     } catch (error) {
@@ -111,7 +110,7 @@ async function deployAction(moduleName) {
     if (!['contentRender', 'onRequest', 'onResponse', 'onAddMessages'].includes(moduleName)) {
         return console.red(`Invalid module name ${moduleName} (valid options: 'contentRender', 'onRequest', 'onResponse', 'onAddMessages')`);
     }
-
+    console.log(`Building and deploying ${bold}${moduleName}${reset} module ...`);
     const localKBData = await fetchLocalKBData();
     const kbId = localKBData?.kbId;
     const namespace = moduleName === 'contentRender' ? 'frontend' : 'functions';
@@ -128,6 +127,7 @@ async function pushAction(location = 'origin', targetFile) {
 
         const localKBData = await fetchLocalKBData();
         const kbId = localKBData?.kbId;
+        if (!kbId)  return console.red('No KB ID found. Please create a KB first using "openkbs create kb".');
         console.log(`Initiating KB ${kbId} upload...`);
         const res = await fetchKBJWT(kbId);
 
@@ -136,7 +136,7 @@ async function pushAction(location = 'origin', targetFile) {
         const kbToken = res?.kbToken;
         const KBData = await getKB(kbToken);
 
-        if (!targetFile) {
+        if (!targetFile || targetFile.endsWith('app/settings.json') || targetFile.endsWith('app/instructions.txt')) {
             await updateKB(localKBData, KBData, kbToken);
             await uploadFiles(['functions', 'frontend'], kbId, kbToken, location, targetFile);
             console.green('KB update complete: All changes have been successfully uploaded!');
@@ -147,8 +147,6 @@ async function pushAction(location = 'origin', targetFile) {
             const fileUploaded = await uploadFiles(['functions', 'frontend'], kbId, kbToken, location, targetFile);
             if (fileUploaded) {
                 console.green(`File ${targetFile} uploaded successfully.`);
-            } else {
-                console.red(`File ${targetFile} not found in the local directory.`);
             }
         }
     } catch (error) {
