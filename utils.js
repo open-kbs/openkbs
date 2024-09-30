@@ -453,8 +453,8 @@ async function fetchAndSaveSettings(localKBData, kbId, kbToken) {
 }
 
 async function downloadIcon(kbId) {
-    console.log(`Downloading: icon.png`);
-    await downloadPublicFile(`https://file.openkbs.com/kb-image/${kbId}.png`, path.join(process.cwd(), 'icon.png'));
+    console.log(`Downloading: ./app/icon.png`);
+    await downloadPublicFile(`https://file.openkbs.com/kb-image/${kbId}.png`, path.join(process.cwd(), 'app' ,'icon.png'));
 }
 
 async function streamToBuffer(stream) {
@@ -531,12 +531,12 @@ async function createKB(localKBData, AESKey, isSelfManagedKey = false) {
     const encryptedWalletPrivateKey = encrypt(userProfile.walletPrivateKey, AESKey);
     const walletPublicKey = userProfile.walletPublicKey;
 
-    if (!await fs.pathExists('./icon.png')) {
-        console.red('icon.png not found');
+    if (!await fs.pathExists('./app/icon.png')) {
+        console.red('./app/icon.png not found');
         process.exit(1);
     }
 
-    const iconFile = await fs.readFile('./icon.png');
+    const iconFile = await fs.readFile('./app/icon.png');
     const fileData = `data:image/png;base64,${iconFile.toString('base64')}`;
 
     const params = {
@@ -576,7 +576,7 @@ async function updateKB(localKBData, KBData, kbToken) {
     } = localKBData;
 
     // Read and encode the icon file
-    const iconFile = await fs.readFile('./icon.png');
+    const iconFile = await fs.readFile('./app/icon.png');
     const fileData = `data:image/png;base64,${iconFile.toString('base64')}`;
 
     const params = {

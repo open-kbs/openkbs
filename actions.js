@@ -92,7 +92,7 @@ async function pullAction(location = 'origin', targetFile) {
             console.green('Synchronization complete: All changes have been successfully downloaded!');
         } else if (targetFile === 'settings.json') {
             await fetchAndSaveSettings(localKBData, kbId, res.kbToken);
-        } else if (targetFile === 'icon.png') {
+        } else if (targetFile === 'app/icon.png') {
             await downloadIcon(kbId);
         } else {
             const fileDownloaded = await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, location, targetFile);
@@ -124,7 +124,7 @@ async function pushAction(location = 'origin', targetFile) {
     try {
         targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
 
-        if (targetFile === 'icon.png') return console.log(`Try the following command instead:\n\nopenkbs push settings.json\n`);
+        if (targetFile === 'app/icon.png') return console.log(`Try the following command instead:\n\nopenkbs push settings.json\n`);
 
         const localKBData = await fetchLocalKBData();
         const kbId = localKBData?.kbId;
