@@ -23,8 +23,8 @@
     "outputPath": "build/"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "OpenKBS",
+  "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.658.1",
     "bip39": "^3.1.0",
