@@ -449,7 +449,7 @@ async function fetchAndSaveSettings(localKBData, kbId, kbToken) {
     if (itemTypes) params.itemTypes = itemTypes;
 
     await saveLocalKBData(params);
-    console.log('Settings Updated');
+    console.log('KB Settings Updated.');
 }
 
 async function downloadIcon(kbId) {
@@ -571,7 +571,7 @@ async function createKB(localKBData, AESKey, isSelfManagedKey = false) {
     return await makePostRequest(KB_API_URL, params);
 }
 
-async function updateKB(localKBData, KBData, kbToken) {
+async function updateKB(localKBData, KBData, kbToken, withIcon = true) {
     const {
         kbId, chatVendor, kbDescription, kbTitle, model, kbInstructions, inputTools, installation,
         itemTypes, embeddingModel, embeddingDimension, searchEngine
@@ -582,7 +582,7 @@ async function updateKB(localKBData, KBData, kbToken) {
     const fileData = `data:image/png;base64,${iconFile.toString('base64')}`;
 
     const params = {
-        fileData,
+        fileData: withIcon ? fileData : undefined,
         token: kbToken,
         action: 'update',
         kbTitle: encrypt(kbTitle, KBData.key),

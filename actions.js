@@ -76,22 +76,25 @@ async function loginAction() {
 
 async function pullAction(location = 'origin', targetFile) {
     try {
+        // Remove './' prefix if present
         targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
+        // Remove 'src/' prefix if present
+        targetFile = targetFile && targetFile.startsWith('src/') ? targetFile.slice(4) : targetFile;
 
         const localKBData = await fetchLocalKBData();
         const { kbId } = localKBData;
-        if (!kbId)  return console.red('No KB ID found. Please create a KB first using "openkbs create kb".');
+        if (!kbId) return console.red('No KB ID found. Please create a KB first using "openkbs create kb".');
         console.log(`Initiating KB ${kbId} download...`);
         const res = await fetchKBJWT(kbId);
 
         if (!res?.kbToken) return console.red(`KB ${kbId} does not exist on the remote service`);
 
-        if (!targetFile || targetFile.endsWith('app/settings.json') || targetFile.endsWith('app/instructions.txt')) {
+        if (!targetFile) {
             await fetchAndSaveSettings(localKBData, kbId, res.kbToken);
             await downloadIcon(kbId);
             await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, location, targetFile);
             console.green('Synchronization complete: All changes have been successfully downloaded!');
-        } else if (targetFile === 'settings.json') {
+        } else if (targetFile === 'app/settings.json' || targetFile === 'app/instructions.txt') {
             await fetchAndSaveSettings(localKBData, kbId, res.kbToken);
         } else if (targetFile === 'app/icon.png') {
             await downloadIcon(kbId);
@@ -99,6 +102,8 @@ async function pullAction(location = 'origin', targetFile) {
             const fileDownloaded = await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, location, targetFile);
             if (fileDownloaded) {
                 console.green(`File ${targetFile} synchronized successfully.`);
+            } else {
+                console.red(`Invalid path ${targetFile}`);
             }
         }
     } catch (error) {
@@ -121,13 +126,16 @@ async function deployAction(moduleName) {
 async function pushAction(location = 'origin', targetFile) {
     if (!['origin', 'localstack', 'aws'].includes(location)) return console.red(`Invalid location ${location} (valid options: 'origin', 'localstack', 'aws')`);
     try {
+        // Remove './' prefix if present
         targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
+        // Remove 'src/' prefix if present
+        targetFile = targetFile && targetFile.startsWith('src/') ? targetFile.slice(4) : targetFile;
 
-        if (targetFile === 'app/icon.png') return console.log(`Try the following command instead:\n\nopenkbs push settings.json\n`);
+        if (targetFile === 'app/icon.png') return console.log(`Try the following command instead:\n\nopenkbs push origin app\n`);
 
         const localKBData = await fetchLocalKBData();
         const kbId = localKBData?.kbId;
-        if (!kbId)  return console.red('No KB ID found. Please create a KB first using "openkbs create kb".');
+        if (!kbId) return console.red('No KB ID found. Please create a KB first using "openkbs create kb".');
         console.log(`Initiating KB ${kbId} upload...`);
         const res = await fetchKBJWT(kbId);
 
@@ -136,17 +144,23 @@ async function pushAction(location = 'origin', targetFile) {
         const kbToken = res?.kbToken;
         const KBData = await getKB(kbToken);
 
-        if (!targetFile || targetFile.endsWith('app/settings.json') || targetFile.endsWith('app/instructions.txt')) {
+        if (!targetFile) {
             await updateKB(localKBData, KBData, kbToken);
             await uploadFiles(['functions', 'frontend'], kbId, kbToken, location, targetFile);
             console.green('KB update complete: All changes have been successfully uploaded!');
-        } else if (targetFile === 'settings.json') {
+        } else if (targetFile === 'app/settings.json' || targetFile === 'app/instructions.txt') {
+            await updateKB(localKBData, KBData, kbToken, false);
+            console.log('KB Settings updated.');
+        } else if (targetFile === 'app/icon.png') {
             await updateKB(localKBData, KBData, kbToken);
-            console.log('Settings updated.');
+            console.log('KB Settings updated.');
+            console.log('KB app/icon.png updated.');
         } else {
             const fileUploaded = await uploadFiles(['functions', 'frontend'], kbId, kbToken, location, targetFile);
             if (fileUploaded) {
                 console.green(`File ${targetFile} uploaded successfully.`);
+            } else {
+                console.red(`Invalid path ${targetFile}`);
             }
         }
     } catch (error) {

@@ -16,7 +16,10 @@ const {
 
 const getPushPullHelpText = (command) => `
 Examples:
-  $ openkbs ${command} origin
+  $ openkbs ${command} origin app/settings.json
+  $ openkbs ${command} origin app/instructions.txt
+  $ openkbs ${command} origin app/icon.png
+  $ openkbs ${command} origin Frontend/contentRender.js
   $ openkbs ${command} origin Events/onRequest.js
 
 Parameters:
@@ -37,13 +40,13 @@ program
 
 program
     .command('pull [location] [targetFile]')
-    .description('Pull KB details and files using kbId from app/settings.json')
+    .description('Pull KB settings, instructions and source code to local KB')
     .action(pullAction)
     .addHelpText('after', getPushPullHelpText('pull'));
 
 program
     .command('push [location] [targetFile]')
-    .description('Push KB details and files from settings.json and local files to update remote KB.')
+    .description('Push KB settings, instructions and source code to remote KB.')
     .action(pushAction)
     .addHelpText('after', getPushPullHelpText('push'));
 
