@@ -74,12 +74,12 @@ program
     .description('Clone existing KB locally by provided kbId')
     .action(cloneAction);
 
-// program
-//     .command('create kb')
-//     .description('Create new KB')
-//     .option('-s, --self-managed-keys', 'Enable self-managed keys mode')
-//     .option('-f, --force', 'Force KB creation')
-//     .action(createKBAction);
+program
+    .command('create kb')
+    .description('Create new KB')
+    .option('-s, --self-managed-keys', 'Enable self-managed keys mode')
+    .option('-f, --force', 'Force KB creation')
+    .action(createKBAction);
 
 program
     .command('ls [kbId] [field]')
@@ -150,27 +150,27 @@ program
         console.log(`Application ${appName} created successfully.`);
     });
 
-    program
-        .command('init')
-        .description('Initialize the current directory with missing template files')
-        .action(() => {
-            const targetDir = process.cwd();
+program
+    .command('init')
+    .description('Initialize the current directory with missing template files')
+    .action(() => {
+        const targetDir = process.cwd();
 
-            // Copy all files and folders, skipping existing ones
-            fs.readdirSync(TEMPLATE_DIR).forEach(item => {
-                const srcPath = path.join(TEMPLATE_DIR, item);
-                const destPath = path.join(targetDir, item);
+        // Copy all files and folders, skipping existing ones
+        fs.readdirSync(TEMPLATE_DIR).forEach(item => {
+            const srcPath = path.join(TEMPLATE_DIR, item);
+            const destPath = path.join(targetDir, item);
 
-                if (fs.existsSync(destPath)) {
-                    console.log(`Skipping existing item: ${item}`);
-                } else {
-                    fs.copySync(srcPath, destPath);
-                    console.log(`Copied: ${item}`);
-                }
-            });
-
-            console.log('Initialization complete.');
+            if (fs.existsSync(destPath)) {
+                console.log(`Skipping existing item: ${item}`);
+            } else {
+                fs.copySync(srcPath, destPath);
+                console.log(`Copied: ${item}`);
+            }
         });
+
+        console.log('Initialization complete.');
+    });
 
 
 program.parse(process.argv);
