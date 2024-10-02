@@ -32,7 +32,8 @@ function readSettings() {
                 if (kbId) {
                     resolve(kbId);
                 } else {
-                    reject('kbId not found in settings file.');
+                    reject('kbId not found in settings file. Try "openkbs push" first');
+                    console.yellow('Use "openkbs push" to create remote KB')
                 }
             } catch (parseErr) {
                 reject('Error parsing settings file: ' + parseErr);
@@ -61,7 +62,8 @@ function makePostRequest(url, data) {
             });
             res.on('end', () => {
                 if (res.statusCode === 401) {
-                    console.red('It appears you are not logged in. Please use "openkbs login" to log in.');
+                    console.red('It appears you are not logged in.');
+                    console.yellow('Use "openkbs login" to log in.')
                 }
 
                 if (res.statusCode >= 200 && res.statusCode < 300) {
