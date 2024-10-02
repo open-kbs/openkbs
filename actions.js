@@ -6,7 +6,7 @@ const { exec } = require('child_process');
 const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
     fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
-    reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData, listKBs, deleteKBFile,
+    reset, bold, red, yellow, green, createKB, saveLocalKBData, listKBs, deleteKBFile,
     deleteKB, buildPackage
 } = require("./utils");
 
