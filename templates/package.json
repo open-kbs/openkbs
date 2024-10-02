@@ -1,5 +1,5 @@
 {
-  "name": "my-app",
+  "name": "{{{openkbsAppName}}}",
   "version": "0.0.1",
   "description": "OpenKBS Application",
   "main": "index.js",
@@ -9,9 +9,8 @@
   "scripts": {
     "postinstall": "npm install openkbs-ui@0 && npm install openkbs-chat@0 && npm install openkbs-ai-server@0 && npm install openkbs-code@0",
     "start": "node index.js",
-    "start-ui": "cd node_modules/openkbs-ui && npm start",
-    "start-ui-dev": "cd node_modules/openkbs-ui && npm run dev",
-    "start-content-render": "webpack serve --config webpack.contentRender.config.js"
+    "chat": "cd node_modules/openkbs-chat && npm start",
+    "code": "cd node_modules/openkbs-code && npm start"
   },
   "dependencies": {
     "@emotion/react": "^11.10.6",
