@@ -111,7 +111,4 @@ program
     .option('-p, --payload <payload>', 'Payload')
     .action(signAction);
 
-
-
-
 program.parse(process.argv);
