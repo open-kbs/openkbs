@@ -668,9 +668,28 @@ const generateKey = (passphrase) => {
     return key.toString('hex');
 };
 
+const replacePlaceholderInFiles = (dir, name) => {
+    const files = fs.readdirSync(dir);
+
+    files.forEach((file) => {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+
+        if (stat.isDirectory()) {
+            replacePlaceholderInFiles(filePath);
+        } else if (stat.isFile()) {
+            let content = fs.readFileSync(filePath, 'utf8');
+            if (content.includes('{{{openkbsAppName}}}')) {
+                content = content.replace(/{{{openkbsAppName}}}/g, name);
+                fs.writeFileSync(filePath, content, 'utf8');
+            }
+        }
+    })
+}
+
 module.exports = {
     KB_API_URL, AUTH_API_URL, decryptKBFields, fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload,
     listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, updateKB, uploadFiles, generateKey,
     generateMnemonic, reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB, buildPackage
+    deleteKB, buildPackage, replacePlaceholderInFiles
 }

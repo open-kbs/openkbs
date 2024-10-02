@@ -7,9 +7,10 @@ const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
     fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
     reset, bold, red, yellow, green, createKB, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB, buildPackage
+    deleteKB, buildPackage, replacePlaceholderInFiles
 } = require("./utils");
 
+const TEMPLATE_DIR = path.join(__dirname, '../templates');
 const jwtPath = path.join(os.homedir(), '.openkbs', 'clientJWT');
 const generateTransactionId = () => `${+new Date()}-${Math.floor(100000 + Math.random() * 900000)}`;
 
@@ -212,6 +213,45 @@ async function cloneAction(kbId) {
     }
 }
 
+async function initByTemplateAction(appName) {
+    try {
+        const targetDir = process.cwd();
+
+        // Copy all files and folders, skipping existing ones
+        fs.readdirSync(TEMPLATE_DIR).forEach(item => {
+            const srcPath = path.join(TEMPLATE_DIR, item);
+            const destPath = path.join(targetDir, item);
+
+            if (fs.existsSync(destPath)) {
+                console.log(`Skipping existing item: ${item}`);
+            } else {
+                fs.copySync(srcPath, destPath);
+                console.log(`Copied: ${item}`);
+            }
+        });
+    } catch (error) {
+        console.red(`Error during create operation:`, error.message);
+    }
+}
+
+
+async function createByTemplateAction(name) {
+    try {
+        const targetDir = path.join(process.cwd(), name);
+
+        if (fs.existsSync(targetDir)) {
+            console.error(`Error: Directory ${name} already exists.`);
+            process.exit(1);
+        }
+        fs.copySync(TEMPLATE_DIR, targetDir);
+        replacePlaceholderInFiles(targetDir, name);
+
+        console.log(`Application ${name} created successfully.`);
+    } catch (error) {
+        console.red(`Error during create operation:`, error.message);
+    }
+}
+
 async function createKBAction(_, options) {
     try {
         const mnemonic = generateMnemonic(128);
@@ -317,5 +357,7 @@ module.exports = {
     deleteKBAction,
     deleteFileAction,
     describeAction,
-    deployAction
+    deployAction,
+    createByTemplateAction,
+    initByTemplateAction,
 };
