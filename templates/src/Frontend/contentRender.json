@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "react": "^18.2.0 (fixed)",
+    "react-dom": "^18.2.0 (fixed)",
+    "@mui/material": "^5.16.1 (fixed)",
+    "@mui/icons-material": "^5.16.1 (fixed)",
+    "@emotion/react": "^11.10.6 (fixed)",
+    "@emotion/styled": "^11.10.6 (fixed)"
+  }
+}

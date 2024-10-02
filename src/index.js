@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 const { program } = require('commander');
-const packageJson = require('./package.json');
+const packageJson = require('../package.json');
+const fs = require('fs-extra');
+const path = require('path');
+
+const TEMPLATE_DIR = path.join(__dirname, '../templates');
+
 const {
     signAction,
     loginAction,
@@ -13,6 +18,7 @@ const {
     deleteFileAction,
     describeAction, deployAction
 } = require('./actions');
+
 
 const getPushPullHelpText = (command) => `
 Examples:
@@ -68,12 +74,12 @@ program
     .description('Clone existing KB locally by provided kbId')
     .action(cloneAction);
 
-program
-    .command('create kb')
-    .description('Create new KB')
-    .option('-s, --self-managed-keys', 'Enable self-managed keys mode')
-    .option('-f, --force', 'Force KB creation')
-    .action(createKBAction);
+// program
+//     .command('create kb')
+//     .description('Create new KB')
+//     .option('-s, --self-managed-keys', 'Enable self-managed keys mode')
+//     .option('-f, --force', 'Force KB creation')
+//     .action(createKBAction);
 
 program
     .command('ls [kbId] [field]')
@@ -104,5 +110,67 @@ program
     .option('-r, --resourceId <resourceId>', 'Resource ID', 'credits')
     .option('-p, --payload <payload>', 'Payload')
     .action(signAction);
+
+program
+    .command('create <app-name>')
+    .description('Create a new application')
+    .action((appName) => {
+        const targetDir = path.join(process.cwd(), appName);
+
+        if (fs.existsSync(targetDir)) {
+            console.error(`Error: Directory ${appName} already exists.`);
+            process.exit(1);
+        }
+
+        fs.copySync(TEMPLATE_DIR, targetDir);
+
+        // Function to replace {{{openkbsAppName}}} in files that contain it
+        const replacePlaceholderInFiles = (dir) => {
+            const files = fs.readdirSync(dir);
+
+            files.forEach((file) => {
+                const filePath = path.join(dir, file);
+                const stat = fs.statSync(filePath);
+
+                if (stat.isDirectory()) {
+                    replacePlaceholderInFiles(filePath);
+                } else if (stat.isFile()) {
+                    let content = fs.readFileSync(filePath, 'utf8');
+                    if (content.includes('{{{openkbsAppName}}}')) {
+                        content = content.replace(/{{{openkbsAppName}}}/g, appName);
+                        fs.writeFileSync(filePath, content, 'utf8');
+                    }
+                }
+            })
+        }
+
+        // Replace {{{openkbsAppName}}} in files that contain it
+        replacePlaceholderInFiles(targetDir);
+
+        console.log(`Application ${appName} created successfully.`);
+    });
+
+    program
+        .command('init')
+        .description('Initialize the current directory with missing template files')
+        .action(() => {
+            const targetDir = process.cwd();
+
+            // Copy all files and folders, skipping existing ones
+            fs.readdirSync(TEMPLATE_DIR).forEach(item => {
+                const srcPath = path.join(TEMPLATE_DIR, item);
+                const destPath = path.join(targetDir, item);
+
+                if (fs.existsSync(destPath)) {
+                    console.log(`Skipping existing item: ${item}`);
+                } else {
+                    fs.copySync(srcPath, destPath);
+                    console.log(`Copied: ${item}`);
+                }
+            });
+
+            console.log('Initialization complete.');
+        });
+
 
 program.parse(process.argv);
