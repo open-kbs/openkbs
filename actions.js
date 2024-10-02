@@ -83,7 +83,8 @@ async function pullAction(location = 'origin', targetFile) {
 
         const localKBData = await fetchLocalKBData();
         const { kbId } = localKBData;
-        if (!kbId) return console.red('No KB ID found. Please create a KB first using "openkbs create kb".');
+        if (!kbId) return console.red('No KB found. Please create a KB first using "openkbs create kb".');
+
         console.log(`Initiating KB ${kbId} download...`);
         const res = await fetchKBJWT(kbId);
 
@@ -111,18 +112,34 @@ async function pullAction(location = 'origin', targetFile) {
     }
 }
 
-async function deployAction(moduleName) {
-    if (!['contentRender', 'onRequest', 'onResponse', 'onAddMessages'].includes(moduleName)) {
-        return console.red(`Invalid module name ${moduleName} (valid options: 'contentRender', 'onRequest', 'onResponse', 'onAddMessages')`);
-    }
-    console.log(`Building and deploying ${bold}${moduleName}${reset} module ...`);
-    const localKBData = await fetchLocalKBData();
-    const kbId = localKBData?.kbId;
-    const namespace = moduleName === 'contentRender' ? 'frontend' : 'functions';
-    const res = await buildPackage(namespace, kbId, moduleName)
-    console.log(res)
+function isModulePresent(moduleName) {
+    const eventPath = path.join(process.cwd(), 'src', 'Events', `${moduleName}.js`);
+    const frontendPath = path.join(process.cwd(), 'src', 'Frontend', `${moduleName}.js`);
+    return fs.existsSync(eventPath) || fs.existsSync(frontendPath);
 }
 
+async function deployAction(moduleName) {
+    const validModules = ['contentRender', 'onRequest', 'onResponse', 'onAddMessages'];
+
+    if (moduleName && !validModules.includes(moduleName)) {
+        return console.error(`Invalid module name ${moduleName} (valid options: 'contentRender', 'onRequest', 'onResponse', 'onAddMessages')`);
+    }
+
+    const modulesToDeploy = moduleName ? [moduleName] : validModules.filter(isModulePresent);
+
+    if (modulesToDeploy.length === 0) {
+        return console.log('No valid modules found to deploy.');
+    }
+
+    const localKBData = await fetchLocalKBData();
+    const kbId = localKBData?.kbId;
+
+    for (const module of modulesToDeploy) {
+        const namespace = module === 'contentRender' ? 'frontend' : 'functions';
+        const res = await buildPackage(namespace, kbId, module);
+        console.log(res);
+    }
+}
 async function pushAction(location = 'origin', targetFile) {
     if (!['origin', 'localstack', 'aws'].includes(location)) return console.red(`Invalid location ${location} (valid options: 'origin', 'localstack', 'aws')`);
     try {
@@ -135,7 +152,7 @@ async function pushAction(location = 'origin', targetFile) {
 
         const localKBData = await fetchLocalKBData();
         const kbId = localKBData?.kbId;
-        if (!kbId) return console.red('No KB ID found. Please create a KB first using "openkbs create kb".');
+        if (!kbId) return console.red('No KB found. Please create a KB first using "openkbs create kb".');
         console.log(`Initiating KB ${kbId} upload...`);
         const res = await fetchKBJWT(kbId);
 
@@ -147,7 +164,9 @@ async function pushAction(location = 'origin', targetFile) {
         if (!targetFile) {
             await updateKB(localKBData, KBData, kbToken);
             await uploadFiles(['functions', 'frontend'], kbId, kbToken, location, targetFile);
-            console.green('KB update complete: All changes have been successfully uploaded!');
+            await deployAction();
+            if (location === 'origin') console.green(`KB update complete: All changes have been successfully uploaded to https://${kbId}.apps.openkbs.com`);
+            if (location === 'localstack') console.green(`KB update complete: All changes have been successfully uploaded to http://${kbId}.apps.localhost:38593/`);
         } else if (targetFile === 'app/settings.json' || targetFile === 'app/instructions.txt') {
             await updateKB(localKBData, KBData, kbToken, false);
             console.log('KB Settings updated.');

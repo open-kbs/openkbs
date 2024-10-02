@@ -1,6 +1,6 @@
 {
-  "name": "openkbs-cli",
-  "version": "1.0.14",
+  "name": "openkbs",
+  "version": "0.0.2",
   "description": "OpenKBS - Command Line Interface",
   "main": "index.js",
   "scripts": {

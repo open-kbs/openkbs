@@ -52,10 +52,11 @@ program
 
 program
     .command('deploy [moduleName]')
-    .description('Builds and deploys a specified moduleName to OpenKBS Cloud "dist" module folder')
+    .description('Builds and deploys a specified moduleName to OpenKBS Cloud "dist" module folder. If moduleName is not provided, deploys all modules.')
     .action(deployAction)
     .addHelpText('after', `
 Examples:
+  $ openkbs deploy
   $ openkbs deploy onRequest
   $ openkbs deploy onResponse
   $ openkbs deploy onAddMessages
