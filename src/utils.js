@@ -676,9 +676,10 @@ const replacePlaceholderInFiles = (dir, name) => {
         const stat = fs.statSync(filePath);
 
         if (stat.isDirectory()) {
-            replacePlaceholderInFiles(filePath);
+            replacePlaceholderInFiles(filePath, name);
         } else if (stat.isFile()) {
             let content = fs.readFileSync(filePath, 'utf8');
+
             if (content.includes('{{{openkbsAppName}}}')) {
                 content = content.replace(/{{{openkbsAppName}}}/g, name);
                 fs.writeFileSync(filePath, content, 'utf8');

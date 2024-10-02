@@ -8,7 +8,6 @@ const {
     pullAction,
     pushAction,
     cloneAction,
-    createKBAction,
     lsAction,
     deleteKBAction,
     deleteFileAction,
@@ -18,6 +17,7 @@ const {
 
 const getPushPullHelpText = (command) => `
 Examples:
+  $ openkbs ${command}
   $ openkbs ${command} origin app/settings.json
   $ openkbs ${command} origin app/instructions.txt
   $ openkbs ${command} origin app/icon.png
@@ -41,29 +41,27 @@ program
     .action(loginAction);
 
 program
-    .command('pull [location] [targetFile]')
-    .description('Pull KB settings, instructions and source code to local KB')
-    .action(pullAction)
-    .addHelpText('after', getPushPullHelpText('pull'));
+    .command('create <app-name>')
+    .description('Create a new KB application')
+    .action(createByTemplateAction);
+
+program
+    .command('init')
+    .description('Initialize the current directory as a KB application (generates standard template files in the current folder)')
+    .action(initByTemplateAction);
 
 program
     .command('push [location] [targetFile]')
     .description('Push KB settings, instructions and source code to remote KB.')
+    .option('-s, --self-managed-keys', 'Enable self-managed keys mode during the initial push before the remote KB is created.')
     .action(pushAction)
     .addHelpText('after', getPushPullHelpText('push'));
 
 program
-    .command('deploy [moduleName]')
-    .description('Builds and deploys a specified moduleName to OpenKBS Cloud "dist" module folder. If moduleName is not provided, deploys all modules.')
-    .action(deployAction)
-    .addHelpText('after', `
-Examples:
-  $ openkbs deploy
-  $ openkbs deploy onRequest
-  $ openkbs deploy onResponse
-  $ openkbs deploy onAddMessages
-  $ openkbs deploy contentRender
-`);
+    .command('pull [location] [targetFile]')
+    .description('Pull KB settings, instructions and source code to local KB')
+    .action(pullAction)
+    .addHelpText('after', getPushPullHelpText('pull'));
 
 program
     .command('clone <kbId>')
@@ -91,6 +89,19 @@ program
     .action(describeAction);
 
 program
+    .command('deploy [moduleName]')
+    .description('Builds and deploys a specified moduleName to "dist" module folder. If moduleName is not provided, deploys all modules.')
+    .action(deployAction)
+    .addHelpText('after', `
+Examples:
+  $ openkbs deploy
+  $ openkbs deploy onRequest
+  $ openkbs deploy onResponse
+  $ openkbs deploy onAddMessages
+  $ openkbs deploy contentRender
+`);
+
+program
     .command('sign')
     .description('Signs a transaction to request OpenKBS service')
     .requiredOption('-a, --toAccountId <toAccountId>', 'Receiver account ID')
@@ -100,22 +111,7 @@ program
     .option('-p, --payload <payload>', 'Payload')
     .action(signAction);
 
-program
-    .command('create kb')
-    .description('Create new KB')
-    .option('-s, --self-managed-keys', 'Enable self-managed keys mode')
-    .option('-f, --force', 'Force KB creation')
-    .action(createKBAction);
 
-program
-    .command('create <app-name>')
-    .description('Create a new application')
-    .action(createByTemplateAction);
-
-program
-    .command('init')
-    .description('Initialize the current directory with missing template files')
-    .action(initByTemplateAction);
 
 
 program.parse(process.argv);

@@ -84,7 +84,7 @@ async function pullAction(location = 'origin', targetFile) {
 
         const localKBData = await fetchLocalKBData();
         const { kbId } = localKBData;
-        if (!kbId) return console.red('No KB found. Please create a KB first using "openkbs create kb".');
+        if (!kbId) return console.red('No KB found. Please push the KB first using "openkbs push".');
 
         console.log(`Initiating KB ${kbId} download...`);
         const res = await fetchKBJWT(kbId);
@@ -141,7 +141,8 @@ async function deployAction(moduleName) {
         console.log(res);
     }
 }
-async function pushAction(location = 'origin', targetFile) {
+
+async function pushAction(location = 'origin', targetFile, options) {
     if (!['origin', 'localstack', 'aws'].includes(location)) return console.red(`Invalid location ${location} (valid options: 'origin', 'localstack', 'aws')`);
     try {
         // Remove './' prefix if present
@@ -153,7 +154,13 @@ async function pushAction(location = 'origin', targetFile) {
 
         const localKBData = await fetchLocalKBData();
         const kbId = localKBData?.kbId;
-        if (!kbId) return console.red('No KB found. Please create a KB first using "openkbs create kb".');
+
+        if (kbId && options?.selfManagedKeys) {
+            console.log('Warning: The self-managed keys mode can only be enabled during the initial push before the remote KB is created.');
+        }
+
+        if (!kbId) return await registerKBAndPush(options)
+
         console.log(`Initiating KB ${kbId} upload...`);
         const res = await fetchKBJWT(kbId);
 
@@ -234,7 +241,6 @@ async function initByTemplateAction(appName) {
     }
 }
 
-
 async function createByTemplateAction(name) {
     try {
         const targetDir = path.join(process.cwd(), name);
@@ -252,7 +258,7 @@ async function createByTemplateAction(name) {
     }
 }
 
-async function createKBAction(_, options) {
+async function registerKBAndPush(options) {
     try {
         const mnemonic = generateMnemonic(128);
         const AESKey = generateKey(mnemonic);
@@ -266,13 +272,6 @@ async function createKBAction(_, options) {
         }
 
         const localKBData = await fetchLocalKBData();
-
-        if (localKBData?.kbId && !options?.force) {
-            console.log(`${yellow}KB ${green}${localKBData?.kbId}${reset}${yellow} saved in settings.json.${reset}`);
-            console.log(`${bold}${yellow}To push the changes to OpenKBS remote use "openkbs push"${reset}`);
-            console.log(`${bold}${yellow}To delete KB ${localKBData?.kbId} from settings.js and force-create a new app, use "openkbs create kb --force"${reset}`);
-            return;
-        }
 
         console.log('Initiating KB creation...');
         const { kbId } = await createKB(localKBData, AESKey, options?.selfManagedKeys);
@@ -352,7 +351,6 @@ module.exports = {
     pullAction,
     pushAction,
     cloneAction,
-    createKBAction,
     lsAction,
     deleteKBAction,
     deleteFileAction,
