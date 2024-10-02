@@ -32,7 +32,7 @@ function readSettings() {
                 if (kbId) {
                     resolve(kbId);
                 } else {
-                    reject('kbId not found in settings file. Try: "openkbs create kb" to register new OpenKBS application');
+                    reject('kbId not found in settings file.');
                 }
             } catch (parseErr) {
                 reject('Error parsing settings file: ' + parseErr);
