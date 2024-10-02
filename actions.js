@@ -164,9 +164,12 @@ async function pushAction(location = 'origin', targetFile) {
         if (!targetFile) {
             await updateKB(localKBData, KBData, kbToken);
             await uploadFiles(['functions', 'frontend'], kbId, kbToken, location, targetFile);
-            await deployAction();
-            if (location === 'origin') console.green(`KB update complete: All changes have been successfully uploaded to https://${kbId}.apps.openkbs.com`);
-            if (location === 'localstack') console.green(`KB update complete: All changes have been successfully uploaded to http://${kbId}.apps.localhost:38593/`);
+            if (location === 'origin') {
+                await deployAction();
+                console.green(`KB update complete: All changes have been successfully uploaded to https://${kbId}.apps.openkbs.com`);
+            } else if (location === 'localstack') {
+                console.green(`KB update complete: All changes have been successfully uploaded to http://${kbId}.apps.localhost:38593/`);
+            }
         } else if (targetFile === 'app/settings.json' || targetFile === 'app/instructions.txt') {
             await updateKB(localKBData, KBData, kbToken, false);
             console.log('KB Settings updated.');
