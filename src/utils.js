@@ -7,6 +7,8 @@ const fs = require("fs-extra");
 const os = require("os");
 const { generateMnemonic } = require('bip39');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { exec } = require('child_process');
+
 const reset = "\x1b[0m";
 const bold = "\x1b[1m";
 const red = "\x1b[31m";
@@ -616,6 +618,116 @@ async function updateKB(localKBData, KBData, kbToken, withIcon = true) {
     await makePostRequest(KB_API_URL, params);
 }
 
+const executeCommand = async (command) => {
+    return new Promise((resolve, reject) => {
+        const childProcess = exec(command, { env: process.env, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve({ stdout, stderr });
+            }
+        });
+
+        childProcess.stdout.on('data', (data) => {
+            console.log(`stdout: ${data}`);
+        });
+        childProcess.stderr.on('data', (data) => {
+            console.error(`stderr: ${data}`);
+        });
+    });
+};
+
+const uploadDirectoryToS3 = async (directory, bucket, prefix, location) => {
+    const files = await fs.readdir(directory);
+
+    for (const file of files) {
+        const filePath = path.join(directory, file);
+        const fileKey = path.join(prefix, file);
+        const fileContent = await fs.readFile(filePath);
+
+        await getS3Client(location).send(new PutObjectCommand({
+            Bucket: bucket,
+            Key: fileKey,
+            Body: fileContent
+        }));
+    }
+};
+
+
+const defaultNodeJson = `
+{
+  "dependencies": {
+  
+  }
+}`;
+
+const buildNodePackage = async (namespace, kbId, moduleName, location, originalDir) => {
+    const safeFolder = 'Events';
+    const srcDir = path.join(originalDir, 'src', safeFolder);
+
+    // Secure moduleNames
+    if (!['onRequest', 'onResponse', 'onAddMessages'].includes(moduleName)) return;
+
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'node-'));
+    process.chdir(tempDir);
+
+    let combinedOutput = '';
+
+    // Copy the .js file from the local directory
+    combinedOutput += `\nProcess: ${moduleName}.js\n`;
+    await fs.copyFile(path.join(srcDir, `${moduleName}.js`), path.join(tempDir, `${moduleName}.js`));
+
+    // Check if the .json file exists, if not, create it using the default template
+    const jsonFilePath = path.join(srcDir, `${moduleName}.json`);
+    const packageJsonPath = path.join(tempDir, 'package.json');
+    try {
+        await fs.access(jsonFilePath);
+        await fs.copyFile(jsonFilePath, packageJsonPath);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            // File does not exist, create it using the default template
+            await fs.writeFile(packageJsonPath, defaultNodeJson);
+        } else {
+            throw error;
+        }
+    }
+
+    const packageJsonOutput = await executeCommand('cat package.json');
+    combinedOutput += packageJsonOutput.stdout;
+    combinedOutput += packageJsonOutput.stderr;
+    // Copy all other files in the directory
+    const files = await fs.readdir(srcDir);
+    for (const file of files) {
+        if (![`${moduleName}.js`, `${moduleName}.json`].includes(file) && !file.includes('dist/')) {
+            combinedOutput += `\nProcess: ${file}\n`;
+            await fs.copyFile(path.join(srcDir, file), path.join(tempDir, file));
+        } else {
+            combinedOutput += `\nSkip: ${file}\n`;
+        }
+    }
+
+    // Install npm packages and run webpack
+    combinedOutput += `\nnpm install\n`;
+    const npmInstallOutput = await executeCommand('npm install');
+
+    combinedOutput += `\nbuilding:\n`;
+    const nccOutput = await executeCommand(`${originalDir}/node_modules/@vercel/ncc/dist/ncc/cli.js build ${moduleName}.js -o ${moduleName}`);
+    combinedOutput += npmInstallOutput.stdout + npmInstallOutput.stderr + nccOutput.stdout + nccOutput.stderr;
+
+    // Ensure the dist directory is clean before uploading
+    const distDir = path.join(tempDir, moduleName);
+
+    // Upload the dist directory back to S3
+    combinedOutput += `\nDeploy dist folder\n`;
+    const res = await uploadDirectoryToS3(distDir, 'openkbs-files', `${namespace}/${kbId}/Events/dist/${moduleName}`, location);
+
+    // Clean up the temporary directory
+    await fs.rm(tempDir, { recursive: true, force: true });
+
+    return combinedOutput;
+};
+
+
 async function uploadFiles(namespaces, kbId, kbToken, location = 'origin', targetFile) {
     const localDir = path.join(process.cwd(), 'src');
     const filesMap = await buildLocalFilesMap(localDir, namespaces);
@@ -702,5 +814,5 @@ module.exports = {
     KB_API_URL, AUTH_API_URL, decryptKBFields, fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload,
     listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, updateKB, uploadFiles, generateKey,
     generateMnemonic, reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB, buildPackage, replacePlaceholderInFiles
+    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage
 }

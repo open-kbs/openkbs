@@ -7,7 +7,7 @@ const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
     fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
     reset, bold, red, yellow, green, createKB, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB, buildPackage, replacePlaceholderInFiles
+    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage
 } = require("./utils");
 
 const TEMPLATE_DIR = path.join(__dirname, '../templates');
@@ -176,6 +176,13 @@ async function pushAction(location = 'origin', targetFile, options) {
                 await deployAction();
                 console.green(`KB update complete: All changes have been successfully uploaded to https://${kbId}.apps.openkbs.com`);
             } else if (location === 'localstack') {
+                const modulesToDeploy = ['onRequest', 'onResponse', 'onAddMessages'].filter(isModulePresent);
+
+                const originalDir = process.cwd();
+                for (const module of modulesToDeploy) {
+                    await buildNodePackage('functions', kbId, module, location, originalDir);
+                }
+
                 console.green(`KB update complete: All changes have been successfully uploaded to http://${kbId}.apps.localhost:38593/`);
             }
         } else if (targetFile === 'app/settings.json' || targetFile === 'app/instructions.txt') {
