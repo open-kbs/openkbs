@@ -11,12 +11,33 @@ const red = "\x1b[31m";
 const yellow = "\x1b[33m";
 const green = "\x1b[32m";
 
-console.red = (data) =>  console.log(`${red}${data}${reset}`)
-console.green = (data) =>  console.log(`${green}${data}${reset}`)
-console.yellow = (data) =>  console.log(`${yellow}${bold}${data}${reset}`)
+console.red = (data) => console.log(`${red}${data}${reset}`);
+console.green = (data) => console.log(`${green}${bold}${data}${reset}`);
+console.yellow = (data) => console.log(`${yellow}${bold}${data}${reset}`);
 
 const settingsPath = path.join(__dirname, 'app', 'settings.json');
 const clientJWTPath = path.join(os.homedir(), '.openkbs', 'clientJWT');
+
+async function printRunning() {
+    const figlet = (await import('figlet')).default;
+    const chalk = (await import('chalk')).default;
+    console.green('\n');
+    const asciiArt = await generateAsciiArt('OpenKBS', figlet);
+    console.log(chalk.blue(asciiArt));
+    console.log(chalk.blue(`                                 Starter`));
+}
+
+const generateAsciiArt = async (text, figlet) => {
+    return new Promise((resolve, reject) => {
+        figlet(text, (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(data);
+            }
+        });
+    });
+};
 
 function readSettings() {
     return new Promise((resolve, reject) => {
@@ -33,7 +54,7 @@ function readSettings() {
                     resolve(kbId);
                 } else {
                     reject('kbId not found in settings file. Try "openkbs push" first');
-                    console.yellow('Use "openkbs push" to create remote KB')
+                    console.yellow('Use "openkbs push" to create remote KB');
                 }
             } catch (parseErr) {
                 reject('Error parsing settings file: ' + parseErr);
@@ -63,7 +84,7 @@ function makePostRequest(url, data) {
             res.on('end', () => {
                 if (res.statusCode === 401) {
                     console.red('It appears you are not logged in.');
-                    console.yellow('Use "openkbs login" to log in.')
+                    console.yellow('Use "openkbs login" to log in.');
                 }
 
                 if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -79,7 +100,7 @@ function makePostRequest(url, data) {
                     } catch (e) {
                         console.red(`Invalid Request`);
                     } finally {
-                        reject()
+                        reject();
                     }
                 }
             });
@@ -125,6 +146,7 @@ function startServer(command, cwd) {
         });
 
         serverProcess.stdout.on('data', (data) => {
+            if (data.toString()?.startsWith(' HTTP')) return; // strip HTTP requests from the output
             console.log(data.toString());
         });
 
@@ -159,14 +181,16 @@ function openBrowser(url) {
 
 async function main() {
     try {
+        await printRunning(); // Call the printRunning function here
+
         const kbId = await readSettings();
 
         let kbToken;
         try {
             const res = await fetchKBJWT(kbId);
-            kbToken = res.kbToken
+            kbToken = res.kbToken;
         } catch (e) {
-            console.log("Local session expired")
+            console.log("Local session expired");
         }
 
         const url = kbToken

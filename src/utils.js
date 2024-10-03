@@ -197,7 +197,17 @@ async function fetchLocalKBData() {
 }
 
 async function getClientJWT() {
-    return await fs.readFile(jwtPath, 'utf-8');
+    try {
+        const jwt = await fs.readFile(jwtPath, 'utf-8');
+        return jwt;
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            console.yellow('Use "openkbs login" to log in to OpenKBS.');
+            process.exit(1);
+        } else {
+            console.red('An error occurred while reading the JWT file');
+        }
+    }
 }
 
 async function getUserProfile(token = null) {
