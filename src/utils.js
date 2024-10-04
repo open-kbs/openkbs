@@ -202,14 +202,30 @@ async function fetchLocalKBData() {
 
 async function getClientJWT() {
     try {
-        const jwt = await fs.readFile(jwtPath, 'utf-8');
-        return jwt;
+        const jwtToken = await fs.readFile(jwtPath, 'utf-8');
+
+        // Split the JWT into its parts
+        const parts = jwtToken.split('.');
+
+        // Decode the payload (second part of the JWT)
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+
+        const currentTime = Math.floor(Date.now() / 1000);
+
+        // Check if the token is expired
+        if (payload.exp && payload.exp < currentTime) {
+            console.red('Session expired. Please log in again using "openkbs login"');
+            process.exit(1);
+        }
+
+        return jwtToken;
     } catch (error) {
         if (error.code === 'ENOENT') {
-            console.yellow('Use "openkbs login" to log in to OpenKBS.');
+            console.red('Use "openkbs login" to log in to OpenKBS.');
             process.exit(1);
         } else {
             console.red('An error occurred while reading the JWT file');
+            process.exit(1);
         }
     }
 }
