@@ -31,4 +31,4 @@ We welcome contributions from the community! Please feel free to submit issues, 
 
 ## Contact
 
-For more information, visit our [official website](https://openkbs.com) or join our community discussions on [GitHub](https://github.com/open-kbs/openkbs-cli/discussions).
+For more information, visit our [official website](https://openkbs.com) or join our community discussions on [GitHub](https://github.com/open-kbs/openkbs/discussions).
