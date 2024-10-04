@@ -10,11 +10,12 @@ This module needs to be installed globally, so use the `-g` flag when installing
 npm install -g openkbs
 ```
 
-## Key Features
+**## Key Features
 
-- **User-Friendly**: Designed for both developers and human beings, offering an intuitive interface to enhance AI development.
-- **Extensive Tooling**: Leverage a wide array of AI tools and services for building robust, scalable AI agents.
-- **Open Source**: Provides developers with the freedom to customize, modify, and distribute the software freely.
+- **Generative AI First**: An intuitive development interface designed for both developers and human beings. Utilize generative AI tools to streamline the development life cycle, enabling rapid requirements gathering, system design, and deployment.
+- **Seamless LLM Integration**: Implemented an abstraction layer that provides a unified interface to multiple LLM vendors, such as OpenAI and Anthropic, as well as open-source models like LLaMA, Mistral, and others. The abstraction layer allows you to switch between different LLM models with just one click, without needing to change the source code, making it easy to test your agents with any LLM.
+- **Extensive Tooling**: Leverage a wide array of AI tools and services for building robust, scalable AI agents. We are committed to continually expanding the range of tools available, including code execution services, database engines, web browsing tools, image generation models, embedding models for semantic search, speech synthesis, speech recognition, and other powerful resources. These tools empower users to create sophisticated AI solutions that enhance the ability of large language models (LLMs) to operate autonomously.
+- **Open Source**: Provides developers with the freedom to customize, modify, and distribute the software freely.**
 
 ## Getting Started
 
