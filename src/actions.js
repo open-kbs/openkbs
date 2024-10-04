@@ -47,6 +47,16 @@ async function signAction(options) {
     }
 }
 
+async function logoutAction() {
+    try {
+        await fs.access(jwtPath);
+        await fs.unlink(jwtPath);
+        console.log('Logout successful. JWT file deleted.');
+    } catch (error) {
+        console.warn('You are already logged out. No session file found.');
+    }
+}
+
 async function loginAction() {
     const app = express();
     const port = 38591;
@@ -365,4 +375,5 @@ module.exports = {
     deployAction,
     createByTemplateAction,
     initByTemplateAction,
+    logoutAction
 };

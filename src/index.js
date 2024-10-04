@@ -11,7 +11,8 @@ const {
     lsAction,
     deleteKBAction,
     deleteFileAction,
-    describeAction, deployAction, createByTemplateAction, initByTemplateAction
+    describeAction, deployAction, createByTemplateAction, initByTemplateAction,
+    logoutAction
 } = require('./actions');
 
 
@@ -110,5 +111,10 @@ program
     .option('-r, --resourceId <resourceId>', 'Resource ID', 'credits')
     .option('-p, --payload <payload>', 'Payload')
     .action(signAction);
+
+program
+    .command('logout')
+    .description('Log out from OpenKBS by deleting the locally stored session token.')
+    .action(logoutAction);
 
 program.parse(process.argv);
