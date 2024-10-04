@@ -3,7 +3,6 @@ const os = require('os');
 const path = require('path');
 const https = require('https');
 
-
 const platform = os.platform();
 const arch = os.arch();
 let url = '';

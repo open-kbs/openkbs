@@ -1,6 +1,4 @@
 const https = require('https');
-const KB_API_URL = 'https://kb.openkbs.com/';
-const AUTH_API_URL = 'https://auth.openkbs.com/';
 const crypto = require('crypto');
 const path = require("path");
 const fs = require("fs-extra");
@@ -8,6 +6,84 @@ const os = require("os");
 const { generateMnemonic } = require('bip39');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { exec } = require('child_process');
+
+/**
+ * Encrypts the given text using AES encryption with a passphrase.
+ * This function mimics the CryptoJS.AES.encrypt function and is compatible with it.
+ *
+ * @param {string} text - The plaintext to encrypt.
+ * @param {string} passphrase - The passphrase used for encryption.
+ * @returns {string} The encrypted text, base64 encoded.
+ */
+function encrypt(text, passphrase) {
+    const salt = crypto.randomBytes(8); // Generate an 8-byte salt
+    const password = Buffer.from(passphrase, 'utf8');
+
+    // Derive key and IV using the custom EVP key derivation function
+    const { key, iv } = evpKDF(password, salt, 32, 16); // AES-256-CBC key size is 32 bytes, IV is 16 bytes
+
+    // Perform AES encryption
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+
+    // Prepend 'Salted__' and the salt to the encrypted data (mimics OpenSSL format used by CryptoJS)
+    const encryptedData = Buffer.concat([Buffer.from('Salted__'), salt, encrypted]);
+
+    // Return the base64-encoded encrypted data
+    return encryptedData.toString('base64');
+}
+
+/**
+ * Decrypts the given ciphertext using AES decryption with a passphrase.
+ * This function mimics the CryptoJS.AES.decrypt function and is compatible with it.
+ *
+ * @param {string} ciphertext - The base64 encoded ciphertext to decrypt.
+ * @param {string} passphrase - The passphrase used for decryption.
+ * @returns {string} The decrypted plaintext.
+ */
+function decrypt(ciphertext, passphrase) {
+    const input = Buffer.from(ciphertext, 'base64');
+    const password = Buffer.from(passphrase, 'utf8');
+
+    // Check for the 'Salted__' prefix
+    if (input.slice(0, 8).toString('utf8') !== 'Salted__') {
+        throw new Error('Unsupported encryption format');
+    }
+
+    // Extract salt and encrypted data
+    const salt = input.slice(8, 16);
+    const encrypted = input.slice(16);
+
+    // Derive key and IV using the custom EVP key derivation function
+    const { key, iv } = evpKDF(password, salt, 32, 16);
+
+    // Perform AES decryption
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+
+    // Return the decrypted plaintext
+    return decrypted.toString('utf8');
+}
+
+/**
+ * Key derivation function similar to OpenSSL's EVP_BytesToKey.
+ * It uses MD5 hash iterations to derive the key and IV from the password and salt.
+ */
+function evpKDF(password, salt, keySize, ivSize) {
+    let key = Buffer.alloc(0);
+    let hash = Buffer.alloc(0);
+    const totalSize = keySize + ivSize;
+
+    while (key.length < totalSize) {
+        hash = crypto.createHash('md5').update(Buffer.concat([hash, password, salt])).digest();
+        key = Buffer.concat([key, hash]);
+    }
+
+    return {
+        key: key.slice(0, keySize),
+        iv: key.slice(keySize, totalSize),
+    };
+}
 
 const reset = "\x1b[0m";
 const bold = "\x1b[1m";
@@ -31,11 +107,12 @@ const decryptKBItem = (item, AESKey) => {
 
     try {
         const decryptedItem = AESKey ? decrypt(item, AESKey) : item;
-        // Check for the prefix and convert the value back to its original type
-        if (decryptedItem.startsWith('__OPENKBS__NUM__')) return parseFloat(decryptedItem.replace('__OPENKBS__NUM__', ''));
+
+        if (decryptedItem.startsWith('__OPENKBS__NUM__')) {
+            return parseFloat(decryptedItem.replace('__OPENKBS__NUM__', ''));
+        }
         return decryptedItem;
     } catch (e) {
-        // console.log('Unable to decryptKBItem', e.toString())
         return item;
     }
 };
@@ -103,83 +180,8 @@ function makePostRequest(url, data) {
     });
 }
 
-/**
- * Key derivation function similar to OpenSSL's EVP_BytesToKey.
- * It uses MD5 hash iterations to derive the key and IV from the password and salt.
- */
-function evpKDF(password, salt, keySize, ivSize) {
-    let key = Buffer.alloc(0);
-    let hash = Buffer.alloc(0);
-    const totalSize = keySize + ivSize;
-
-    while (key.length < totalSize) {
-        hash = crypto.createHash('md5').update(Buffer.concat([hash, password, salt])).digest();
-        key = Buffer.concat([key, hash]);
-    }
-
-    return {
-        key: key.slice(0, keySize),
-        iv: key.slice(keySize, totalSize),
-    };
-}
-
-/**
- * Encrypts the given text using AES encryption with a passphrase.
- * This function mimics the CryptoJS.AES.encrypt function and is compatible with it.
- *
- * @param {string} text - The plaintext to encrypt.
- * @param {string} passphrase - The passphrase used for encryption.
- * @returns {string} The encrypted text, base64 encoded.
- */
-function encrypt(text, passphrase) {
-    const salt = crypto.randomBytes(8); // Generate an 8-byte salt
-    const password = Buffer.from(passphrase, 'utf8');
-
-    // Derive key and IV using the custom EVP key derivation function
-    const { key, iv } = evpKDF(password, salt, 32, 16); // AES-256-CBC key size is 32 bytes, IV is 16 bytes
-
-    // Perform AES encryption
-    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
-    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
-
-    // Prepend 'Salted__' and the salt to the encrypted data (mimics OpenSSL format used by CryptoJS)
-    const encryptedData = Buffer.concat([Buffer.from('Salted__'), salt, encrypted]);
-
-    // Return the base64-encoded encrypted data
-    return encryptedData.toString('base64');
-}
-
-/**
- * Decrypts the given ciphertext using AES decryption with a passphrase.
- * This function mimics the CryptoJS.AES.decrypt function and is compatible with it.
- *
- * @param {string} ciphertext - The base64 encoded ciphertext to decrypt.
- * @param {string} passphrase - The passphrase used for decryption.
- * @returns {string} The decrypted plaintext.
- */
-function decrypt(ciphertext, passphrase) {
-    const input = Buffer.from(ciphertext, 'base64');
-    const password = Buffer.from(passphrase, 'utf8');
-
-    // Check for the 'Salted__' prefix
-    if (input.slice(0, 8).toString('utf8') !== 'Salted__') {
-        throw new Error('Unsupported encryption format');
-    }
-
-    // Extract salt and encrypted data
-    const salt = input.slice(8, 16);
-    const encrypted = input.slice(16);
-
-    // Derive key and IV using the custom EVP key derivation function
-    const { key, iv } = evpKDF(password, salt, 32, 16);
-
-    // Perform AES decryption
-    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-
-    // Return the decrypted plaintext
-    return decrypted.toString('utf8');
-}
+const KB_API_URL = 'https://kb.openkbs.com/';
+const AUTH_API_URL = 'https://auth.openkbs.com/';
 
 async function fetchLocalKBData() {
     const settingsPath = path.join(process.cwd(), 'app', 'settings.json');
