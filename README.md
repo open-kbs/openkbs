@@ -2,6 +2,14 @@
 
 Welcome to our open-source platform for building and deploying AI agents and applications. Our mission is to provide developers with a flexible and powerful framework, enabling the creation and development AI agents with the ease of a simple text prompts.
 
+## Installation
+
+This module needs to be installed globally, so use the `-g` flag when installing:
+
+```bash
+npm install -g openkbs
+```
+
 ## Key Features
 
 - **User-Friendly**: Designed with both developers and end-users in mind, OpenKBS offers an intuitive interface to enhance AI development.
