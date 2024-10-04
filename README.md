@@ -12,10 +12,10 @@ npm install -g openkbs
 
 ## Key Features
 
-- **Generative AI First**: An intuitive development interface designed for both developers and human beings. Utilize generative AI tools to streamline the development life cycle, enabling rapid requirements gathering, system design, and deployment.
-- **Seamless LLM Integration**: Implemented an abstraction layer that provides a unified interface to multiple LLM vendors, such as OpenAI and Anthropic, as well as open-source models like LLaMA, Mistral, and others. The abstraction layer allows you to switch between different LLM models with just one click, without needing to change the source code, making it easy to test your agents with any LLM.
-- **Extensive Tooling**: Leverage a wide array of AI tools and services for building robust, scalable AI agents. We are committed to continually expanding the range of tools available, including code execution services, database engines, web browsing tools, image generation models, embedding models for semantic search, speech synthesis, speech recognition, and other powerful resources. These tools empower users to create sophisticated AI solutions that enhance the ability of large language models (LLMs) to operate autonomously.
-- **Open Source**: Provides developers with the freedom to customize, modify, and distribute the software freely.**
+- **Generative AI First**: An intuitive development interface designed for developers and human beings. Employs generative AI tools to streamline the development life cycle, enabling rapid requirements gathering, system design, and deployment.
+- **Seamless LLM Integration**: LLM abstraction layer providing a unified interface for various LLM vendors, such as OpenAI, Anthropic, and open-source models like LLaMA and Mistral. This layer allows one-click switching between LLMs without modifying source code, enabling seamless testing across models.
+- **Extensive Tooling**: Utilize a broad range of AI tools and services to build robust, scalable AI agents. This includes code execution, database engines, web browsing, image generation, embedding models, speech synthesis, and recognition. These tools enable LLMs to operate autonomously, with more resources continually being added.
+- **Open Source**: Provides developers with the freedom to customize, modify, and distribute the software freely.
 
 ## Getting Started
 
