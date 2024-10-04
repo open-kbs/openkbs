@@ -10,7 +10,7 @@ This module needs to be installed globally, so use the `-g` flag when installing
 npm install -g openkbs
 ```
 
-**## Key Features
+## Key Features
 
 - **Generative AI First**: An intuitive development interface designed for both developers and human beings. Utilize generative AI tools to streamline the development life cycle, enabling rapid requirements gathering, system design, and deployment.
 - **Seamless LLM Integration**: Implemented an abstraction layer that provides a unified interface to multiple LLM vendors, such as OpenAI and Anthropic, as well as open-source models like LLaMA, Mistral, and others. The abstraction layer allows you to switch between different LLM models with just one click, without needing to change the source code, making it easy to test your agents with any LLM.
