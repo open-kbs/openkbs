@@ -12,7 +12,7 @@ npm install -g openkbs
 
 ## Key Features
 
-- **User-Friendly**: Designed with both developers and end-users in mind, OpenKBS offers an intuitive interface to enhance AI development.
+- **User-Friendly**: Designed for both developers and human beings, offering an intuitive interface to enhance AI development.
 - **Extensive Tooling**: Leverage a wide array of AI tools and services for building robust, scalable AI agents.
 - **Open Source**: Provides developers with the freedom to customize, modify, and distribute the software freely.
 
