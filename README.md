@@ -1,6 +1,6 @@
 # OpenKBS &middot; [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/open-kbs/openkbs-chat/blob/main/LICENSE) [![npm version](https://img.shields.io/badge/npm-v0.0.6-orange.svg)](https://www.npmjs.com/package/openkbs)
 
-Welcome to our open-source platform for building and deploying AI agents and applications. Our mission is to provide developers with a flexible and powerful framework, enabling the creation and development AI agents with the ease of a simple text prompts.
+OpenKBS is an open-source platform for building and deploying AI agents and applications. Our mission is to provide developers with a flexible and powerful framework that empowers them to create advanced AI agents with ease, using simple text prompts to specify requirements.
 
 ## Installation
 
