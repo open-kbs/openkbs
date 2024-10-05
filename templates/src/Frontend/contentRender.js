@@ -1,14 +1,5 @@
 import React, {useEffect} from 'react';
 
-// Inject custom styles
-const style = document.createElement('style');
-style.innerHTML = ``;
-document.head.appendChild(style);
-
-
-const isMobile = window.innerWidth < 960;
-
-
 const onRenderChatMessage = async (params) => {
     const { content } = params.messages[params.msgIndex];
 }
@@ -16,16 +7,16 @@ const onRenderChatMessage = async (params) => {
 const Header = ({ setRenderSettings}) => {
     useEffect(() => {
         setRenderSettings({
-            disableEmojiButton: true,
             disableShareButton: true,
-            disableTextToSpeechButton: true,
-            disableCopyButton: true,
-            disableChatAvatar: true,
-            disableSentLabel: true,
-            disableContextItems: true,
-            disableMobileLeftButton: true,
             disableBalanceView: true,
-            disableChatModelsSelect: true,
+            disableSentLabel: false,
+            disableChatAvatar: false,
+            disableChatModelsSelect: false,
+            disableContextItems: false,
+            disableCopyButton: false,
+            disableEmojiButton: false,
+            disableTextToSpeechButton: false,
+            disableMobileLeftButton: false,
         });
     }, [setRenderSettings]);
 

@@ -2,7 +2,8 @@ const fs = require('fs-extra');
 const os = require('os');
 const path = require('path');
 const express = require('express');
-const { exec } = require('child_process');
+const { exec, execSync } = require('child_process');
+
 const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
     fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
@@ -362,6 +363,67 @@ async function describeAction() {
     }
 }
 
+// Define the action function
+function installFrontendPackageAction(packageName) {
+    if (!packageName) {
+        console.error('Please provide a package name to install.');
+        process.exit(1);
+    }
+
+    // Install the package using npm
+    try {
+        console.log(`Installing package: ${packageName}...`);
+        execSync(`npm install ${packageName}`, { stdio: 'inherit' });
+    } catch (error) {
+        console.error(`Failed to install package: ${packageName}.`);
+        process.exit(1);
+    }
+
+    // Load package-lock.json to get exact versions
+    const packageLockPath = path.resolve('package-lock.json');
+    let packageLock;
+    try {
+        packageLock = JSON.parse(fs.readFileSync(packageLockPath, 'utf8'));
+    } catch (error) {
+        console.error('Cannot read package-lock.json');
+        process.exit(1);
+    }
+
+    // Prepare contentRender.json path
+    const contentRenderPath = path.resolve('./src/Frontend/contentRender.json');
+
+    // Check if contentRender.json exists; if not, create it with a default template
+    let contentRender;
+    if (fs.existsSync(contentRenderPath)) {
+        try {
+            contentRender = JSON.parse(fs.readFileSync(contentRenderPath, 'utf8'));
+        } catch (error) {
+            console.error('Cannot read contentRender.json. Please ensure it is a valid JSON file.');
+            process.exit(1);
+        }
+    } else {
+        // Create default contentRender.json
+        contentRender = { dependencies: {} };
+        fs.mkdirSync(path.dirname(contentRenderPath), { recursive: true });
+    }
+
+    // Add package to contentRender.json
+    const packagePath = `node_modules/${packageName}`;
+    const version = packageLock.packages[packagePath]?.version;
+    if (!version) {
+        console.error(`Cannot find version for ${packageName} in package-lock.json`);
+        return;
+    }
+
+    if (!contentRender.dependencies[packageName]) {
+        contentRender.dependencies[packageName] = `^${version}`;
+        console.log(`Added ${packageName}: "^${version}" to contentRender.json`);
+        fs.writeFileSync(contentRenderPath, JSON.stringify(contentRender, null, 2));
+    } else {
+        console.log(`${packageName} is already in contentRender.json`);
+    }
+}
+
 module.exports = {
     signAction,
     loginAction,
@@ -375,5 +437,6 @@ module.exports = {
     deployAction,
     createByTemplateAction,
     initByTemplateAction,
-    logoutAction
+    logoutAction,
+    installFrontendPackageAction
 };

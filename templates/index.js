@@ -24,7 +24,7 @@ async function printRunning() {
     console.green('\n');
     const asciiArt = await generateAsciiArt('OpenKBS', figlet);
     console.log(chalk.blue(asciiArt));
-    console.log(chalk.blue(`                                 Starter`));
+    console.log(chalk.blue(`                              OpenKBS UI`));
 }
 
 const generateAsciiArt = async (text, figlet) => {

@@ -12,7 +12,7 @@ const {
     deleteKBAction,
     deleteFileAction,
     describeAction, deployAction, createByTemplateAction, initByTemplateAction,
-    logoutAction
+    logoutAction, installFrontendPackageAction
 } = require('./actions');
 
 
@@ -111,6 +111,13 @@ program
     .option('-r, --resourceId <resourceId>', 'Resource ID', 'credits')
     .option('-p, --payload <payload>', 'Payload')
     .action(signAction);
+
+// Set up the CLI program
+program
+    .command('contentRender install <packageName>')
+    .alias('contentRender i')
+    .description('Install a frontend package and update contentRender.json')
+    .action((_,packageName) => installFrontendPackageAction(packageName));
 
 program
     .command('logout')
