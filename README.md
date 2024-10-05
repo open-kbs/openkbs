@@ -222,6 +222,7 @@ To utilize the code execution feature, follow these steps:
    - Set the following instruction [instructions.txt](./examples/cloud-master/instructions.txt):
 
 3. **Push the new instructions**:
+   - frontend changes are updated automatically, however we have push the instructions (stored encrypted):
      ```bash
      openkbs push origin app/instructions.txt
      ```
