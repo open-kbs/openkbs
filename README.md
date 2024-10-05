@@ -21,7 +21,7 @@ npm install -g openkbs
 
 ## Get Started
 
-### Creating Your First OpenKBS Application
+### Creating Your First KB
 
 Follow these steps to create and deploy your first OpenKBS application.
 
