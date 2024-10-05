@@ -222,7 +222,7 @@ To utilize the code execution feature, follow these steps:
    - Set the following instruction [instructions.txt](./examples/cloud-master/instructions.txt):
 
 3. **Push the new instructions**:
-   - frontend changes are updated automatically, however we have push the instructions (stored encrypted):
+   - frontend changes are updated automatically, however we have to push the instructions which are stored encrypted at OpenKBS registry:
      ```bash
      openkbs push origin app/instructions.txt
      ```
