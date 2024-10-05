@@ -1,4 +1,4 @@
-# OpenKBS &middot; [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/open-kbs/openkbs-chat/blob/main/LICENSE) [![npm version](https://img.shields.io/badge/npm-v0.0.6-orange.svg)](https://www.npmjs.com/package/openkbs)
+# OpenKBS &middot; [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/open-kbs/openkbs-chat/blob/main/LICENSE) [![npm version](https://img.shields.io/badge/npm-v0.0.10-orange.svg)](https://www.npmjs.com/package/openkbs)
 
 OpenKBS is an open-source platform for building and deploying AI agents and applications. Our mission is to provide developers with a flexible and powerful framework that empowers them to create advanced AI agents with ease, using simple text prompts to specify requirements.
 
@@ -231,8 +231,6 @@ To utilize the code execution feature, follow these steps:
         ```
         list my desktop files
         ```
-
-
 
 ---
 
