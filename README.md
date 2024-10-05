@@ -38,13 +38,13 @@ npm install -g openkbs
 Create a new application using the OpenKBS CLI:
 
 ```bash
-openkbs create my-app
+openkbs create my-pc-agent
 ```
 
 Navigate into your newly created application directory:
 
 ```bash
-cd my-app
+cd my-pc-agent
 ```
 
 #### Step 3: Understand the Project Structure
@@ -56,9 +56,11 @@ Your application will have the following structure:
 - `./app/instructions.txt`: Agent instructions.
 - `./src/Events/actions.js`: Contains all backend actions (LLM commands).
 - `./src/Events/onRequest.js`: Event handler that executes a command on user input.
+- `./src/Events/onRequest.json`: Contains all npm package dependencies for onRequest module.
 - `./src/Events/onResponse.js`: Similar to `onRequest.js`, but executed against LLM output.
+- `./src/Events/onResponse.json`: Contains all npm package dependencies for onResponse module.
 - `./src/Frontend/contentRender.js`: Contains frontend components of your application.
-
+- `./src/Frontend/contentRender.json`: Contains all npm package dependencies for contentRender module.
 #### Step 4: Deploy Your Application
 
 You have two options for deployment: OpenKBS Cloud or LocalStack.
@@ -77,7 +79,7 @@ You have two options for deployment: OpenKBS Cloud or LocalStack.
    openkbs push
    ```
 
-   This command registers your application, uploads builds, and deploys all frontend and backend code. It will respond with an application URL (e.g., `https://{kbId}.apps.openkbs.com/`).
+   This command registers your application, uploads, builds and deploys all frontend and backend code. It will respond with an application URL (e.g., `https://{kbId}.apps.openkbs.com/`).
 
 3. Open the provided URL and interact with your application.
 
@@ -108,7 +110,7 @@ To improve your application's rendering, you can use libraries like `react-markd
    };
    ```
 
-3. Push your changes, then type 'Write a test plan' in the chat to see the `react-markdown` rendering.
+3. Ask the AI to 'Write a test plan' in the chat, then Push your changes and refresh to see the `react-markdown` rendering.
 
 
 
@@ -138,7 +140,7 @@ Enhance your UI with Material-UI components:
    import { MoreVert as MenuIcon, AccountCircle as AccountIcon } from '@mui/icons-material';
    ```
 
-2. Add a header component:
+2. Add this block at the end of the `Header` component inside `contentRender.js`:
 
    ```js
     return (
@@ -148,7 +150,7 @@ Enhance your UI with Material-UI components:
                     <MenuIcon />
                 </IconButton>
                 <Typography variant="h6" style={{ flexGrow: 1 }}>
-                    My App
+                    My PC Agent
                 </Typography>
                 <IconButton edge="end" color="inherit" aria-label="account">
                     <AccountIcon />
@@ -158,13 +160,13 @@ Enhance your UI with Material-UI components:
     );
    ```
 
-3. Observe real-time rendering on your local KB, now push the changes to your remote KB:
+3. Observe real-time rendering by refreshing your browser at http://{kbId}.apps.localhost:38593/
+
+4. Push the changes to your remote KB:
 
    ```bash
    openkbs push 
    ```
-
-Certainly! Below is a refactored and professional continuation of your README.md, incorporating the unstructured text you provided. I've organized it into sections with appropriate titles and descriptions, ensuring consistency and clarity.
 
 ---
 
@@ -206,8 +208,7 @@ To run the backend services of your AI application locally, follow these steps. 
    - You may be prompted to enter any secret placeholders in your `./src/Events/actions.js`. By default, this includes `googlesearch_api_key` and `googlesearch_engine_id`.
    - You can press enter to skip, but for using Google Search as an AI tool, it's recommended to fill them. Google provides 100 free searches per day.
 
-3. **Empower LLM to Execute NodeJS Code**:
-   - Now, the LLM can execute NodeJS code directly on your machine.
+Congratulations! The LLM can now execute NodeJS code directly on your machine!
 
 ##### Enhancing Your Application with Code Execution
 
@@ -220,7 +221,19 @@ To utilize the code execution feature, follow these steps:
 2. **Edit local `instructions.txt`**:
    - Set the following instruction [instructions.txt](./examples/cloud-master/instructions.txt):
 
-   
+3. **Push the new instructions**:
+     ```bash
+     openkbs push origin app/instructions.txt
+     ```
+
+4. **Ask the AI to operate on your own PC**:
+   - Ask the AI to list your desktop files, review the code, click `execute`, click `send`:
+        ```
+        list my desktop files
+        ```
+
+
+
 ---
 
 ## License

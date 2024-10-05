@@ -3,6 +3,8 @@ import { IconButton, Tooltip, LinearProgress } from '@mui/material';
 import CloseIcon from "@mui/icons-material/Close";
 import SendIcon from "@mui/icons-material/Send";
 import { FileCopy, PlayArrow } from "@mui/icons-material";
+import { AppBar, Toolbar, Typography } from '@mui/material';
+import { MoreVert as MenuIcon, AccountCircle as AccountIcon } from '@mui/icons-material';
 
 // Inject custom styles
 const style = document.createElement('style');
@@ -215,6 +217,39 @@ const onRenderChatMessage = async (params) => {
     }
 }
 
-const exports = { onRenderChatMessage };
+const Header = ({ setRenderSettings}) => {
+    useEffect(() => {
+        setRenderSettings({
+            disableShareButton: true,
+            disableBalanceView: true,
+            disableSentLabel: false,
+            disableChatAvatar: false,
+            disableChatModelsSelect: false,
+            disableContextItems: false,
+            disableCopyButton: false,
+            disableEmojiButton: false,
+            disableTextToSpeechButton: false,
+            disableMobileLeftButton: false,
+        });
+    }, [setRenderSettings]);
+
+    return (
+        <AppBar position="absolute" style={{ zIndex: 2000, flexGrow: 1, textAlign: 'left' }}>
+            <Toolbar>
+                <IconButton edge="start" color="inherit" aria-label="menu" style={{ marginRight: '16px' }}>
+                    <MenuIcon />
+                </IconButton>
+                <Typography variant="h6" style={{ flexGrow: 1 }}>
+                    My PC Agent
+                </Typography>
+                <IconButton edge="end" color="inherit" aria-label="account">
+                    <AccountIcon />
+                </IconButton>
+            </Toolbar>
+        </AppBar>
+    );
+}
+
+const exports = { onRenderChatMessage, Header };
 window.contentRender = exports;
 export default exports;
