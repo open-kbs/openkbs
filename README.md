@@ -233,7 +233,17 @@ To utilize the code execution feature, follow these steps:
         list my desktop files
         ```
 
+4. **Ask the AI to operate on your AWS Cloud account**:
+   - Ask the AI to list your desktop files, review the code, click `execute`, click `send`:
+        ```
+        list my desktop files
+        ```
+
 ---
+
+Create some S3 bucket and backup my desktop images there
+
+
 
 ## License
 

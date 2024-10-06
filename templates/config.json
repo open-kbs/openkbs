@@ -1,5 +1,6 @@
 {
   "windowVariables": {
-    "isOnPremises": true
+    "isOnPremises": true,
+    "enableCloudModels": true
   }
 }
