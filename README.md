@@ -241,7 +241,7 @@ To utilize the code execution feature, follow these steps:
 
 #### Installing openkbs-ai-server and Integrating Llama 3.2 and Stable Diffusion 3 Locally
 
-@Todo
+@Todo coming soon...
 
 ---
 
