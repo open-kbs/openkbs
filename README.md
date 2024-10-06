@@ -24,9 +24,9 @@ npm install -g openkbs
 
 ## Get Started
 
-### Creating Your First AI Agent with React and Node.js
+### Creating Your First AI Agent
 
-Follow these steps to create and deploy your first KB application.
+Follow these steps to create and deploy your first OpenKBS app using React and Node.js
 
 #### Step 1: Install the OpenKBS CLI
 
