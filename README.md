@@ -12,7 +12,7 @@ npm install -g openkbs
 
 ## Key Features
 
-- **Generative AI First**: An intuitive development interface designed for human beings. Employs generative AI tools to streamline the development life cycle, enabling rapid requirements gathering, system design, and deployment.
+[//]: # (- **Generative AI First**: An intuitive development interface designed for human beings. Employs generative AI tools to streamline the development life cycle, enabling rapid requirements gathering, system design, and deployment.)
 - **Seamless LLM Integration**: LLM abstraction layer providing a unified interface for various LLM vendors, such as OpenAI, Anthropic, and open-source models like LLaMA and Mistral. This layer allows one-click switching between LLMs without modifying source code, enabling seamless testing across models.
 - **Extensive Tooling**: Utilize a broad range of AI tools and services to build robust, scalable AI agents. This includes code execution, database engines, web browsing, image generation, embedding models, speech synthesis, and recognition. These tools enable LLMs to operate autonomously, with more resources continually being added.
 - **Open Source**: Provides developers with the freedom to customize, modify, and distribute the software freely.
