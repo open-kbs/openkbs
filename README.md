@@ -24,9 +24,9 @@ npm install -g openkbs
 
 ## Get Started
 
-### Creating Your First KB
+### Creating Your First AI Agent with React and Node.js
 
-Follow these steps to create and deploy your first OpenKBS application.
+Follow these steps to create and deploy your first KB application.
 
 #### Step 1: Install the OpenKBS CLI
 
@@ -238,6 +238,11 @@ To utilize the code execution feature, follow these steps:
         ```
         Create an S3 bucket and back up my desktop images to it
         ```
+
+#### Installing openkbs-ai-server and Integrating Llama 3.2 and Stable Diffusion 3 Locally
+
+@Todo
+
 ---
 
 Create some S3 bucket and backup my desktop images there
