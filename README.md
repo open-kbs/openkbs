@@ -227,17 +227,16 @@ To utilize the code execution feature, follow these steps:
      openkbs push origin app/instructions.txt
      ```
 
-4. **Ask the AI to operate on your own PC**:
-   - Ask the AI to list your desktop files, review the code, click `execute`, click `send`:
+4. **Requesting the AI to Perform Tasks on Your PC and AWS Cloud**:
+   - Instruct the AI to list your desktop files, review the code, click `execute`, and click `send`:
         ```
-        list my desktop files
+        List my desktop files
+        ```
+   - Instruct the AI to create an S3 bucket and back up your desktop images to it:
+        ```
+        Create an S3 bucket and back up my desktop images to it
         ```
 
-4. **Ask the AI to operate on your AWS Cloud account**:
-   - Ask the AI to list your desktop files, review the code, click `execute`, click `send`:
-        ```
-        list my desktop files
-        ```
 
 ---
 
