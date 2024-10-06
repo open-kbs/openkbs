@@ -19,6 +19,9 @@ npm install -g openkbs
 
 ---
 
+## AI Agent Preview
+![backup.png](examples%2Fcloud-master%2Fbackup.png)
+
 ## Get Started
 
 ### Creating Your First KB
@@ -207,7 +210,6 @@ To run the backend services of your AI application locally, follow these steps. 
 2. **Enter Secrets**:
    - You may be prompted to enter any secret placeholders in your `./src/Events/actions.js`. By default, this includes `googlesearch_api_key` and `googlesearch_engine_id`.
    - You can press enter to skip, but for using Google Search as an AI tool, it's recommended to fill them. Google provides 100 free searches per day.
-
 Congratulations! The LLM can now execute NodeJS code directly on your machine!
 
 ##### Enhancing Your Application with Code Execution
@@ -236,8 +238,6 @@ To utilize the code execution feature, follow these steps:
         ```
         Create an S3 bucket and back up my desktop images to it
         ```
-
-
 ---
 
 Create some S3 bucket and backup my desktop images there
