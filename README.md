@@ -21,7 +21,7 @@ npm install -g openkbs
 
 ## AI Agent Preview
 ![backup.png](examples%2Fcloud-master%2Fbackup.png)
-
+![ai-news.png](examples%2Fcloud-master%2Fai-news.png)
 ## Get Started
 
 ### Creating Your First AI Agent
@@ -242,14 +242,179 @@ To utilize the code execution feature, follow these steps:
         Create an S3 bucket and back up my desktop images to it
         ```
 
-#### Installing openkbs-ai-server and Integrating Llama 3.2 and Stable Diffusion 3 Locally
-
-@Todo coming soon...
-
 ---
 
-Create some S3 bucket and backup my desktop images there
+## Installing openkbs-ai-server and Integrating Llama 3.1 and Stable Diffusion 3 Locally
 
+
+To set up the `openkbs-ai-server` and integrate advanced AI models like Llama 3.1 and Stable Diffusion 3 on your local machine, follow the steps outlined below.
+
+### Prerequisites
+
+Ensure you have the following prerequisites installed and configured:
+
+- Ubuntu 22.04 or a compatible Linux distribution.
+- Python 3.10 and virtual environment tools.
+- Node.js and npm.
+- NVIDIA or AMD GPU drivers, depending on your hardware.
+
+### Step 1: Install Essential Packages
+
+Begin by updating your package list and installing essential packages:
+
+```bash
+sudo apt-get update
+sudo apt install ubuntu-desktop python3.10-venv curl python-is-python3 pip ffmpeg
+```
+
+### Step 2: Install GPU Drivers
+
+#### For NVIDIA GPUs:
+
+Add the graphics drivers PPA and install the NVIDIA driver:
+
+```bash
+sudo add-apt-repository ppa:graphics-drivers/ppa
+sudo apt install nvidia-driver-535
+```
+
+#### For AMD GPUs:
+
+Download and install the AMD GPU package:
+
+```bash
+wget https://repo.radeon.com/amdgpu-install/5.3/ubuntu/jammy/amdgpu-install_5.3.50300-1_all.deb
+sudo apt-get install ./amdgpu-install_5.3.50300-1_all.deb
+
+# Add the necessary repositories and update:
+
+echo 'deb [arch=amd64] https://repo.radeon.com/amdgpu/latest/ubuntu jammy main' | sudo tee /etc/apt/sources.list.d/amdgpu.list
+echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/debian/ jammy main' | sudo tee /etc/apt/sources.list.d/rocm.list
+sudo apt-get update
+
+# Install the kernel mode driver and reboot:
+
+sudo apt install amdgpu-dkms
+sudo reboot
+```
+
+After reboot, install ROCm libraries and create a symbolic link for `rocm-smi`:
+
+```bash
+sudo apt install rocm-hip-libraries
+sudo /opt/rocm-6.0.0/bin/rocm-smi
+sudo ln -s /opt/rocm-6.0.0/bin/rocm-smi /usr/bin/rocm-smi
+```
+
+Test the installation:
+
+```bash
+rocm-smi --showtemp --showuse --json --showpower --showfan --showsclkrange --showuniqueid --showbus --showpagesinfo --showmemuse --showmeminfo vram
+```
+
+### Step 3: Passwordless Sudo Configuration
+
+Edit the sudoers file to allow passwordless execution of specific commands:
+
+```bash
+sudo visudo
+```
+
+Add the following line, replacing `yourusername` with your actual username:
+
+```
+yourusername ALL=(ALL) NOPASSWD: /usr/bin/nvidia-smi, /sbin/reboot
+```
+
+### Step 4: Checkout, Build, and Run
+
+Clone the `openkbs-ai-server` repository and set up the environment:
+
+```bash
+git clone git@github.com:open-kbs/openkbs-ai-server.git
+cd openkbs-ai-server/cluster
+npm i
+cd ..
+python -m venv .env
+source .env/bin/activate
+```
+
+#### For AMD GPUs:
+
+Install necessary libraries and Python packages:
+
+```bash
+sudo apt-get install -y libjpeg-dev libpng-dev
+pip install wheel setuptools
+pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/rocm6.1/
+pip install -r ./models/requirements_AMD.txt
+```
+
+#### For NVIDIA GPUs:
+
+Install the required Python packages:
+
+```bash
+pip install torch
+pip install -r ./models/requirements_NVIDIA.txt
+```
+
+### Step 5: Configure Hugging Face Authentication
+
+Log in to Hugging Face to access the AI models:
+
+```bash
+huggingface-cli login
+```
+
+Enter your Hugging Face token when prompted.
+
+### Step 6: Install Global Node.js Packages
+
+Install global Node.js packages required for running the server:
+
+```bash
+npm install -g pm2 nodemon react-scripts
+```
+
+### Step 7: Start the AI Server
+
+Launch the AI server using the provided script:
+
+```bash
+./start.sh
+```
+
+This command will start both the frontend and backend services using pm2. Your default web browser should automatically open to [http://localhost:7080/register](http://localhost:7080/register), where you can register the admin account for the AI server.
+
+### Step 8: Install AI Models
+
+In the AI server admin panel, search for and install the following models:
+
+- **Llama 3.1**: Ensure you have access to [Llama 3.1](https://huggingface.co/meta-llama/Llama-3.1-8B) on Hugging Face.
+- **Stable Diffusion 3**: Ensure you have access to [Stable Diffusion 3](https://huggingface.co/stabilityai/stable-diffusion-3-medium) on Hugging Face.
+
+After installation, restart your chat server to apply the changes.
+
+### Step 9: Integrate Stable Diffusion using Events actions
+
+Update your`./src/Events/actions.js` to look like this [actions.js](examples%2Fcloud-master%2Factions.js)
+
+Now push the changes:
+```bash
+openkbs push localstack
+```
+### Step 10: Test Llama agent
+
+Once the models are installed and the server is running, select `Llama-3.1-8B-Inst` in your Chat Models selection and type in the chat:
+
+```
+Hey Llama, search Google for the latest AI news, then generate a funny image, and finally create a funny HTML news page.
+```
+
+Have fun!
+
+---
 
 
 ## License
