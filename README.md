@@ -27,29 +27,28 @@ npm install -g openkbs
 ### Table of Contents
 
 
-- [Get Started](#get-started)
-   - [Creating Your First AI Agent Manually](#creating-your-first-ai-agent-manually)
-      - [Step 1: Install the OpenKBS CLI](#step-1-install-the-openkbs-cli)
-      - [Step 2: Create a Local Knowledge Base Application](#step-2-create-a-local-knowledge-base-application)
-      - [Step 3: Understand the Project Structure](#step-3-understand-the-project-structure)
-      - [Step 4: Deploy Your Application](#step-4-deploy-your-application)
-      - [Step 5: Enhance Your Application](#step-5-enhance-your-application)
-      - [Step 6: Local Development](#step-6-local-development)
-      - [Step 7: Use Built-in MUI Components](#step-7-use-built-in-mui-components)
-      - [Step 8: Running the Backend Locally (On-Premises)](#step-8-running-the-backend-locally-on-premises)
+
+- [Creating Your First AI Agent Manually](#creating-your-first-ai-agent-manually)
+   - [Step 1: Install the OpenKBS CLI](#step-1-install-the-openkbs-cli)
+   - [Step 2: Create a Local Knowledge Base Application](#step-2-create-a-local-knowledge-base-application)
+   - [Step 3: Understand the Project Structure](#step-3-understand-the-project-structure)
+   - [Step 4: Deploy Your Application](#step-4-deploy-your-application)
+   - [Step 5: Enhance Your Application](#step-5-enhance-your-application)
+   - [Step 6: Local Development](#step-6-local-development)
+   - [Step 7: Use Built-in MUI Components](#step-7-use-built-in-mui-components)
+   - [Step 8: Running the Backend Locally (On-Premises)](#step-8-running-the-backend-locally-on-premises)
 - [Installing openkbs-ai-server and Integrating Llama 3.1 and Stable Diffusion 3 Locally](#installing-openkbs-ai-server-and-integrating-llama-31-and-stable-diffusion-3-locally)
 - [License](#license)
 - [Contributing](#contributing)
 - [Contact](#contact)
 
 
-## Get Started
 
-### Creating Your First AI Agent Manually
+## Creating Your First AI Agent Manually
 
 Follow these steps to create and deploy your first OpenKBS app using React and Node.js, 
 
-#### Step 1: Install the OpenKBS CLI
+### Step 1: Install the OpenKBS CLI
 
 First, ensure you have the OpenKBS CLI installed globally:
 
@@ -57,7 +56,7 @@ First, ensure you have the OpenKBS CLI installed globally:
 npm install -g openkbs
 ```
 
-#### Step 2: Create a Local Knowledge Base Application
+### Step 2: Create a Local Knowledge Base Application
 
 Create a new application using the OpenKBS CLI:
 
@@ -71,7 +70,7 @@ Navigate into your newly created application directory:
 cd my-pc-agent
 ```
 
-#### Step 3: Understand the Project Structure
+### Step 3: Understand the Project Structure
 
 Your application will have the following structure:
 
@@ -85,11 +84,11 @@ Your application will have the following structure:
 - `./src/Events/onResponse.json`: Contains all npm package dependencies for onResponse module.
 - `./src/Frontend/contentRender.js`: Contains frontend components of your application.
 - `./src/Frontend/contentRender.json`: Contains all npm package dependencies for contentRender module.
-#### Step 4: Deploy Your Application
+### Step 4: Deploy Your Application
 
 You have two options for deployment: OpenKBS Cloud or LocalStack.
 
-##### Deploy to OpenKBS Cloud
+#### Deploy to OpenKBS Cloud
 
 1. Log in to OpenKBS:
 
@@ -107,7 +106,7 @@ You have two options for deployment: OpenKBS Cloud or LocalStack.
 
 3. Open the provided URL and interact with your application.
 
-#### Step 5: Enhance Your Application
+### Step 5: Enhance Your Application
 
 To improve your application's rendering, you can use libraries like `react-markdown` for example.
 
@@ -142,7 +141,7 @@ To improve your application's rendering, you can use libraries like `react-markd
    openkbs push
    ```
 
-#### Step 6: Local Development
+### Step 6: Local Development
 
 For faster frontend development, run the OpenKBS UI dev server locally:
 
@@ -153,7 +152,7 @@ For faster frontend development, run the OpenKBS UI dev server locally:
 
 This command opens a browser pointing to `localhost`, allowing automatic rebuilds of your frontend code locally.
 
-#### Step 7: Use Built-in MUI Components
+### Step 7: Use Built-in MUI Components
 
 Enhance your UI with Material-UI components:
 
@@ -194,11 +193,11 @@ Enhance your UI with Material-UI components:
 
 ---
 
-#### Step 8: Running the Backend Locally (On-Premises)
+### Step 8: Running the Backend Locally (On-Premises)
 
 To run the backend services of your AI application locally, follow these steps. This allows you to manage chat services, code execution, and AI LLM services on your own infrastructure.
 
-##### Running the Chat Service Locally
+#### Running the Chat Service Locally
 
 1. **Start the Chat Service**:
    - Open a new terminal and navigate to the root folder of your application.
@@ -219,7 +218,7 @@ To run the backend services of your AI application locally, follow these steps. 
    - Refresh your browser at `http://{kbId}.apps.localhost:38593/chat`.
    - You will see "On-Premises" in green text, indicating that your OpenKBS instance is using the local chat server to communicate with the OpenAI streaming API.
 
-##### Running the Code Execution Service Locally
+#### Running the Code Execution Service Locally
 
 1. **Start the Code Execution Service**:
    - Open another terminal tab, navigate to the root folder of your KB app, and run:
@@ -233,7 +232,7 @@ To run the backend services of your AI application locally, follow these steps. 
    - You can press enter to skip, but for using Google Search as an AI tool, it's recommended to fill them. Google provides 100 free searches per day.
 Congratulations! The LLM can now execute NodeJS code directly on your machine!
 
-##### Enhancing Your Application with Code Execution
+#### Enhancing Your Application with Code Execution
 
 To utilize the code execution feature, follow these steps:
 
