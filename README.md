@@ -216,6 +216,7 @@ To run the backend services of your AI application locally, follow these steps. 
 5. **Access the Local Chat Service**:
    - Refresh your browser at `http://{kbId}.apps.localhost:38593/chat`.
    - You will see "On-Premises" in green text, indicating that your OpenKBS instance is using the local chat server to communicate with the OpenAI streaming API.
+   - You can remove the cloud models options by setting `"enableCloudModels": false` in `config.json`
 
 #### Running the Code Execution Service Locally
 
@@ -229,19 +230,19 @@ To run the backend services of your AI application locally, follow these steps. 
 2. **Enter Secrets**:
    - You may be prompted to enter any secret placeholders in your `./src/Events/actions.js`. By default, this includes `googlesearch_api_key` and `googlesearch_engine_id`.
    - You can press enter to skip, but for using Google Search as an AI tool, it's recommended to fill them. Google provides 100 free searches per day.
+
 Congratulations! The LLM can now execute NodeJS code directly on your machine!
 
 #### Enhancing Your Application with Code Execution
 
 To utilize the code execution feature, follow these steps:
 
-1. **Edit local `contentRender.js`**:
-   - Update your local `contentRender.js` to match [contentRender.js](./examples/cloud-master/contentRender.js), which provides UI for local code execution and response rendering:
+1. **Update `contentRender.js`**:
+    - Modify your local `contentRender.js` file to match the version found at [contentRender.js](./examples/cloud-master/contentRender.js). This update will provide the necessary UI components for local code execution and response rendering.
 
+2. **Update `instructions.txt`**:
+    - Edit your local `instructions.txt` file to include the instructions found at [instructions.txt](./examples/cloud-master/instructions.txt). These instructions will guide the LLM on how to output code and other API commands for execution by the OpenKBS framework.
    
-2. **Edit local `instructions.txt`**:
-   - Set the following instruction [instructions.txt](./examples/cloud-master/instructions.txt):
-
 3. **Push the new instructions**:
    - we have to push the instructions which are stored encrypted at OpenKBS registry:
      ```bash
