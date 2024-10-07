@@ -224,11 +224,14 @@ To utilize the code execution feature, follow these steps:
    - Set the following instruction [instructions.txt](./examples/cloud-master/instructions.txt):
 
 3. **Push the new instructions**:
-   - frontend changes are updated automatically, however we have to push the instructions which are stored encrypted at OpenKBS registry:
+   - we have to push the instructions which are stored encrypted at OpenKBS registry:
      ```bash
-     openkbs push origin app/instructions.txt
+     openkbs push origin app/instructions.txt 
      ```
-
+   - push to localstack to build and deploy all Node.js events - ./src/Events
+     ```bash
+     openkbs push localstack
+     ```
 4. **Requesting the AI to Perform Tasks on Your PC and AWS Cloud**:
    - Instruct the AI to list your desktop files, review the code, click `execute`, and click `send`:
         ```
