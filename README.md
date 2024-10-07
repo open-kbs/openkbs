@@ -2,6 +2,10 @@
 
 OpenKBS is an open-source platform for building and deploying AI agents and applications. Our mission is to provide developers with a flexible and powerful framework that empowers them to create advanced AI agents with ease, using simple text prompts to specify requirements.
 
+## AI Agents Preview
+![backup.png](examples%2Fcloud-master%2Fbackup.png)
+![ai-news.png](examples%2Fcloud-master%2Fai-news.png)
+
 ## Installation
 
 This module needs to be installed globally, so use the `-g` flag when installing:
@@ -18,11 +22,6 @@ npm install -g openkbs
 - **Open Source**: Provides developers with the freedom to customize, modify, and distribute the software freely.
 
 ---
-
-## AI Agent Preview
-![backup.png](examples%2Fcloud-master%2Fbackup.png)
-![ai-news.png](examples%2Fcloud-master%2Fai-news.png)
-
 
 ### Table of Contents
 
