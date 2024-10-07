@@ -27,7 +27,6 @@ npm install -g openkbs
 ### Table of Contents
 
 
-
 - [Creating Your First AI Agent Manually](#creating-your-first-ai-agent-manually)
    - [Step 1: Install the OpenKBS CLI](#step-1-install-the-openkbs-cli)
    - [Step 2: Create a Local Knowledge Base Application](#step-2-create-a-local-knowledge-base-application)
