@@ -258,75 +258,9 @@ Ensure you have the following prerequisites installed and configured:
 - Node.js and npm.
 - NVIDIA or AMD GPU drivers, depending on your hardware.
 
-### Step 1: Install Essential Packages
+Please follow the installation on https://github.com/open-kbs/openkbs-ai-server
 
-Begin by updating your package list and installing essential packages:
-
-```bash
-sudo apt-get update
-sudo apt install ubuntu-desktop python3.10-venv curl python-is-python3 pip ffmpeg
-```
-
-### Step 2: Install GPU Drivers
-
-#### For NVIDIA GPUs:
-
-Add the graphics drivers PPA and install the NVIDIA driver:
-
-```bash
-sudo add-apt-repository ppa:graphics-drivers/ppa
-sudo apt install nvidia-driver-535
-```
-
-#### For AMD GPUs:
-
-Download and install the AMD GPU package:
-
-```bash
-wget https://repo.radeon.com/amdgpu-install/5.3/ubuntu/jammy/amdgpu-install_5.3.50300-1_all.deb
-sudo apt-get install ./amdgpu-install_5.3.50300-1_all.deb
-
-# Add the necessary repositories and update:
-
-echo 'deb [arch=amd64] https://repo.radeon.com/amdgpu/latest/ubuntu jammy main' | sudo tee /etc/apt/sources.list.d/amdgpu.list
-echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/debian/ jammy main' | sudo tee /etc/apt/sources.list.d/rocm.list
-sudo apt-get update
-
-# Install the kernel mode driver and reboot:
-
-sudo apt install amdgpu-dkms
-sudo reboot
-```
-
-After reboot, install ROCm libraries and create a symbolic link for `rocm-smi`:
-
-```bash
-sudo apt install rocm-hip-libraries
-sudo /opt/rocm-6.0.0/bin/rocm-smi
-sudo ln -s /opt/rocm-6.0.0/bin/rocm-smi /usr/bin/rocm-smi
-```
-
-Test the installation:
-
-```bash
-rocm-smi --showtemp --showuse --json --showpower --showfan --showsclkrange --showuniqueid --showbus --showpagesinfo --showmemuse --showmeminfo vram
-```
-
-### Step 3: Passwordless Sudo Configuration
-
-Edit the sudoers file to allow passwordless execution of specific commands:
-
-```bash
-sudo visudo
-```
-
-Add the following line, replacing `yourusername` with your actual username:
-
-```
-yourusername ALL=(ALL) NOPASSWD: /usr/bin/nvidia-smi, /sbin/reboot
-```
-
-### Step 4: Checkout, Build, and Run
+### Step 1: Checkout, Build, and Run
 
 Clone the `openkbs-ai-server` repository and set up the environment:
 
@@ -359,7 +293,7 @@ pip install torch
 pip install -r ./models/requirements_NVIDIA.txt
 ```
 
-### Step 5: Configure Hugging Face Authentication
+### Step 2: Configure Hugging Face Authentication
 
 Log in to Hugging Face to access the AI models:
 
@@ -369,7 +303,7 @@ huggingface-cli login
 
 Enter your Hugging Face token when prompted.
 
-### Step 6: Install Global Node.js Packages
+### Step 3: Install Global Node.js Packages
 
 Install global Node.js packages required for running the server:
 
@@ -377,7 +311,7 @@ Install global Node.js packages required for running the server:
 npm install -g pm2 nodemon react-scripts
 ```
 
-### Step 7: Start the AI Server
+### Step 4: Start the AI Server
 
 Launch the AI server using the provided script:
 
@@ -387,7 +321,7 @@ Launch the AI server using the provided script:
 
 This command will start both the frontend and backend services using pm2. Your default web browser should automatically open to [http://localhost:7080/register](http://localhost:7080/register), where you can register the admin account for the AI server.
 
-### Step 8: Install AI Models
+### Step 5: Install AI Models
 
 In the AI server admin panel, search for and install the following models:
 
@@ -396,7 +330,7 @@ In the AI server admin panel, search for and install the following models:
 
 After installation, restart your chat server to apply the changes.
 
-### Step 9: Integrate Stable Diffusion using Events actions
+### Step 6: Integrate Stable Diffusion using Events actions
 
 Update your`./src/Events/actions.js` to look like this [actions.js](examples%2Fcloud-master%2Factions.js)
 
@@ -404,7 +338,7 @@ Now push the changes:
 ```bash
 openkbs push localstack
 ```
-### Step 10: Test Llama agent
+### Step 7: Test Llama agent
 
 Once the models are installed and the server is running, select `Llama-3.1-8B-Inst` in your Chat Models selection and type in the chat:
 
