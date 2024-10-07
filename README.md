@@ -12,7 +12,7 @@ npm install -g openkbs
 
 ## Key Features
 
-[//]: # (- **Generative AI First**: An intuitive development interface designed for human beings. Employs generative AI tools to streamline the development life cycle, enabling rapid requirements gathering, system design, and deployment.)
+- **Generative AI First**: An intuitive development interface designed for human beings. Employs generative AI tools to streamline the development life cycle, enabling rapid requirements gathering, system design, and deployment.
 - **Seamless LLM Integration**: LLM abstraction layer providing a unified interface for various LLM vendors, such as OpenAI, Anthropic, and open-source models like LLaMA and Mistral. This layer allows one-click switching between LLMs without modifying source code, enabling seamless testing across models.
 - **Extensive Tooling**: Utilize a broad range of AI tools and services to build robust, scalable AI agents. This includes code execution, database engines, web browsing, image generation, embedding models, speech synthesis, and recognition. These tools enable LLMs to operate autonomously, with more resources continually being added.
 - **Open Source**: Provides developers with the freedom to customize, modify, and distribute the software freely.
@@ -22,11 +22,32 @@ npm install -g openkbs
 ## AI Agent Preview
 ![backup.png](examples%2Fcloud-master%2Fbackup.png)
 ![ai-news.png](examples%2Fcloud-master%2Fai-news.png)
+
+
+### Table of Contents
+
+
+- [Get Started](#get-started)
+   - [Creating Your First AI Agent Manually](#creating-your-first-ai-agent-manually)
+      - [Step 1: Install the OpenKBS CLI](#step-1-install-the-openkbs-cli)
+      - [Step 2: Create a Local Knowledge Base Application](#step-2-create-a-local-knowledge-base-application)
+      - [Step 3: Understand the Project Structure](#step-3-understand-the-project-structure)
+      - [Step 4: Deploy Your Application](#step-4-deploy-your-application)
+      - [Step 5: Enhance Your Application](#step-5-enhance-your-application)
+      - [Step 6: Local Development](#step-6-local-development)
+      - [Step 7: Use Built-in MUI Components](#step-7-use-built-in-mui-components)
+      - [Step 8: Running the Backend Locally (On-Premises)](#step-8-running-the-backend-locally-on-premises)
+- [Installing openkbs-ai-server and Integrating Llama 3.1 and Stable Diffusion 3 Locally](#installing-openkbs-ai-server-and-integrating-llama-31-and-stable-diffusion-3-locally)
+- [License](#license)
+- [Contributing](#contributing)
+- [Contact](#contact)
+
+
 ## Get Started
 
-### Creating Your First AI Agent
+### Creating Your First AI Agent Manually
 
-Follow these steps to create and deploy your first OpenKBS app using React and Node.js
+Follow these steps to create and deploy your first OpenKBS app using React and Node.js, 
 
 #### Step 1: Install the OpenKBS CLI
 
