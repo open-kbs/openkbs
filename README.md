@@ -330,11 +330,28 @@ In the AI server admin panel, search for and install the following models:
 
 After installation, restart your chat server to apply the changes.
 
-### Step 6: Integrate Stable Diffusion using Events actions
+### Step 6: Integrate Stable Diffusion under Events actions, so that Llama can call it
+```javascript
+    [/\/?textToImage\("(.*)"\)/, async (match) => {
+        try {
+            const response = await axios.get(`http://localhost:8080/pipe/stabilityai--stable-diffusion-3-medium-diffusers--default?prompt=${encodeURIComponent(match[1])}`, {
+                responseType: 'arraybuffer'
+            });
 
+            const base64Data = Buffer.from(response.data, 'binary').toString('base64');
+            const contentType = response.headers['content-type'];
+            const imageSrc = `data:${contentType};base64,${base64Data}`;
+
+            return { type: 'SAVED_CHAT_IMAGE', imageSrc, ...meta };
+        } catch (error) {
+            console.error('Error fetching image:', error);
+            throw error; // or handle the error as needed
+        }
+    }]
+```
 Update your`./src/Events/actions.js` to look like this [actions.js](examples%2Fcloud-master%2Factions.js)
 
-Now push the changes:
+Push the changes:
 ```bash
 openkbs push localstack
 ```
