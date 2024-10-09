@@ -2,9 +2,6 @@
 
 OpenKBS is an open-source platform for building and deploying AI agents and applications. Our mission is to provide developers with a flexible and powerful framework that empowers them to create advanced AI agents with ease, using simple text prompts to specify requirements.
 
-## AI Agents Preview
-![ai-news.png](examples%2Fcloud-master%2Fai-news.png)
-![backup.png](examples%2Fcloud-master%2Fbackup.png)
 
 ## Installation
 
@@ -13,6 +10,11 @@ This module needs to be installed globally, so use the `-g` flag when installing
 ```bash
 npm install -g openkbs
 ```
+
+## Example Agent Preview
+![ai-news.png](examples%2Fcloud-master%2Fai-news.png)
+![backup.png](examples%2Fcloud-master%2Fbackup.png)
+
 
 ## Key Features
 
@@ -265,7 +267,6 @@ To utilize the code execution feature, follow these steps:
 
 ## Installing openkbs-ai-server and Integrating Llama 3.1 and Stable Diffusion 3 Locally
 
-
 To set up the `openkbs-ai-server` and integrate advanced AI models like Llama 3.1 and Stable Diffusion 3 on your local machine, follow the steps outlined below.
 
 ### Prerequisites
@@ -277,7 +278,7 @@ Ensure you have the following prerequisites installed and configured:
 - Node.js and npm.
 - NVIDIA or AMD GPU drivers, depending on your hardware.
 
-Please follow the installation on https://github.com/open-kbs/openkbs-ai-server
+Please follow the installation on [GitHub](https://github.com/open-kbs/openkbs-ai-server).
 
 ### Step 1: Checkout, Build, and Run
 
@@ -292,7 +293,11 @@ python -m venv .env
 source .env/bin/activate
 ```
 
-#### For AMD GPUs:
+**IMPORTANT: SELECT THE CORRECT GPU INSTRUCTIONS BELOW. DO NOT EXECUTE BOTH.**
+
+#### **FOR AMD GPUS:**
+
+**ONLY FOLLOW THESE INSTRUCTIONS IF YOU HAVE AN AMD GPU.**
 
 Install necessary libraries and Python packages:
 
@@ -303,7 +308,9 @@ pip install --pre torch torchvision torchaudio --index-url https://download.pyto
 pip install -r ./models/requirements_AMD.txt
 ```
 
-#### For NVIDIA GPUs:
+#### **FOR NVIDIA GPUS:**
+
+**ONLY FOLLOW THESE INSTRUCTIONS IF YOU HAVE AN NVIDIA GPU.**
 
 Install the required Python packages:
 
@@ -368,7 +375,6 @@ After installation, restart your chat server to apply the changes.
         }
     }]
 ```
-Update your`./src/Events/actions.js` to look like this [actions.js](examples%2Fcloud-master%2Factions.js)
 
 Push the changes:
 ```bash
@@ -385,7 +391,6 @@ Hey Llama, search Google for the latest AI news, then generate a funny image, an
 Have fun!
 
 ---
-
 
 ## License
 
