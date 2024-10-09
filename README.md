@@ -11,7 +11,7 @@ This module needs to be installed globally, so use the `-g` flag when installing
 npm install -g openkbs
 ```
 
-## AI Agent Examples
+## Example AI agents ( built on OpenKBS )
 ![ai-news.png](examples%2Fcloud-master%2Fai-news.png)
 ![backup.png](examples%2Fcloud-master%2Fbackup.png)
 
