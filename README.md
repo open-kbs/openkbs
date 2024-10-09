@@ -237,7 +237,7 @@ Congratulations! The LLM can now execute NodeJS code directly on your machine!
 #### Enhancing Your Application with Code Execution
 
 To utilize the code execution feature, follow these steps:
-![llama-loaded.png](examples%2Fcloud-master%2Fllama-loaded.png)
+
 1. **Update `contentRender.js`**:
     - Modify your local `contentRender.js` file to match the version found at [contentRender.js](./examples/cloud-master/contentRender.js). This update will provide the necessary UI components for local code execution and response rendering.
 
@@ -266,6 +266,8 @@ To utilize the code execution feature, follow these steps:
 ---
 
 ## Installing openkbs-ai-server and Integrating Llama 3.1 and Stable Diffusion 3 Locally
+
+![llama-loaded.png](examples%2Fcloud-master%2Fllama-loaded.png)
 
 To set up the `openkbs-ai-server` and integrate advanced AI models like Llama 3.1 and Stable Diffusion 3 on your local machine, follow the steps outlined below.
 
