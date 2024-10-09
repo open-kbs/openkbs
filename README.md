@@ -237,7 +237,7 @@ Congratulations! The LLM can now execute NodeJS code directly on your machine!
 #### Enhancing Your Application with Code Execution
 
 To utilize the code execution feature, follow these steps:
-
+![llama-loaded.png](examples%2Fcloud-master%2Fllama-loaded.png)
 1. **Update `contentRender.js`**:
     - Modify your local `contentRender.js` file to match the version found at [contentRender.js](./examples/cloud-master/contentRender.js). This update will provide the necessary UI components for local code execution and response rendering.
 
@@ -351,12 +351,19 @@ This command will start both the frontend and backend services using pm2. Your d
 
 In the AI server admin panel, search for and install the following models:
 
-- **Llama 3.1**: Ensure you have access to [Llama 3.1](https://huggingface.co/meta-llama/Llama-3.1-8B) on Hugging Face.
+- **Llama-3.1-8B-Instruct**: Ensure you have access to [Llama-3.1-8B-Instruct](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct) on Hugging Face.
 - **Stable Diffusion 3**: Ensure you have access to [Stable Diffusion 3](https://huggingface.co/stabilityai/stable-diffusion-3-medium) on Hugging Face.
 
 After installation, restart your chat server to apply the changes.
 
 ### Step 6: Integrate Stable Diffusion under Events actions, so that Llama can call it
+
+Go to your app root folder
+```bash
+cd my-pc-agent
+```
+
+Add to `./src/Events/actions.js`
 ```javascript
     [/\/?textToImage\("(.*)"\)/, async (match) => {
         try {
@@ -385,9 +392,18 @@ openkbs push localstack
 Once the models are installed and the server is running, select `Llama-3.1-8B-Inst` in your Chat Models selection and type in the chat:
 
 ```
-Hey Llama, search Google for the latest AI news, then generate a funny image, and finally create a funny HTML news page.
+Hey Llama, search Google for the latest AI news and wait, then generate news image. Finally, use a template function to create an HTML page hosted on the S3 bucket 'ai-news-openkbs'.
 ```
 
+![ai1.png](examples%2Fcloud-master%2Fai1.png)
+
+![llama-loaded.png](examples%2Fcloud-master%2Fllama-loaded.png)
+
+![sd3-loaded.png](examples%2Fcloud-master%2Fsd3-loaded.png)
+
+![ai2.png](examples%2Fcloud-master%2Fai2.png)
+
+![ai3.png](examples%2Fcloud-master%2Fai3.png)
 Have fun!
 
 ---
