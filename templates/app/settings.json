@@ -1,0 +1,14 @@
+{
+  "chatVendor": "openai",
+  "kbDescription": "{{{openkbsAppName}}}",
+  "kbTitle": "{{{openkbsAppName}}}",
+  "model": "gpt-4o",
+  "inputTools": [
+    "imageToText",
+    "speechToText"
+  ],
+  "embeddingModel": "text-embedding-3-small",
+  "embeddingDimension": 1536,
+  "searchEngine": "IndexedDB",
+  "itemTypes": {}
+}
