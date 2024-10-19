@@ -184,7 +184,7 @@ async function pushAction(location = 'origin', targetFile, options) {
             await updateKB(localKBData, KBData, kbToken);
             await uploadFiles(['functions', 'frontend'], kbId, kbToken, location, targetFile);
             if (location === 'origin') {
-                console.log(`Building and deploying to the remote service ...`);
+                console.log(`Building and deploying source code to remote service ...`);
                 await deployAction();
                 console.green(`KB update complete: All changes have been successfully uploaded to https://${kbId}.apps.openkbs.com`);
             } else if (location === 'localstack') {
