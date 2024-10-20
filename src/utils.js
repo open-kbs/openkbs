@@ -496,22 +496,25 @@ async function streamToBuffer(stream) {
     });
 }
 
-async function downloadFiles(namespaces, kbId, kbToken, location = 'origin', targetFile) {
+async function downloadFiles(namespaces, kbId, kbToken, location = 'origin', targetFile, dist = false) {
     const localDir = path.join(process.cwd(), 'src');
     const filesMap = await buildFilesMap(namespaces, kbId, kbToken);
     let filesToDownload = [];
 
     if (targetFile) {
-        if (filesMap[targetFile] && !targetFile.startsWith('Events/dist') && !targetFile.startsWith('Frontend/dist')) {
+        // Check if the target file is in the correct folder based on the dist flag
+        const isDistFile = targetFile.startsWith('Events/dist') || targetFile.startsWith('Frontend/dist');
+        if (filesMap[targetFile] && ((dist && isDistFile) || (!dist && !isDistFile))) {
             filesToDownload.push({ ...filesMap[targetFile], fileName: targetFile });
         } else {
-            return false; // File not found or in dist folder
+            return false; // File not found or not in the correct folder
         }
     } else {
-        // No target file, download all files except those in dist folders
-        filesToDownload = Object.keys(filesMap).filter(fileName =>
-            !fileName.startsWith('Events/dist') && !fileName.startsWith('Frontend/dist')
-        ).map(fileName => {
+        // No target file, download files based on the dist flag
+        filesToDownload = Object.keys(filesMap).filter(fileName => {
+            const isDistFile = fileName.startsWith('Events/dist') || fileName.startsWith('Frontend/dist');
+            return dist ? isDistFile : !isDistFile;
+        }).map(fileName => {
             return { ...filesMap[fileName], fileName };
         });
     }

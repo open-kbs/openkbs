@@ -65,6 +65,11 @@ program
     .addHelpText('after', getPushPullHelpText('pull'));
 
 program
+    .command('dist')
+    .description('Download dist folder from remote KB')
+    .action(() => pullAction( null, null, true))
+
+program
     .command('clone <kbId>')
     .description('Clone existing KB locally by provided kbId')
     .action(cloneAction);

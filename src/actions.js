@@ -86,7 +86,7 @@ async function loginAction() {
     });
 }
 
-async function pullAction(location = 'origin', targetFile) {
+async function pullAction(location = 'origin', targetFile, dist = false) {
     try {
         // Remove './' prefix if present
         targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
@@ -105,7 +105,7 @@ async function pullAction(location = 'origin', targetFile) {
         if (!targetFile) {
             await fetchAndSaveSettings(localKBData, kbId, res.kbToken);
             await downloadIcon(kbId);
-            await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, location, targetFile);
+            await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, location, targetFile, dist);
             console.green('Synchronization complete: All changes have been successfully downloaded!');
         } else if (targetFile === 'app/settings.json' || targetFile === 'app/instructions.txt') {
             await fetchAndSaveSettings(localKBData, kbId, res.kbToken);
