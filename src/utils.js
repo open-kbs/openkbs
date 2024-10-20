@@ -497,12 +497,11 @@ async function streamToBuffer(stream) {
 }
 
 async function downloadFiles(namespaces, kbId, kbToken, location = 'origin', targetFile, dist = false) {
-    const localDir = path.join(process.cwd(), 'src');
+    const baseDir = dist ? path.join(process.cwd(), 'cache') : path.join(process.cwd(), 'src');
     const filesMap = await buildFilesMap(namespaces, kbId, kbToken);
     let filesToDownload = [];
 
     if (targetFile) {
-        // Check if the target file is in the correct folder based on the dist flag
         const isDistFile = targetFile.startsWith('Events/dist') || targetFile.startsWith('Frontend/dist');
         if (filesMap[targetFile] && ((dist && isDistFile) || (!dist && !isDistFile))) {
             filesToDownload.push({ ...filesMap[targetFile], fileName: targetFile });
@@ -510,7 +509,6 @@ async function downloadFiles(namespaces, kbId, kbToken, location = 'origin', tar
             return false; // File not found or not in the correct folder
         }
     } else {
-        // No target file, download files based on the dist flag
         filesToDownload = Object.keys(filesMap).filter(fileName => {
             const isDistFile = fileName.startsWith('Events/dist') || fileName.startsWith('Frontend/dist');
             return dist ? isDistFile : !isDistFile;
@@ -519,7 +517,7 @@ async function downloadFiles(namespaces, kbId, kbToken, location = 'origin', tar
         });
     }
 
-    for (const { namespace, file, fileName } of filesToDownload) {
+    await Promise.all(filesToDownload.map(async ({ namespace, file, fileName }) => {
         let fileContent;
         if (location === 'origin') {
             const presignedURL = await getPresignedURL(namespace, kbId, fileName, 'getObject', kbToken);
@@ -533,11 +531,12 @@ async function downloadFiles(namespaces, kbId, kbToken, location = 'origin', tar
             fileContent = await streamToBuffer(response.Body);
         }
 
-        const localFilePath = path.join(localDir, fileName);
+        const localFilePath = path.join(baseDir, fileName);
         await fs.ensureDir(path.dirname(localFilePath));
         console.log(`Downloading: ${fileName}`);
         await fs.writeFile(localFilePath, fileContent);
-    }
+    }));
+
     return true; // Files downloaded successfully
 }
 
@@ -749,22 +748,24 @@ const buildNodePackage = async (namespace, kbId, moduleName, location, originalD
 };
 
 
-async function uploadFiles(namespaces, kbId, kbToken, location = 'origin', targetFile) {
-    const localDir = path.join(process.cwd(), 'src');
+async function uploadFiles(namespaces, kbId, kbToken, location = 'origin', targetFile, dist = false) {
+    const localDir = dist ? path.join(process.cwd(), 'cache') : path.join(process.cwd(), 'src');
     const filesMap = await buildLocalFilesMap(localDir, namespaces);
     let filesToUpload = [];
 
     if (targetFile) {
-        if (filesMap[targetFile] && !targetFile.startsWith('Events/dist') && !targetFile.startsWith('Frontend/dist')) {
+        const isDistFile = targetFile.startsWith('Events/dist') || targetFile.startsWith('Frontend/dist');
+        if (filesMap[targetFile] && ((dist && isDistFile) || (!dist && !isDistFile))) {
             filesToUpload.push({ ...filesMap[targetFile], fileName: targetFile });
         } else {
-            return false; // File not found locally or in dist folder
+            return false; // File not found locally or not in the correct folder
         }
     } else {
-        // No target file, upload all files except those in dist folders
-        filesToUpload = Object.keys(filesMap).filter(fileName =>
-            !fileName.startsWith('Events/dist') && !fileName.startsWith('Frontend/dist')
-        ).map(fileName => {
+        // No target file, upload all files based on the dist parameter
+        filesToUpload = Object.keys(filesMap).filter(fileName => {
+            const isDistFile = fileName.startsWith('Events/dist') || fileName.startsWith('Frontend/dist');
+            return dist ? isDistFile : !isDistFile;
+        }).map(fileName => {
             return { ...filesMap[fileName], fileName };
         });
     }

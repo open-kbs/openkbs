@@ -86,7 +86,7 @@ async function loginAction() {
     });
 }
 
-async function pullAction(location = 'origin', targetFile, dist = false) {
+async function pullAction(location = 'origin', targetFile) {
     try {
         // Remove './' prefix if present
         targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
@@ -102,10 +102,15 @@ async function pullAction(location = 'origin', targetFile, dist = false) {
 
         if (!res?.kbToken) return console.red(`KB ${kbId} does not exist on the remote service`);
 
-        if (!targetFile) {
+        if (location === 'cache') {
+            await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, location, targetFile, true);
+            return console.green('Dist files downloaded!');
+        }
+
+         if (!targetFile) {
             await fetchAndSaveSettings(localKBData, kbId, res.kbToken);
             await downloadIcon(kbId);
-            await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, location, targetFile, dist);
+            await downloadFiles(['functions', 'frontend'], kbId, res.kbToken, location, targetFile);
             console.green('Synchronization complete: All changes have been successfully downloaded!');
         } else if (targetFile === 'app/settings.json' || targetFile === 'app/instructions.txt') {
             await fetchAndSaveSettings(localKBData, kbId, res.kbToken);
@@ -163,7 +168,7 @@ async function deployAction(moduleName) {
 }
 
 async function pushAction(location = 'origin', targetFile, options) {
-    if (!['origin', 'localstack', 'aws'].includes(location)) return console.red(`Invalid location ${location} (valid options: 'origin', 'localstack', 'aws')`);
+    if (!['origin', 'localstack', 'aws', 'cache'].includes(location)) return console.red(`Invalid location ${location} (valid options: 'origin', 'localstack', 'aws')`);
     try {
         // Remove './' prefix if present
         targetFile = targetFile && targetFile.startsWith('./') ? targetFile.slice(2) : targetFile;
@@ -179,15 +184,28 @@ async function pushAction(location = 'origin', targetFile, options) {
             console.log('Warning: The self-managed keys mode can only be enabled during the initial push before the remote KB is created.');
         }
 
-        if (!kbId) return await registerKBAndPush(options)
+        if (!localKBData?.kbId) return await registerKBAndPush(options)
 
-        console.log(`Initiating KB ${kbId} upload...`);
+        if (location !== 'cache') {
+            console.log(`Initiating KB ${kbId} upload ...`);
+        } else {
+            console.log(`Initiating KB ${kbId} upload from cache ...`);
+        }
+
         const res = await fetchKBJWT(kbId);
 
         if (!res?.kbToken) return console.red(`KB ${kbId} does not exist on the remote service`);
 
         const kbToken = res?.kbToken;
         const KBData = await getKB(kbToken);
+
+        if (location === 'cache') {
+            await Promise.all([
+                uploadFiles(['functions', 'frontend'], kbId, kbToken, location, targetFile, true),
+                uploadFiles(['functions', 'frontend'], kbId, kbToken, location, targetFile)
+            ]);
+            return console.green(`KB creation complete: All changes have been successfully uploaded to https://${kbId}.apps.openkbs.com`);
+        }
 
         if (!targetFile) {
             await updateKB(localKBData, KBData, kbToken);
@@ -306,9 +324,9 @@ async function registerKBAndPush(options) {
 
         await saveLocalKBData({ ...localKBData, kbId });
         console.log(`KB ${kbId} created!`);
-        await pushAction();
+        await pushAction(fs.existsSync(path.join(process.cwd(), 'cache')) ? 'cache' : undefined);
     } catch (error) {
-        console.red(`Error during create operation:`, error.message);
+        console.error(`Error during create operation:`, error.message);
     }
 }
 
