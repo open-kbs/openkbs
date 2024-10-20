@@ -766,7 +766,7 @@ async function uploadFiles(namespaces, kbId, kbToken, location = 'origin', targe
         });
     }
 
-    for (const { namespace, filePath, fileName } of filesToUpload) {
+    const uploadPromises = filesToUpload.map(async ({ namespace, filePath, fileName }) => {
         const fileContent = await fs.readFile(filePath);
         console.log(`Uploading: ${fileName}`);
         if (location === 'origin') {
@@ -779,7 +779,9 @@ async function uploadFiles(namespaces, kbId, kbToken, location = 'origin', targe
                 Body: fileContent
             }));
         }
-    }
+    });
+
+    await Promise.all(uploadPromises);
     return true; // Files uploaded successfully
 }
 

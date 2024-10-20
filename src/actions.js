@@ -134,7 +134,7 @@ async function deployAction(moduleName) {
     const validModules = ['contentRender', 'onRequest', 'onResponse', 'onAddMessages', 'onPublicAPIRequest'];
 
     if (moduleName && !validModules.includes(moduleName)) {
-        return console.error(`Invalid module name ${moduleName} (valid options: 'contentRender', 'onRequest', 'onResponse', 'onAddMessages', onPublicAPIRequest)`);
+        return console.error(`Invalid module name ${moduleName} (valid options: 'contentRender', 'onRequest', 'onResponse', 'onAddMessages', 'onPublicAPIRequest')`);
     }
 
     const modulesToDeploy = moduleName ? [moduleName] : validModules.filter(isModulePresent);
@@ -146,11 +146,20 @@ async function deployAction(moduleName) {
     const localKBData = await fetchLocalKBData();
     const kbId = localKBData?.kbId;
 
-    for (const module of modulesToDeploy) {
+    let remainingPackages = modulesToDeploy.length;
+
+    const buildPromises = modulesToDeploy.map(async (module) => {
         const namespace = module === 'contentRender' ? 'frontend' : 'functions';
         const res = await buildPackage(namespace, kbId, module);
         console.log(res);
-    }
+
+        // Decrement the remaining packages count and log it
+        remainingPackages--;
+        console.log(`${remainingPackages} more packages left, please wait ...`);
+    });
+
+    await Promise.all(buildPromises);
+    console.log('All modules built successfully.');
 }
 
 async function pushAction(location = 'origin', targetFile, options) {
