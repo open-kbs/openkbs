@@ -2,6 +2,9 @@
 
 OpenKBS is an open-source platform for building and deploying AI agents and applications. Our mission is to provide developers with a flexible and powerful framework that empowers them to create advanced AI agents with ease, using simple text prompts to specify requirements.
 
+### Last Updates
+- openkbs-ai-server: added support for stable-diffusion-3.5-large
+
 ### Table of Contents
 
 
