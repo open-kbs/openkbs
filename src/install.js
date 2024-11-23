@@ -8,11 +8,17 @@ const arch = os.arch();
 let url = '';
 
 if (platform === 'linux' && arch === 'x64') {
-    url = 'https://files.openkbs.com/download/linux/openkbs';
+    url = 'https://downloads.openkbs.com/cli/linux/openkbs';
+} else if (platform === 'darwin' && arch === 'arm64') {
+    url = 'https://downloads.openkbs.com/cli/macos/openkbs';
 } else if (platform === 'darwin' && arch === 'x64') {
-    url = 'https://files.openkbs.com/download/macos/openkbs';
+    url = 'https://downloads.openkbs.com/cli/macos/openkbs-x64';
 } else if (platform === 'win32' && arch === 'x64') {
-    url = 'https://files.openkbs.com/download/windows/openkbs.exe';
+    url = 'https://downloads.openkbs.com/cli/windows/openkbs.exe';
+} else if (platform === 'win32' && arch === 'arm64') {
+    url = 'https://downloads.openkbs.com/cli/windows/openkbs-arm64.exe';
+} else if (platform === 'linux' && arch === 'arm64') {
+    url = 'https://downloads.openkbs.com/cli/linux/openkbs-arm64';
 } else {
     console.error(`Unsupported platform: ${platform} ${arch}`);
     process.exit(1);
