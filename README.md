@@ -56,7 +56,7 @@ npm install -g openkbs
 
 - **Option 2: Download Binary**
 
-    - **Linux:**
+    - **Linux (x64):**
       ```bash
       wget -O ~/Downloads/openkbs https://downloads.openkbs.com/cli/linux/openkbs && chmod +x ~/Downloads/openkbs && sudo mv ~/Downloads/openkbs /usr/local/bin/openkbs
       ```
@@ -66,7 +66,7 @@ npm install -g openkbs
       curl -o ~/Downloads/openkbs https://downloads.openkbs.com/cli/macos/openkbs && mkdir -p /usr/local/bin && chmod +x ~/Downloads/openkbs && sudo mv ~/Downloads/openkbs /usr/local/bin/openkbs
       ```
 
-    - **Windows:**
+    - **Windows (x64):**
       ```powershell
       Invoke-WebRequest -Uri "https://downloads.openkbs.com/cli/windows/openkbs.exe" -OutFile "$Env:USERPROFILE\Downloads\openkbs.exe"
       $Env:Path += ";$Env:USERPROFILE\Downloads"
