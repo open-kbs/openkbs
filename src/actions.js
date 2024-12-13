@@ -8,7 +8,7 @@ const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
     fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
     reset, bold, red, yellow, green, createKB, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage
+    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction
 } = require("./utils");
 
 const TEMPLATE_DIR = path.join(__dirname, '../templates');
@@ -246,7 +246,7 @@ async function pushAction(location = 'origin', targetFile, options) {
 
 async function cloneAction(kbId) {
     try {
-        const localKBData = await fetchLocalKBData();
+        const localKBData = await fetchLocalKBData({forceInit: true});
 
         if (localKBData?.kbId) {
             console.red(`KB ${localKBData?.kbId} already saved in settings.json.`);
@@ -254,7 +254,7 @@ async function cloneAction(kbId) {
             return;
         }
 
-        console.log('Initiating KB cloning...');
+        console.log('Cloning KB ' + kbId + ' ...');
         const { kbToken } = await fetchKBJWT(kbId);
         if (!fs.existsSync('app')) fs.mkdirSync('app');
         await fetchAndSaveSettings({ kbId }, kbId, kbToken);
@@ -263,27 +263,6 @@ async function cloneAction(kbId) {
         console.green('Cloning complete!');
     } catch (error) {
         console.red('Error during clone operation:', error.message);
-    }
-}
-
-async function initByTemplateAction(appName) {
-    try {
-        const targetDir = process.cwd();
-
-        // Copy all files and folders, skipping existing ones
-        fs.readdirSync(TEMPLATE_DIR).forEach(item => {
-            const srcPath = path.join(TEMPLATE_DIR, item);
-            const destPath = path.join(targetDir, item);
-
-            if (fs.existsSync(destPath)) {
-                console.log(`Skipping existing item: ${item}`);
-            } else {
-                fs.copySync(srcPath, destPath);
-                console.log(`Copied: ${item}`);
-            }
-        });
-    } catch (error) {
-        console.red(`Error during create operation:`, error.message);
     }
 }
 
@@ -466,5 +445,5 @@ module.exports = {
     createByTemplateAction,
     initByTemplateAction,
     logoutAction,
-    installFrontendPackageAction
+    installFrontendPackageAction,
 };

@@ -7,6 +7,8 @@ const { generateMnemonic } = require('bip39');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { exec } = require('child_process');
 
+const TEMPLATE_DIR = path.join(__dirname, '../templates');
+
 /**
  * Encrypts the given text using AES encryption with a passphrase.
  * This function mimics the CryptoJS.AES.encrypt function and is compatible with it.
@@ -183,14 +185,18 @@ function makePostRequest(url, data) {
 const KB_API_URL = 'https://kb.openkbs.com/';
 const AUTH_API_URL = 'https://auth.openkbs.com/';
 
-async function fetchLocalKBData() {
+async function fetchLocalKBData(params) {
     const settingsPath = path.join(process.cwd(), 'app', 'settings.json');
     const instructionsPath = path.join(process.cwd(), 'app', 'instructions.txt');
 
     if (!await fs.pathExists(settingsPath)) {
-        console.red('KB project found in the current directory.');
-        console.yellow('Use "openkbs init" to initialize a new KB project.');
-        process.exit(1);
+        if (params?.forceInit) {
+            await initByTemplateAction({silent: true});
+        } else {
+            console.red('KB project not found in the current directory.');
+            console.yellow('Use "openkbs init" to initialize a new KB project.');
+            process.exit(1);
+        }
     }
 
     const settings = await fs.readJson(settingsPath);
@@ -479,11 +485,12 @@ async function fetchAndSaveSettings(localKBData, kbId, kbToken) {
     if (itemTypes) params.itemTypes = itemTypes;
 
     await saveLocalKBData(params);
-    console.log('KB Settings Updated.');
+    console.log(`Downloading: app/settings.json`);
+    console.log(`Downloading: app/instructions.txt`);
 }
 
 async function downloadIcon(kbId) {
-    console.log(`Downloading: ./app/icon.png`);
+    console.log(`Downloading: app/icon.png`);
     await downloadPublicFile(`https://file.openkbs.com/kb-image/${kbId}.png`, path.join(process.cwd(), 'app' ,'icon.png'));
 }
 
@@ -533,7 +540,7 @@ async function downloadFiles(namespaces, kbId, kbToken, location = 'origin', tar
 
         const localFilePath = path.join(baseDir, fileName);
         await fs.ensureDir(path.dirname(localFilePath));
-        console.log(`Downloading: ${fileName}`);
+        console.log(`Downloading: src/${fileName}`);
         await fs.writeFile(localFilePath, fileContent);
     }));
 
@@ -566,7 +573,7 @@ async function createKB(localKBData, AESKey, isSelfManagedKey = false) {
     const walletPublicKey = userProfile.walletPublicKey;
 
     if (!await fs.pathExists('./app/icon.png')) {
-        console.red('./app/icon.png not found');
+        console.red('app/icon.png not found');
         process.exit(1);
     }
 
@@ -834,9 +841,30 @@ const replacePlaceholderInFiles = (dir, name) => {
     })
 }
 
+async function initByTemplateAction(params) {
+    try {
+        const targetDir = process.cwd();
+
+        // Copy all files and folders, skipping existing ones
+        fs.readdirSync(TEMPLATE_DIR).forEach(item => {
+            const srcPath = path.join(TEMPLATE_DIR, item);
+            const destPath = path.join(targetDir, item);
+
+            if (fs.existsSync(destPath)) {
+                if (!params?.silent) console.log(`Skipping existing item: ${item}`);
+            } else {
+                fs.copySync(srcPath, destPath);
+                if (!params?.silent) console.log(`Copied: ${item}`);
+            }
+        });
+    } catch (error) {
+        console.red(`Error during create operation:`, error.message);
+    }
+}
+
 module.exports = {
     KB_API_URL, AUTH_API_URL, decryptKBFields, fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload,
     listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, updateKB, uploadFiles, generateKey,
     generateMnemonic, reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage
+    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction
 }
