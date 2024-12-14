@@ -10,7 +10,7 @@ src/
 │   ├── onResponse.js           // Handles outgoing LLM messages
 │   ├── onPublicAPIRequest.js   // Handles public API requests
 │   ├── onRequest.json          // Dependencies for onRequest handler
-│   ├── onRequest.json          // Dependencies for onRequest handler
+│   ├── onResponse.json          // Dependencies for onResponse handler
 │   └── onPublicAPIRequest.json // Dependencies for onPublicAPIRequest handler
 │── Frontend/
 │   ├── contentRender.js        // Custom rendering logic for chat messages
