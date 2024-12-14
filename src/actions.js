@@ -8,7 +8,7 @@ const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
     fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
     reset, bold, red, yellow, green, createKB, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB, getClientJWT
+    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB
 } = require("./utils");
 
 const TEMPLATE_DIR = path.join(__dirname, '../templates');

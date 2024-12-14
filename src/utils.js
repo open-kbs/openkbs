@@ -292,10 +292,34 @@ const stopLoading = () => {
     spinner.stop(true);
 };
 
+const getAllFiles = async dir => {
+    try {
+        const items = await fs.readdir(dir, { withFileTypes: true });
+        return (await Promise.all(items.map(item => {
+            const mypath = path.join(dir, item.name);
+            return item.isDirectory()
+                ? getAllFiles(mypath)
+                : mypath.match(/\.(js|jsx|ts|tsx|css|scss|html|json|txt)$/) ? mypath : [];
+        }))).flat();
+    } catch (error) {
+        console.error(`Error reading ${dir}:`, error);
+        return [];
+    }
+};
 
 async function modifyKB(kbToken, kbData, prompt, files, options) {
     const { kbId, key } = kbData;
     const url = options?.chatURL || CHAT_API_URL;
+
+    if (!files || files.length === 0) {
+        try {
+            const srcFiles = await getAllFiles('./src');
+            const appFiles = await getAllFiles('./app');
+            files = [...srcFiles, ...appFiles];
+        } catch (error) {
+            console.error('Error getting files from directories:', error);
+        }
+    }
 
     const fileContents = await Promise.all(files.map(async (filePath) => {
         try {
@@ -373,7 +397,7 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
 
             if (newAssistantMessage?.content) {
                 lastProcessedAssistantMsgId = newAssistantMessage?.msgId;
-                const batchRegex = /(?:writeFile\s+(?<fileName>[^\s]+)\s*###(?<language>\w+)\s*(?<content>[\s\S]*?)###|\/?(?<actionType>metaAction|jobCompleted|jobFailed|[a-zA-Z]{3,30})\((?<actionParams>[^()]*)\))/g;
+                const batchRegex = /(?:createModifyFile\s+(?<fileName>[^\s]+)\s*###(?<language>\w+)\s*(?<content>[\s\S]*?)###|\/?(?<actionType>metaResponse|modificationCompleted|modificationFailed|[a-zA-Z]{3,30})\((?<actionParams>[^()]*)\))/g;
                 const blocks = Array.from(newAssistantMessage.content.matchAll(batchRegex), match => match.groups);
 
                 const showResponse = () => {
@@ -388,12 +412,12 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
                 }
 
                 for (const block of blocks) {
-                    if (['jobCompleted', 'jobFailed'].includes(block?.actionType)) {
+                    if (['modificationCompleted', 'modificationFailed'].includes(block?.actionType)) {
                         stopLoading();
                         if (verbose) console.log('\nMessages:\n', decryptedMessages);
                         console.log({ actionType: block.actionType, actionParams: JSON.parse(block.actionParams) });
                         process.exit(0);
-                    } else if (block?.actionType === 'metaAction' && block?.actionParams === 'execute_and_wait') {
+                    } else if (block?.actionType === 'metaResponse' && block?.actionParams === 'execute_and_wait') {
                         showResponse();
                         await sendMessage(await getUserInput('\nYou: '));
                     } else if (block?.fileName && block?.content) {
@@ -535,6 +559,7 @@ async function downloadFile(urlStr) {
         throw error;
     }
 }
+
 async function walkDirectory(dir) {
     let files = [];
     const baseDir = path.join(process.cwd(), 'src');
