@@ -8,6 +8,7 @@ const { generateMnemonic } = require('bip39');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { exec } = require('child_process');
 const readline = require('readline');
+const Spinner = require('cli-spinner').Spinner;
 
 const TEMPLATE_DIR = path.join(__dirname, '../templates');
 
@@ -275,12 +276,26 @@ async function fetchKBJWT(kbId) {
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
+const spinner = new Spinner({
+    text: '%s',
+    spinnerString: '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+});
+
+// Start the spinner
+const startLoading = () => {
+    spinner.setSpinnerString('⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏');
+    spinner.start();
+};
+
+// Stop the spinner
+const stopLoading = () => {
+    spinner.stop(true);
+};
+
+
 async function modifyKB(kbToken, kbData, prompt, files, options) {
     const { kbId, key } = kbData;
     const url = options?.chatURL || CHAT_API_URL;
-
-    // Dynamically import ora
-    const ora = (await import('ora')).default;
 
     // Read the content of the files
     const fileContents = await Promise.all(files.map(async (filePath) => {
@@ -311,6 +326,8 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
         if (onRequestHandler) payload.modificationRequestHandler = await fs.readFile(onRequestHandler, 'utf8');
         if (onResponseHandler) payload.modificationResponseHandler = await fs.readFile(onResponseHandler, 'utf8');
 
+        startLoading();
+
         const createChat = await makePostRequest(url, payload);
 
         const { createdChatId } = createChat.find(o => o?.createdChatId);
@@ -329,8 +346,10 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
 
         // Function to prompt the user and get input
         const getUserInput = (query) => {
+            stopLoading();
             return new Promise((resolve) => {
                 rl.question(query, (answer) => {
+                    startLoading();
                     resolve(answer);
                 });
             });
@@ -359,13 +378,13 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
                 lastProcessedAssistantMsgId = newAssistantMessage?.msgId;
                 const batchRegex = /(?:writeFile\s+(?<fileName>[^\s]+)\s*###(?<language>\w+)\s*(?<content>[\s\S]*?)###|\/?(?<actionType>metaAction|jobCompleted|jobFailed|[a-zA-Z]{3,30})\((?<actionParams>[^()]*)\))/g;
                 const blocks = Array.from(newAssistantMessage.content.matchAll(batchRegex), match => match.groups);
-                const respond = () => {
+                const showResponse = () => {
                     console.green('\nAssistant:\n');
                     console.green(newAssistantMessage?.content);
                 };
 
                 if (!blocks?.length) {
-                    respond();
+                    showResponse();
                     const userInput = await getUserInput('\nYou: ');
 
                     // send response back
@@ -386,9 +405,8 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
                         break; // Exit the loop once the job is finished
                     } else if (block?.actionType === 'metaAction' && block?.actionParams === 'execute_and_wait') {
                         // Prompt the user and log the result
-                        respond();
+                        showResponse();
                         const userInput = await getUserInput('\nYou: ');
-
                         // send response back
                         await makePostRequest(url, {
                             modificationToken: kbToken,
@@ -409,11 +427,11 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
 
                 if (jobFinished) break;
             }
-            //const spinner = ora().start();
             await sleep(1000); // Waiting for response
-            //spinner.stop();
             i++;
         }
+
+        stopLoading();
 
         if (verbose) {
             console.log('\nMessages:\n', decryptedMessages);
@@ -431,8 +449,6 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
         process.exit(1);
     }
 }
-
-
 
 function str2ab(str) {
     const buf = new ArrayBuffer(str.length);
