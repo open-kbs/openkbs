@@ -12,7 +12,7 @@ const {
     deleteKBAction,
     deleteFileAction,
     describeAction, deployAction, createByTemplateAction, initByTemplateAction,
-    logoutAction, installFrontendPackageAction
+    logoutAction, installFrontendPackageAction, modifyAction
 } = require('./actions');
 
 
@@ -66,8 +66,24 @@ program
 
 program
     .command('clone <kbId>')
-    .description('Clone existing KB locally by provided kbId')
+    .description('Clone remote KB locally by provided kbId')
     .action(cloneAction);
+
+program
+    .command('modify <prompt> [targetFiles...]')
+    .description('Enhance or alter an existing KB using AI. Results in a modified version of the application, potentially affecting one or multiple files.')
+    .action(modifyAction)
+    .option('-c, --chatURL <url>', 'Specify a custom URL for the chat service that will handle the modification request')
+    .option('-m, --chatModel <modelId>', 'Specify a custom service id for the LLM to be used for the modification process')
+    .option('-i, --instructions <instructions>', 'Provide specific instructions for the chat service to guide the modification request')
+    .option('--verbose', 'Enables verbose mode')
+    .option('--onRequestHandler <filePath>', 'Provide a custom onRequest handler to the modifier agent')
+    .option('--onResponseHandler <filePath>', 'Provide a custom onResponse handler to the modifier agent')
+    .addHelpText('after', () => `
+Examples:
+  $ openkbs modify "Improve the user interface"
+  $ openkbs modify "Improve the user interface" src/Frontend/contentRender.js src/Frontend/contentRender.json
+`);
 
 program
     .command('ls [kbId] [field]')

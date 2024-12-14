@@ -8,7 +8,7 @@ const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
     fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
     reset, bold, red, yellow, green, createKB, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction
+    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB, getClientJWT
 } = require("./utils");
 
 const TEMPLATE_DIR = path.join(__dirname, '../templates');
@@ -346,6 +346,18 @@ async function deleteKBAction(kbId) {
     }
 }
 
+async function modifyAction(prompt, files, options) {
+    const { kbId } = await fetchLocalKBData();
+    const {kbToken} = await fetchKBJWT(kbId);
+    const kbData = await getKB(kbToken);
+
+    try {
+        await modifyKB(kbToken, kbData, prompt, files, options);
+    } catch (error) {
+        console.red('Failed to modify KB');
+    }
+}
+
 async function deleteFileAction(kbId, filePath) {
     try {
         const namespace = filePath.startsWith('Frontend/') ? 'frontend' : 'functions';
@@ -446,4 +458,5 @@ module.exports = {
     initByTemplateAction,
     logoutAction,
     installFrontendPackageAction,
+    modifyAction
 };

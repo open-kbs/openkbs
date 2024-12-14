@@ -1,4 +1,5 @@
 const https = require('https');
+const http = require('http');
 const crypto = require('crypto');
 const path = require("path");
 const fs = require("fs-extra");
@@ -6,6 +7,7 @@ const os = require("os");
 const { generateMnemonic } = require('bip39');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { exec } = require('child_process');
+const readline = require('readline');
 
 const TEMPLATE_DIR = path.join(__dirname, '../templates');
 
@@ -135,7 +137,7 @@ function makePostRequest(url, data) {
         const urlObj = new URL(url);
         const options = {
             hostname: urlObj.hostname,
-            port: 443,
+            port: urlObj.port || 443,
             path: urlObj.pathname,
             method: 'POST',
             headers: {
@@ -143,7 +145,9 @@ function makePostRequest(url, data) {
             }
         };
 
-        const req = https.request(options, (res) => {
+        const protocol = urlObj.protocol === 'http:' ? http : https;
+
+        const req = protocol.request(options, (res) => {
             let body = '';
             res.on('data', (chunk) => {
                 body += chunk;
@@ -184,6 +188,7 @@ function makePostRequest(url, data) {
 
 const KB_API_URL = 'https://kb.openkbs.com/';
 const AUTH_API_URL = 'https://auth.openkbs.com/';
+const CHAT_API_URL = 'https://chat.openkbs.com/';
 
 async function fetchLocalKBData(params) {
     const settingsPath = path.join(process.cwd(), 'app', 'settings.json');
@@ -267,6 +272,178 @@ async function fetchKBJWT(kbId) {
         process.exit(1);
     }
 }
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+async function modifyKB(kbToken, kbData, prompt, files, options) {
+    const { kbId, key } = kbData;
+    const url = options?.chatURL || CHAT_API_URL;
+
+    // Read the content of the files
+    const fileContents = await Promise.all(files.map(async (filePath) => {
+        try {
+            const content = await fs.readFile(filePath, 'utf8');
+            return { filePath, content };
+        } catch (error) {
+            console.error(`Error reading file ${filePath}:`, error);
+            return { filePath, content: null };
+        }
+    }));
+
+    try {
+        const fileContentString = fileContents.map(file => `${file.filePath}\n---\n${file.content}`).join('\n\n\n')
+
+        const { onRequestHandler, onResponseHandler, chatModel, instructions, verbose } = options;
+
+        const payload = {
+            modificationToken: kbToken,
+            message: encrypt( prompt + '\n\n###\n\n' + fileContentString, key),
+            chatTitle: 'modification request',
+            encrypted: true,
+            AESKey: key
+        };
+
+        if (chatModel) payload.modificationModel = chatModel
+        if (instructions) payload.modificationInstructions = instructions
+        if (onRequestHandler) payload.modificationRequestHandler = await fs.readFile(onRequestHandler, 'utf8')
+        if (onResponseHandler) payload.modificationResponseHandler = await fs.readFile(onResponseHandler, 'utf8')
+
+        const createChat = await makePostRequest(url, payload);
+
+        const { createdChatId } = createChat.find(o => o?.createdChatId)
+
+        if (verbose) {
+            console.log('\nModification Chat Created:\n', createChat)
+        }
+
+        if (verbose) console.green(`Modification chat ${createdChatId} created`)
+
+        // Create the readline interface once
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+
+        // Function to prompt the user and get input
+        const getUserInput = (query) => {
+            return new Promise((resolve) => {
+                rl.question(query, (answer) => {
+                    resolve(answer);
+                });
+            });
+        };
+
+        let decryptedMessages;
+        let jobFinished;
+        let lastProcessedAssistantMsgId = '';
+        let i = 0;
+        while (1) {
+            const chatMessages = await makePostRequest(url, {
+                action: 'getChatMessages',
+                token: kbToken,
+                chatId: createdChatId
+            });
+
+            decryptedMessages = chatMessages?.data?.messages?.map(o => ({
+                ...o,
+                content: decryptKBItem(o?.content, key)
+            }))
+
+            const newAssistantMessage = decryptedMessages.findLast(message => message.role === 'assistant' && message?.msgId > lastProcessedAssistantMsgId);
+
+            if (newAssistantMessage?.content) {
+                lastProcessedAssistantMsgId = newAssistantMessage?.msgId;
+                const batchRegex = /(?:writeFile\s+(?<fileName>[^\s]+)\s*###(?<language>\w+)\s*(?<content>[\s\S]*?)###|\/?(?<actionType>metaAction|jobCompleted|jobFailed|[a-zA-Z]{3,30})\((?<actionParams>[^()]*)\))/g;
+                const blocks = Array.from(newAssistantMessage.content.matchAll(batchRegex), match => match.groups);
+                const respond = () => {
+                    console.green('\nAssistant:\n')
+                    console.green(newAssistantMessage?.content)
+                }
+
+                if (!blocks?.length) {
+                    respond();
+                    break;
+                }
+
+                let assistantResponse;
+
+                for (const block of blocks) {
+                    if (block?.actionType === 'jobCompleted' || block?.actionType === 'jobFailed') {
+                        jobFinished = { actionType: block.actionType, actionParams: JSON.parse(block.actionParams) };
+                        break; // Exit the loop once the job is finished
+                    } else if (block?.actionType === 'metaAction' && block?.actionParams === 'execute_and_wait') {
+                        // Prompt the user and log the result
+                        respond();
+                        const userInput = await getUserInput('\nYou: ');
+
+                        // send response back
+                        await makePostRequest(url, {
+                            modificationToken: kbToken,
+                            message: encrypt(userInput, key),
+                            chatId: createdChatId,
+                            encrypted: true,
+                            AESKey: key
+                        });
+
+                    } else if (block?.actionType) {
+                        assistantResponse = true;
+                    }
+                }
+
+                if (jobFinished) break;
+
+
+                // [
+                // [Object: null prototype] {
+                //     fileName: 'src/Frontend/contentRender.json',
+                //         language: 'json',
+                //         content: '{\n' +
+                //     '  "dependencies": {\n' +
+                //     '    "react": "^18.2.0 (fixed)",\n' +
+                //     '    "react-dom": "^18.2.0 (fixed)",\n' +
+                //     '    "@mui/material": "^5.16.1 (fixed)",\n' +
+                //     '    "@mui/icons-material": "^5.16.1 (fixed)",\n' +
+                //     '    "@emotion/react": "^11.10.6 (fixed)",\n' +
+                //     '    "@emotion/styled": "^11.10.6 (fixed)",\n' +
+                //     '    "decimal.js": "^10.3.1"\n' +
+                //     '  }\n' +
+                //     '}\n',
+                //         actionType: undefined,
+                //         actionParams: undefined
+                // },
+                // [Object: null prototype] {
+                //     fileName: undefined,
+                //         language: undefined,
+                //         content: undefined,
+                //         actionType: 'jobCompleted',
+                //         actionParams: '{"commitMessage": "Added decimal.js for precision math as a dependency in contentRender.json"}'
+                // }
+                // ]
+
+            }
+
+            await sleep(1000); // Waiting for response
+            i++;
+        }
+
+        if (verbose) {
+            console.log('\nMessages:\n', decryptedMessages)
+        }
+
+
+        if (jobFinished) {
+            console.log(jobFinished);
+        }
+
+        process.exit(0);
+
+    } catch (error) {
+        console.log(error)
+        console.error('Unable to fetch access token');
+        process.exit(1);
+    }
+}
+
 
 
 function str2ab(str) {
@@ -866,5 +1043,5 @@ module.exports = {
     KB_API_URL, AUTH_API_URL, decryptKBFields, fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload,
     listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, updateKB, uploadFiles, generateKey,
     generateMnemonic, reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction
+    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB
 }
