@@ -297,7 +297,6 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
     const { kbId, key } = kbData;
     const url = options?.chatURL || CHAT_API_URL;
 
-    // Read the content of the files
     const fileContents = await Promise.all(files.map(async (filePath) => {
         try {
             const content = await fs.readFile(filePath, 'utf8');
@@ -310,7 +309,6 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
 
     try {
         const fileContentString = fileContents.map(file => `${file.filePath}\n---\n${file.content}`).join('\n\n\n');
-
         const { onRequestHandler, onResponseHandler, chatModel, instructions, verbose } = options;
 
         const payload = {
@@ -318,66 +316,66 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
             message: encrypt(prompt + '\n\n###\n\n' + fileContentString, key),
             chatTitle: 'modification request',
             encrypted: true,
-            AESKey: key
+            AESKey: key,
+            ...(chatModel && { modificationModel: chatModel }),
+            ...(instructions && { modificationInstructions: instructions }),
+            ...(onRequestHandler && { modificationRequestHandler: await fs.readFile(onRequestHandler, 'utf8') }),
+            ...(onResponseHandler && { modificationResponseHandler: await fs.readFile(onResponseHandler, 'utf8') })
         };
 
-        if (chatModel) payload.modificationModel = chatModel;
-        if (instructions) payload.modificationInstructions = instructions;
-        if (onRequestHandler) payload.modificationRequestHandler = await fs.readFile(onRequestHandler, 'utf8');
-        if (onResponseHandler) payload.modificationResponseHandler = await fs.readFile(onResponseHandler, 'utf8');
-
         startLoading();
-
         const createChat = await makePostRequest(url, payload);
-
         const { createdChatId } = createChat.find(o => o?.createdChatId);
-
         if (verbose) {
             console.log('\nModification Chat Created:\n', createChat);
+            console.log(`Modification chat ${createdChatId} created`);
         }
 
-        if (verbose) console.log(`Modification chat ${createdChatId} created`);
-
-        // Create the readline interface once
         const rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout
         });
 
-        // Function to prompt the user and get input
-        const getUserInput = (query) => {
+        const getUserInput = async (query) => {
             stopLoading();
-            return new Promise((resolve) => {
-                rl.question(query, (answer) => {
-                    startLoading();
-                    resolve(answer);
-                });
+            const answer = await new Promise(resolve => rl.question(query, resolve));
+            startLoading();
+            return answer;
+        };
+
+        const sendMessage = async (message) => {
+            return makePostRequest(url, {
+                modificationToken: kbToken,
+                message: encrypt(message, key),
+                chatId: createdChatId,
+                encrypted: true,
+                AESKey: key
             });
         };
 
-        let decryptedMessages;
-        let jobFinished;
         let lastProcessedAssistantMsgId = '';
-        let i = 0;
 
-        while (1) {
+        while (true) {
             const chatMessages = await makePostRequest(url, {
                 action: 'getChatMessages',
                 token: kbToken,
                 chatId: createdChatId
             });
 
-            decryptedMessages = chatMessages?.data?.messages?.map(o => ({
+            const decryptedMessages = chatMessages?.data?.messages?.map(o => ({
                 ...o,
                 content: decryptKBItem(o?.content, key)
             }));
 
-            const newAssistantMessage = decryptedMessages.findLast(message => message.role === 'assistant' && message?.msgId > lastProcessedAssistantMsgId);
+            const newAssistantMessage = decryptedMessages.findLast(message =>
+                message.role === 'assistant' && message?.msgId > lastProcessedAssistantMsgId
+            );
 
             if (newAssistantMessage?.content) {
                 lastProcessedAssistantMsgId = newAssistantMessage?.msgId;
                 const batchRegex = /(?:writeFile\s+(?<fileName>[^\s]+)\s*###(?<language>\w+)\s*(?<content>[\s\S]*?)###|\/?(?<actionType>metaAction|jobCompleted|jobFailed|[a-zA-Z]{3,30})\((?<actionParams>[^()]*)\))/g;
                 const blocks = Array.from(newAssistantMessage.content.matchAll(batchRegex), match => match.groups);
+
                 const showResponse = () => {
                     console.green('\nAssistant:\n');
                     console.green(newAssistantMessage?.content);
@@ -385,64 +383,27 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
 
                 if (!blocks?.length) {
                     showResponse();
-                    const userInput = await getUserInput('\nYou: ');
-
-                    // send response back
-                    await makePostRequest(url, {
-                        modificationToken: kbToken,
-                        message: encrypt(userInput, key),
-                        chatId: createdChatId,
-                        encrypted: true,
-                        AESKey: key
-                    });
+                    await sendMessage(await getUserInput('\nYou: '));
+                    continue;
                 }
 
-                let assistantResponse;
-
                 for (const block of blocks) {
-                    if (block?.actionType === 'jobCompleted' || block?.actionType === 'jobFailed') {
-                        jobFinished = { actionType: block.actionType, actionParams: JSON.parse(block.actionParams) };
-                        break; // Exit the loop once the job is finished
+                    if (['jobCompleted', 'jobFailed'].includes(block?.actionType)) {
+                        stopLoading();
+                        if (verbose) console.log('\nMessages:\n', decryptedMessages);
+                        console.log({ actionType: block.actionType, actionParams: JSON.parse(block.actionParams) });
+                        process.exit(0);
                     } else if (block?.actionType === 'metaAction' && block?.actionParams === 'execute_and_wait') {
-                        // Prompt the user and log the result
                         showResponse();
-                        const userInput = await getUserInput('\nYou: ');
-                        // send response back
-                        await makePostRequest(url, {
-                            modificationToken: kbToken,
-                            message: encrypt(userInput, key),
-                            chatId: createdChatId,
-                            encrypted: true,
-                            AESKey: key
-                        });
-
-                    } else if (block?.actionType) {
-                        assistantResponse = true;
+                        await sendMessage(await getUserInput('\nYou: '));
                     } else if (block?.fileName && block?.content) {
-                        // Handle writeFile command
                         await fs.outputFile(block.fileName, block.content);
                         console.log(`File written: ${block.fileName}`);
                     }
                 }
-
-                if (jobFinished) break;
             }
-            await sleep(1000); // Waiting for response
-            i++;
+            await sleep(1000);
         }
-
-        stopLoading();
-
-        if (verbose) {
-            console.log('\nMessages:\n', decryptedMessages);
-        }
-
-        if (jobFinished) {
-            console.log(jobFinished);
-        }
-
-        process.exit(0);
-
     } catch (error) {
         console.log(error);
         console.error('Unable to fetch access token');
