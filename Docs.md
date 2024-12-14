@@ -91,8 +91,106 @@ export const handler = async (event) => {
 
 The `onRequest` and `onResponse` handlers are the core of customizing your OpenKBS agent's behavior. They act as middleware, intercepting messages before they reach the LLM (`onRequest`) and after the LLM generates a response (`onResponse`). This enables you to implement custom logic, interact with external APIs, and control the flow of the conversation.
 
+### Example:
 
-### `onPublicAPIRequest` Handler and Public API Integration:**
+```javascript
+// src/Events/actions.js
+export const getActions = (meta) => [
+    
+    [/\/?textToImage\("(.*)"\)/, async (match) => {
+        const response = await openkbs.textToImage(match[1], { serviceId: 'stability.sd3Medium' });
+        const imageSrc = `data:${response.ContentType};base64,${response.base64Data}`;
+        return { type: 'SAVED_CHAT_IMAGE', imageSrc, ...meta };
+    }],
+
+    [/\/?googleSearch\("(.*)"\)/, async (match) => {
+        const q = match[1];
+        const searchParams = match[2] && JSON.parse(match[2]) || {};
+        const params = {
+            q,
+            ...searchParams,
+            key: '{{secrets.googlesearch_api_key}}',
+            cx: '{{secrets.googlesearch_engine_id}}'
+        };
+        const response = (await axios.get('https://www.googleapis.com/customsearch/v1', { params }))?.data?.items;
+        const data = response?.map(({ title, link, snippet, pagemap }) => ({
+            title,
+            link,
+            snippet,
+            image: pagemap?.metatags?.[0]?.["og:image"]
+        }));
+        return { data, ...meta };
+    }],
+
+    [/\/?webpageToText\("(.*)"\)/, async (match) => {
+        let response = await openkbs.webpageToText(match[1]);
+        if (response?.content?.length > 5000) {
+            response.content = response.content.substring(0, 5000);
+        }
+        return { data: response, ...meta };
+    }],
+
+    [/\/?documentToText\("(.*)"\)/, async (match) => {
+        let response = await openkbs.documentToText(match[1]);
+        if (response?.text?.length > 5000) {
+            response.text = response.text.substring(0, 5000);
+        }
+        return { data: response, ...meta };
+    }],
+
+    [/\/?imageToText\("(.*)"\)/, async (match) => {
+        let response = await openkbs.imageToText(match[1]);
+        if (response?.detections?.[0]?.txt) {
+          response = { detections: response?.detections?.[0]?.txt };
+        }
+        return { data: response, ...meta };
+    }],
+
+    [/\/?textToSpeech\("(.*)"\s*,\s*"(.*)"\)/, async (match) => {
+        const response = await openkbs.textToSpeech(match[2], {
+          languageCode: match[1]
+        });
+        return { data: response, ...meta };
+    }],
+];
+```
+
+
+```javascript
+// src/Events/onRequest.js
+import {getActions} from './actions.js';
+
+
+export const handler = async (event) => {
+    const actions = getActions({});
+    for (let [regex, action] of actions) {
+        const lastMessage = event.payload.messages[event.payload.messages.length - 1].content;
+        const match = lastMessage?.match(regex);
+        if (match) return await action(match);
+    }
+    
+    return { type: 'CONTINUE' }
+};
+```
+
+```javascript
+// src/Events/onResponse.js
+import {getActions} from './actions.js';
+
+export const handler = async (event) => {
+    const actions = getActions({_meta_actions: ["REQUEST_CHAT_MODEL"]});
+    
+    for (let [regex, action] of actions) {
+        const lastMessage = event.payload.messages[event.payload.messages.length - 1].content;
+        const match = lastMessage?.match(regex);
+        if (match) return await action(match);
+    }
+    
+    return { type: 'CONTINUE' }
+};
+```
+
+### `onPublicAPIRequest` Handler and Public API Integration:
 
 The `onPublicAPIRequest` handler serves as a bridge between publicly accessible APIs and your OpenKBS application. This enables external systems, webhooks, or even client-side JavaScript to interact with your application's backend, particularly for storing data in the OpenKBS NoSQL Items service via `openkbs.items`. This is achieved without requiring authentication for these specific API requests.
 
