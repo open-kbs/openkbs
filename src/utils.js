@@ -333,7 +333,7 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
 
     try {
         const fileContentString = fileContents.map(file => `${file.filePath}\n---\n${file.content}`).join('\n\n\n');
-        const { onRequestHandler, onResponseHandler, chatModel, instructions, verbose } = options;
+        const { onRequestHandler, onResponseHandler, chatModel, instructions, verbose, preserveChat } = options;
 
         const payload = {
             modificationToken: kbToken,
@@ -413,6 +413,12 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
 
                 for (const block of blocks) {
                     if (['modificationCompleted', 'modificationFailed'].includes(block?.actionType)) {
+                        if (!preserveChat) await makePostRequest(url, {
+                            action: 'deleteChat',
+                            token: kbToken,
+                            chatId: createdChatId
+                        });
+
                         stopLoading();
                         if (verbose) console.log('\nMessages:\n', decryptedMessages);
                         console.log({ actionType: block.actionType, actionParams: JSON.parse(block.actionParams) });

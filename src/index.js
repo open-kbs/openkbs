@@ -77,6 +77,7 @@ program
     .option('-m, --chatModel <modelId>', 'Specify a custom service id for the LLM to be used for the modification process')
     .option('-i, --instructions <instructions>', 'Provide specific instructions for the chat service to guide the modification request')
     .option('--verbose', 'Enables verbose mode')
+    .option('--preserveChat', 'Keep the modification chat history intact instead of clearing it after completion')
     .option('--onRequestHandler <filePath>', 'Provide a custom onRequest handler to the modifier agent')
     .option('--onResponseHandler <filePath>', 'Provide a custom onResponse handler to the modifier agent')
     .addHelpText('after', () => `
