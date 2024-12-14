@@ -279,6 +279,9 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
     const { kbId, key } = kbData;
     const url = options?.chatURL || CHAT_API_URL;
 
+    // Dynamically import ora
+    const ora = (await import('ora')).default;
+
     // Read the content of the files
     const fileContents = await Promise.all(files.map(async (filePath) => {
         try {
@@ -291,32 +294,32 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
     }));
 
     try {
-        const fileContentString = fileContents.map(file => `${file.filePath}\n---\n${file.content}`).join('\n\n\n')
+        const fileContentString = fileContents.map(file => `${file.filePath}\n---\n${file.content}`).join('\n\n\n');
 
         const { onRequestHandler, onResponseHandler, chatModel, instructions, verbose } = options;
 
         const payload = {
             modificationToken: kbToken,
-            message: encrypt( prompt + '\n\n###\n\n' + fileContentString, key),
+            message: encrypt(prompt + '\n\n###\n\n' + fileContentString, key),
             chatTitle: 'modification request',
             encrypted: true,
             AESKey: key
         };
 
-        if (chatModel) payload.modificationModel = chatModel
-        if (instructions) payload.modificationInstructions = instructions
-        if (onRequestHandler) payload.modificationRequestHandler = await fs.readFile(onRequestHandler, 'utf8')
-        if (onResponseHandler) payload.modificationResponseHandler = await fs.readFile(onResponseHandler, 'utf8')
+        if (chatModel) payload.modificationModel = chatModel;
+        if (instructions) payload.modificationInstructions = instructions;
+        if (onRequestHandler) payload.modificationRequestHandler = await fs.readFile(onRequestHandler, 'utf8');
+        if (onResponseHandler) payload.modificationResponseHandler = await fs.readFile(onResponseHandler, 'utf8');
 
         const createChat = await makePostRequest(url, payload);
 
-        const { createdChatId } = createChat.find(o => o?.createdChatId)
+        const { createdChatId } = createChat.find(o => o?.createdChatId);
 
         if (verbose) {
-            console.log('\nModification Chat Created:\n', createChat)
+            console.log('\nModification Chat Created:\n', createChat);
         }
 
-        if (verbose) console.green(`Modification chat ${createdChatId} created`)
+        if (verbose) console.log(`Modification chat ${createdChatId} created`);
 
         // Create the readline interface once
         const rl = readline.createInterface({
@@ -337,6 +340,7 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
         let jobFinished;
         let lastProcessedAssistantMsgId = '';
         let i = 0;
+
         while (1) {
             const chatMessages = await makePostRequest(url, {
                 action: 'getChatMessages',
@@ -347,7 +351,7 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
             decryptedMessages = chatMessages?.data?.messages?.map(o => ({
                 ...o,
                 content: decryptKBItem(o?.content, key)
-            }))
+            }));
 
             const newAssistantMessage = decryptedMessages.findLast(message => message.role === 'assistant' && message?.msgId > lastProcessedAssistantMsgId);
 
@@ -356,13 +360,22 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
                 const batchRegex = /(?:writeFile\s+(?<fileName>[^\s]+)\s*###(?<language>\w+)\s*(?<content>[\s\S]*?)###|\/?(?<actionType>metaAction|jobCompleted|jobFailed|[a-zA-Z]{3,30})\((?<actionParams>[^()]*)\))/g;
                 const blocks = Array.from(newAssistantMessage.content.matchAll(batchRegex), match => match.groups);
                 const respond = () => {
-                    console.green('\nAssistant:\n')
-                    console.green(newAssistantMessage?.content)
-                }
+                    console.green('\nAssistant:\n');
+                    console.green(newAssistantMessage?.content);
+                };
 
                 if (!blocks?.length) {
                     respond();
-                    break;
+                    const userInput = await getUserInput('\nYou: ');
+
+                    // send response back
+                    await makePostRequest(url, {
+                        modificationToken: kbToken,
+                        message: encrypt(userInput, key),
+                        chatId: createdChatId,
+                        encrypted: true,
+                        AESKey: key
+                    });
                 }
 
                 let assistantResponse;
@@ -387,49 +400,24 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
 
                     } else if (block?.actionType) {
                         assistantResponse = true;
+                    } else if (block?.fileName && block?.content) {
+                        // Handle writeFile command
+                        await fs.outputFile(block.fileName, block.content);
+                        console.log(`File written: ${block.fileName}`);
                     }
                 }
 
                 if (jobFinished) break;
-
-
-                // [
-                // [Object: null prototype] {
-                //     fileName: 'src/Frontend/contentRender.json',
-                //         language: 'json',
-                //         content: '{\n' +
-                //     '  "dependencies": {\n' +
-                //     '    "react": "^18.2.0 (fixed)",\n' +
-                //     '    "react-dom": "^18.2.0 (fixed)",\n' +
-                //     '    "@mui/material": "^5.16.1 (fixed)",\n' +
-                //     '    "@mui/icons-material": "^5.16.1 (fixed)",\n' +
-                //     '    "@emotion/react": "^11.10.6 (fixed)",\n' +
-                //     '    "@emotion/styled": "^11.10.6 (fixed)",\n' +
-                //     '    "decimal.js": "^10.3.1"\n' +
-                //     '  }\n' +
-                //     '}\n',
-                //         actionType: undefined,
-                //         actionParams: undefined
-                // },
-                // [Object: null prototype] {
-                //     fileName: undefined,
-                //         language: undefined,
-                //         content: undefined,
-                //         actionType: 'jobCompleted',
-                //         actionParams: '{"commitMessage": "Added decimal.js for precision math as a dependency in contentRender.json"}'
-                // }
-                // ]
-
             }
-
+            //const spinner = ora().start();
             await sleep(1000); // Waiting for response
+            //spinner.stop();
             i++;
         }
 
         if (verbose) {
-            console.log('\nMessages:\n', decryptedMessages)
+            console.log('\nMessages:\n', decryptedMessages);
         }
-
 
         if (jobFinished) {
             console.log(jobFinished);
@@ -438,7 +426,7 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
         process.exit(0);
 
     } catch (error) {
-        console.log(error)
+        console.log(error);
         console.error('Unable to fetch access token');
         process.exit(1);
     }
