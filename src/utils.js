@@ -426,7 +426,7 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
                     } else if (block?.actionType === 'metaResponse' && block?.actionParams === 'execute_and_wait') {
                         showResponse();
                         await sendMessage(await getUserInput('\nYou: '));
-                    } else if (block?.fileName && block?.content) {
+                    } else if (block?.fileName && block?.content && blocks?.find(o => o?.actionType === 'modificationCompleted')) {
                         await fs.outputFile(block.fileName, block.content);
                         console.log(`File written: ${block.fileName}`);
                     }
