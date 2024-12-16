@@ -336,15 +336,16 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
         const { onRequestHandler, onResponseHandler, chatModel, instructions, verbose, preserveChat } = options;
 
         const payload = {
-            modificationToken: kbToken,
+            operation: 'modify',
+            token: kbToken,
             message: encrypt(prompt + '\n\n###\n\n' + fileContentString, key),
             chatTitle: 'modification request',
             encrypted: true,
             AESKey: key,
-            ...(chatModel && { modificationModel: chatModel }),
-            ...(instructions && { modificationInstructions: instructions }),
-            ...(onRequestHandler && { modificationRequestHandler: await fs.readFile(onRequestHandler, 'utf8') }),
-            ...(onResponseHandler && { modificationResponseHandler: await fs.readFile(onResponseHandler, 'utf8') })
+            ...(chatModel && { operationModel: chatModel }),
+            ...(instructions && { operationInstructions: instructions }),
+            ...(onRequestHandler && { operationRequestHandler: await fs.readFile(onRequestHandler, 'utf8') }),
+            ...(onResponseHandler && { operationResponseHandler: await fs.readFile(onResponseHandler, 'utf8') })
         };
 
         startLoading();
@@ -369,7 +370,7 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
 
         const sendMessage = async (message) => {
             return makePostRequest(url, {
-                modificationToken: kbToken,
+                rootToken: kbToken,
                 message: encrypt(message, key),
                 chatId: createdChatId,
                 encrypted: true,
