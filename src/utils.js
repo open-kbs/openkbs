@@ -339,7 +339,7 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
             operation: 'modify',
             token: kbToken,
             message: encrypt(prompt + '\n\n###\n\n' + fileContentString, key),
-            chatTitle: 'modification request',
+            chatTitle: 'operation request',
             encrypted: true,
             AESKey: key,
             ...(chatModel && { operationModel: chatModel }),
@@ -398,7 +398,7 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
 
             if (newAssistantMessage?.content) {
                 lastProcessedAssistantMsgId = newAssistantMessage?.msgId;
-                const batchRegex = /(?:createModifyFile\s+(?<fileName>[^\s]+)\s*###(?<language>\w+)\s*(?<content>[\s\S]*?)###|\/?(?<actionType>metaResponse|modificationCompleted|modificationFailed|[a-zA-Z]{3,30})\((?<actionParams>[^()]*)\))/g;
+                const batchRegex = /(?:createModifyFile\s+(?<fileName>[^\s]+)\s*###(?<language>\w+)\s*(?<content>[\s\S]*?)###|\/?(?<actionType>metaResponse|operationCompleted|operationFailed|[a-zA-Z]{3,30})\((?<actionParams>[^()]*)\))/g;
                 const blocks = Array.from(newAssistantMessage.content.matchAll(batchRegex), match => match.groups);
 
                 const showResponse = () => {
@@ -413,7 +413,7 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
                 }
 
                 for (const block of blocks) {
-                    if (['modificationCompleted', 'modificationFailed'].includes(block?.actionType)) {
+                    if (['operationCompleted', 'operationFailed'].includes(block?.actionType)) {
                         if (!preserveChat) await makePostRequest(url, {
                             action: 'deleteChat',
                             token: kbToken,
@@ -427,7 +427,7 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
                     } else if (block?.actionType === 'metaResponse' && block?.actionParams === 'execute_and_wait') {
                         showResponse();
                         await sendMessage(await getUserInput('\nYou: '));
-                    } else if (block?.fileName && block?.content && blocks?.find(o => o?.actionType === 'modificationCompleted')) {
+                    } else if (block?.fileName && block?.content && blocks?.find(o => o?.actionType === 'operationCompleted')) {
                         await fs.outputFile(block.fileName, block.content);
                         console.log(`File written: ${block.fileName}`);
                     }
