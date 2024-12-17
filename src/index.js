@@ -141,13 +141,4 @@ program
     .description('Log out from OpenKBS by deleting the locally stored session token.')
     .action(logoutAction);
 
-// program
-//     .command('evolve <featureDescription>')
-//     .description('Evolve the application by providing additional feature requirements before deployment.')
-//     .action(evolveApplication)
-//     .addHelpText('after', `
-// Examples:
-//   $ openkbs evolve "Add water tracking feature"
-// `);
-
 program.parse(process.argv);
