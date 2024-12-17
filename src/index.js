@@ -119,15 +119,15 @@ Examples:
   $ openkbs deploy contentRender
 `);
 
-program
-    .command('sign')
-    .description('Signs a transaction to request OpenKBS service')
-    .requiredOption('-a, --toAccountId <toAccountId>', 'Receiver account ID')
-    .option('-e, --expires <expiresInSeconds>', 'Expiration time in seconds', '60')
-    .option('-m, --maxAmount <maxAmount>', 'Maximum authorized charge', '300000')
-    .option('-r, --resourceId <resourceId>', 'Resource ID', 'credits')
-    .option('-p, --payload <payload>', 'Payload')
-    .action(signAction);
+// program
+//     .command('sign')
+//     .description('Signs a transaction to request OpenKBS service')
+//     .requiredOption('-a, --toAccountId <toAccountId>', 'Receiver account ID')
+//     .option('-e, --expires <expiresInSeconds>', 'Expiration time in seconds', '60')
+//     .option('-m, --maxAmount <maxAmount>', 'Maximum authorized charge', '300000')
+//     .option('-r, --resourceId <resourceId>', 'Resource ID', 'credits')
+//     .option('-p, --payload <payload>', 'Payload')
+//     .action(signAction);
 
 // Set up the CLI program
 program
