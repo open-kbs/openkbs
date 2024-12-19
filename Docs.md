@@ -9,9 +9,11 @@ src/
 │   ├── onRequest.js            // Handles incoming user messages
 │   ├── onResponse.js           // Handles outgoing LLM messages
 │   ├── onPublicAPIRequest.js   // Handles public API requests
+│   ├── onAddMessages.js         // Handles messages added to the chat (NEW)
 │   ├── onRequest.json          // Dependencies for onRequest handler
 │   ├── onResponse.json          // Dependencies for onResponse handler
-│   └── onPublicAPIRequest.json // Dependencies for onPublicAPIRequest handler
+│   ├── onPublicAPIRequest.json // Dependencies for onPublicAPIRequest handler
+│   └── onAddMessages.json       // Dependencies for onAddMessages handler (NEW)
 │── Frontend/
 │   ├── contentRender.js        // Custom rendering logic for chat messages
 │   └── contentRender.json      // Dependencies for the contentRender module
@@ -267,7 +269,81 @@ const createFeedback = async (kbId, name, text) => (
 
 By utilizing `onPublicAPIRequest` and `openkbs.items`, you can build powerful integrations that allow external systems to store and manage data within your OpenKBS application without compromising security. This approach is especially valuable for scenarios like form submissions, webhooks, or any situation where direct, unauthenticated access to data storage is required.  Remember to carefully consider security implications and implement necessary precautions.
 
-**Dependencies (onRequest.json, onResponse.json, onPublicAPIRequest.json):**
+### `onAddMessages` Event Handler:
+
+The `onAddMessages` handler allows you to intercept and process messages *as they are added to the chat*. This handler is triggered *after* the `onRequest` handler but *before* the message is sent to the LLM. It's particularly useful for scenarios where a third-party system or service sends messages directly to your OpenKBS application to perform an action.
+
+**Example: User moderation:**
+
+**1. Third-Party Service API request:**
+
+```javascript
+// Example of a third-party system sending a report to OpenKBS
+axios.post('https://chat.openkbs.com/', {
+    action: "chatAddMessages",
+    chatId: 'NSFW_CHAT_ID', // chat created to process NFW events
+    messages: [{
+        role: "system",
+        content: JSON.stringify({
+            nsfw: true,
+            labels: ['adult', 'explicit'],
+            fileName: 'image.jpg',
+            path: '/uploads/image.jpg'
+        }),
+        msgId: `${Date.now()}-000000`
+    }],
+    apiKey: "YOUR_API_KEY",
+    kbId: "YOUR_KB_ID"
+}, {
+    headers: { 'Content-Type': 'application/json' }
+});
+```
+
+**2. `onAddMessages` Handler:**
+
+```javascript
+// src/Events/onAddMessages.js
+import * as actions from './actions.js';
+
+export const handler = async (event) => {
+    const { messages, chatId } = event.payload;
+    let msgData;
+
+    // NSFW Chat Handler
+    if (chatId === 'NSFW_CHAT_ID') {  // Check if the message is for the NSFW chat
+        try {
+            msgData = JSON.parse(messages[0].content); // Parse the message content (expecting JSON)
+
+            if (msgData?.nsfw) { // Check for the NSFW flag
+                const labels = msgData?.labels?.join(' , ');
+                const { data } = await actions.getUser([null, msgData.kbId]); // Get user information
+                await actions.warnAccount([null, data.user.accountId, labels]); // Issue a warning
+
+                if (msgData.path) {
+                    await actions.deleteFile([null, msgData.path]); // Delete the offending file
+                }
+
+                // Return a system message confirming the action
+                return [
+                    ...messages,
+                    {
+                        role: 'system',
+                        msgId: Date.now() + '000000',
+                        content: `### 👮‍♀️ System Actions:\nWarning issued and content removed`
+                    }
+                ];
+            }
+        } catch (e) {
+            console.error("Error processing NSFW content:", e);
+        }
+    }
+
+    return messages; // Return messages unchanged if no action is taken
+};
+
+```
+
+**Dependencies (onRequest.json, onResponse.json, etc.):**
 
 These files specify the NPM package dependencies required for the respective event handlers. They follow the standard `package.json` format.
 
