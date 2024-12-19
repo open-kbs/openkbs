@@ -220,7 +220,6 @@ module.exports = {
         if (!kbId) return { error: "kbId is not provided" }
 
         try {
-            // Encrypt specific fields if needed
             const myItem = {};
             for (const attribute of attributes) {
                 const { attrName, encrypted } = attribute;
@@ -248,42 +247,22 @@ module.exports = {
 
 ```javascript
 // Example creating a "feedback" item
-const kbId = 'your-kb-id';  // Replace with your actual kbId
-const data = {
-    action: "createItem",
-    kbId: kbId, // knowledge base ID
-    itemType: "feedback",
-    attributes: [
-        { attrType: "keyword1", attrName: "name", encrypted: true },
-        { attrType: "text1", attrName: "feedbackText", encrypted: false }
-    ],
-    item: {
-        name: "John Doe",
-        feedbackText: "Great product!"
-    }
-};
-
-fetch('https://chat.openkbs.com/publicAPIRequest', { // Call the public API endpoint
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-})
-.then(response => response.json())
-.then(data => {
-    if (data.error) {
-        console.error("Error creating item:", data.error);
-        // Handle error (e.g., display error message)
-    } else {
-        console.log("Item created successfully:", data);
-        // Handle success (e.g., update UI)
-    }
-})
-.catch(error => {
-    console.error("Network error:", error);
-    // Handle network errors
-});
-
-
+const createFeedback = async (kbId, name, text) => (
+        await fetch('https://chat.openkbs.com/publicAPIRequest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: "createItem",
+            kbId,
+            itemType: "feedback",
+            attributes: [
+              { attrType: "keyword1", attrName: "name", encrypted: true },
+              { attrType: "text1", attrName: "feedbackText", encrypted: false }
+            ],
+            item: { name, feedbackText: text }
+          })
+        })
+).json();
 ```
 
 By utilizing `onPublicAPIRequest` and `openkbs.items`, you can build powerful integrations that allow external systems to store and manage data within your OpenKBS application without compromising security. This approach is especially valuable for scenarios like form submissions, webhooks, or any situation where direct, unauthenticated access to data storage is required.  Remember to carefully consider security implications and implement necessary precautions.
@@ -293,7 +272,7 @@ By utilizing `onPublicAPIRequest` and `openkbs.items`, you can build powerful in
 These files specify the NPM package dependencies required for the respective event handlers. They follow the standard `package.json` format.
 
 ```json
-// src/Events/onRequest.json, src/Events/onResponse.json, src/Events/onPublicAPIRequest.json
+// src/Events/*.json
 {
   "dependencies": {
     "your-package": "^1.0.0"
@@ -550,7 +529,7 @@ The dependencies marked as `(fixed)` are not installed as additional dependencie
 
 These components and utilities are accessible directly within your `onRenderChatMessage` function, streamlining your custom development process.
 
-### `msgIndex`
+### msgIndex
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { msgIndex, messages } = params;
@@ -560,7 +539,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `messages`
+### messages
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { messages } = params;
@@ -571,7 +550,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `setMessages`
+### setMessages
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { setMessages, messages } = params;
@@ -580,7 +559,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `KB`
+### KB
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { KB } = params;
@@ -589,7 +568,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `chatContainerRef`
+### chatContainerRef
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { chatContainerRef } = params;
@@ -599,7 +578,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `RequestChatAPI`
+### RequestChatAPI
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { RequestChatAPI, messages } = params;
@@ -608,7 +587,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `setSystemAlert`
+### setSystemAlert
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { setSystemAlert } = params;
@@ -616,7 +595,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `setBlockingLoading`
+### setBlockingLoading
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { setBlockingLoading } = params;
@@ -626,7 +605,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `blockingLoading`
+### blockingLoading
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { blockingLoading } = params;
@@ -636,7 +615,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `sendButtonRef`
+### sendButtonRef
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { sendButtonRef } = params;
@@ -646,7 +625,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `sendButtonRippleRef`
+### sendButtonRippleRef
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { sendButtonRippleRef } = params;
@@ -656,7 +635,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `setInputValue`
+### setInputValue
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { setInputValue } = params;
@@ -664,7 +643,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `renderSettings`
+### renderSettings
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { renderSettings } = params;
@@ -672,7 +651,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `axios`
+### axios
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { axios } = params;
@@ -681,7 +660,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `itemsAPI`
+### itemsAPI
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { itemsAPI } = params;
@@ -690,7 +669,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `indexedDB`
+### indexedDB
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { indexedDB } = params;
@@ -699,7 +678,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `generateMsgId`
+### generateMsgId
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { generateMsgId } = params;
@@ -708,7 +687,7 @@ const onRenderChatMessage = async (params) => {
 };
 ```
 
-### `kbUserData`
+### kbUserData
 ```javascript
 const onRenderChatMessage = async (params) => {
     const { kbUserData } = params;
