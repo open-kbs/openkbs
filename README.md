@@ -1,76 +1,41 @@
-# OpenKBS &middot; [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/open-kbs/openkbs-chat/blob/main/LICENSE) [![npm version](https://img.shields.io/badge/npm-v0.0.19-orange.svg)](https://www.npmjs.com/package/openkbs)
+# OpenKBS &middot; [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/open-kbs/openkbs-chat/blob/main/LICENSE) [![npm version](https://img.shields.io/badge/npm-v0.0.20-orange.svg)](https://www.npmjs.com/package/openkbs)
 
-OpenKBS is an open-source platform for building and deploying AI agents. Our mission is to provide developers with a flexible and powerful framework that empowers them to create advanced AI agents, using simple text prompts to specify requirements.
+OpenKBS is an extendable open-source platform designed to build, deploy and integrate AI agents anywhere, from websites to IoT devices. Its event-driven architecture enables full customization of backend and frontend components, while the LLM abstraction layer allows seamless switching between language models.
+## Last Updates
 
-### Last Updates
-
-### Table of Contents
+## Table of Contents
 
 - [Install CLI](#install-cli)
-- [Create new Application](#create-new-application)
-- [Deploy Your Application](#deploy-your-application)
-- [Enhance Your Application](#enhance-your-application)
-- [Local Development](#local-development)
+- [Create App](#create-app)
+- [Deploy](#deploy)
+- [Extend Frontend](#extend-frontend)
+- [Setup Local Development](#setup-local-development)
 - [Use Built-in MUI Components](#use-built-in-mui-components)
+- [AI-Powered Frontend Generation](#ai-powered-frontend-generation)
+  
 - [License](#license)
 - [Contributing](#contributing)
 - [Contact](#contact)
 
-## Creating Your First AI Agent Manually
-
-Follow these steps to create and deploy your first OpenKBS app using React and Node.js, 
-
-### Install CLI
+## Install CLI
 
 First, ensure you have the OpenKBS CLI installed globally:
 
-- **Option 1: using NPM**
 ```bash
 npm install -g openkbs
 ```
 
-- **Option 2: Download Binary**
-
-  - **Linux (x64):**
-    ```bash
-    wget -O ~/Downloads/openkbs https://downloads.openkbs.com/cli/linux/openkbs && chmod +x ~/Downloads/openkbs && sudo mv ~/Downloads/openkbs /usr/local/bin/openkbs
-    ```
-  - **Windows (x64):**
-    ```powershell
-    Invoke-WebRequest -Uri "https://downloads.openkbs.com/cli/windows/openkbs.exe" -OutFile "$Env:USERPROFILE\Downloads\openkbs.exe"
-    $Env:Path += ";$Env:USERPROFILE\Downloads"
-    ```
-    
-  - **Mac (new M series):**
-    ```bash
-    curl -o ~/Downloads/openkbs https://downloads.openkbs.com/cli/macos/openkbs && mkdir -p /usr/local/bin && chmod +x ~/Downloads/openkbs && sudo mv ~/Downloads/openkbs /usr/local/bin/openkbs
-    ```
-  - **Mac (old models):**
-    ```bash
-    curl -o ~/Downloads/openkbs https://downloads.openkbs.com/cli/macos/openkbs-x64 && mkdir -p /usr/local/bin && chmod +x ~/Downloads/openkbs && sudo mv ~/Downloads/openkbs /usr/local/bin/openkbs
-    ```
-
-
-
-### Create New Application
+## Create App
 
 Create a new application using the OpenKBS CLI:
 
 ```bash
-openkbs create my-pc-agent
+openkbs create my-agent
+
+cd my-agent
 ```
 
-Navigate into your newly created application directory:
-
-```bash
-cd my-pc-agent
-```
-
-### Deploy Your Application
-
-You have two options for deployment: OpenKBS Cloud or LocalStack.
-
-#### Deploy to OpenKBS Cloud
+## Deploy
 
 1. Log in to OpenKBS:
 
@@ -78,7 +43,7 @@ You have two options for deployment: OpenKBS Cloud or LocalStack.
    openkbs login
    ```
 
-2. Push your application to OpenKBS Cloud:
+2. Push your application to OpenKBS:
 
    ```bash
    openkbs push
@@ -88,9 +53,9 @@ You have two options for deployment: OpenKBS Cloud or LocalStack.
 
 3. Open the provided URL and interact with your application.
 
-### Enhance Your Application
+## Extend Frontend
 
-To improve your application's rendering, you can use libraries like `react-markdown` for example.
+To improve your application's user interface, you can use libraries like `react-markdown` for example.
 
 1. Add `react-markdown` to your dependencies:
 
@@ -123,7 +88,7 @@ To improve your application's rendering, you can use libraries like `react-markd
    openkbs push
    ```
 
-### Local Development
+## Setup Local Development
 
 For faster frontend development, run the OpenKBS UI dev server locally:
 
@@ -134,7 +99,7 @@ For faster frontend development, run the OpenKBS UI dev server locally:
 
 This command opens a browser pointing to `localhost`, allowing automatic rebuilds of your frontend code locally.
 
-### Use Built-in MUI Components
+## Use Built-in MUI Components
 
 Enhance your UI with Material-UI components:
 
@@ -155,7 +120,7 @@ Enhance your UI with Material-UI components:
                     <MenuIcon />
                 </IconButton>
                 <Typography variant="h6" style={{ flexGrow: 1 }}>
-                    My PC Agent
+                    My Agent
                 </Typography>
                 <IconButton edge="end" color="inherit" aria-label="account">
                     <AccountIcon />

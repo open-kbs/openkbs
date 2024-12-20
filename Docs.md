@@ -278,14 +278,13 @@ The `onAddMessages` handler allows you to intercept and process messages *as the
 **1. Third-Party Service API request:**
 
 ```javascript
-// Example of a third-party system sending a report to OpenKBS
+// Example of a third-party system sending a chat message to OpenKBS
 axios.post('https://chat.openkbs.com/', {
     action: "chatAddMessages",
-    chatId: 'NSFW_CHAT_ID', // chat created to process NFW events
+    chatId: 'NSFW_CHAT_ID', // the chat id created to log and process NSFW message
     messages: [{
         role: "system",
         content: JSON.stringify({
-            nsfw: true,
             labels: ['adult', 'explicit'],
             fileName: 'image.jpg',
             path: '/uploads/image.jpg'
@@ -313,26 +312,19 @@ export const handler = async (event) => {
     if (chatId === 'NSFW_CHAT_ID') {  // Check if the message is for the NSFW chat
         try {
             msgData = JSON.parse(messages[0].content); // Parse the message content (expecting JSON)
+            const { data } = await actions.getUser([null, msgData.kbId]); // Get user information
+            await actions.warnAccount([null, data.user.accountId, msgData?.labels]); // Issue a warning
+            await actions.deleteFile([null, msgData.path]); // Delete the offending file
 
-            if (msgData?.nsfw) { // Check for the NSFW flag
-                const labels = msgData?.labels?.join(' , ');
-                const { data } = await actions.getUser([null, msgData.kbId]); // Get user information
-                await actions.warnAccount([null, data.user.accountId, labels]); // Issue a warning
-
-                if (msgData.path) {
-                    await actions.deleteFile([null, msgData.path]); // Delete the offending file
+            // Return a system message confirming the action
+            return [
+                ...messages,
+                {
+                    role: 'system',
+                    msgId: Date.now() + '000000',
+                    content: `### 👮‍♀️ System Actions:\nWarning issued and content removed`
                 }
-
-                // Return a system message confirming the action
-                return [
-                    ...messages,
-                    {
-                        role: 'system',
-                        msgId: Date.now() + '000000',
-                        content: `### 👮‍♀️ System Actions:\nWarning issued and content removed`
-                    }
-                ];
-            }
+            ];
         } catch (e) {
             console.error("Error processing NSFW content:", e);
         }
