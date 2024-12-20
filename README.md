@@ -1,7 +1,6 @@
 # OpenKBS &middot; [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/open-kbs/openkbs-chat/blob/main/LICENSE) [![npm version](https://img.shields.io/badge/npm-v0.0.20-orange.svg)](https://www.npmjs.com/package/openkbs)
 
 OpenKBS is an extendable open-source platform designed to build, deploy and integrate AI agents anywhere, from websites to IoT devices. Its event-driven architecture enables full customization of backend and frontend components, while the LLM abstraction layer allows seamless switching between language models.
-## Last Updates
 
 ## Table of Contents
 
@@ -9,10 +8,11 @@ OpenKBS is an extendable open-source platform designed to build, deploy and inte
 - [Create App](#create-app)
 - [Deploy](#deploy)
 - [Extend Frontend](#extend-frontend)
-- [Setup Local Development](#setup-local-development)
-- [Use Built-in MUI Components](#use-built-in-mui-components)
-- [AI-Powered Frontend Generation](#ai-powered-frontend-generation)
-  
+   - [Setup Local Development](#setup-local-development)
+   - [Use Built-in MUI Components](#use-built-in-mui-components)
+   - [AI-Powered Generation](#ai-powered-frontend-generation)
+- [Extend Backend](#extend-backend)
+- [Framework Documentation](#framework-documentation)
 - [License](#license)
 - [Contributing](#contributing)
 - [Contact](#contact)
@@ -88,7 +88,7 @@ To improve your application's user interface, you can use libraries like `react-
    openkbs push
    ```
 
-## Setup Local Development
+### Setup Local Development
 
 For faster frontend development, run the OpenKBS UI dev server locally:
 
@@ -99,7 +99,7 @@ For faster frontend development, run the OpenKBS UI dev server locally:
 
 This command opens a browser pointing to `localhost`, allowing automatic rebuilds of your frontend code locally.
 
-## Use Built-in MUI Components
+### Use Built-in MUI Components
 
 Enhance your UI with Material-UI components:
 
