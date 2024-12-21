@@ -160,7 +160,7 @@ function makePostRequest(url, data) {
                 }
 
                 if (res.statusCode >= 200 && res.statusCode < 300) {
-                    const data = JSON.parse(body);
+                    const data = body?.length ? JSON.parse(body) : body;
                     resolve(data);
                 } else {
                     try {
@@ -334,18 +334,20 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
     try {
         const fileContentString = fileContents.map(file => `${file.filePath}\n---\n${file.content}`).join('\n\n\n');
         const { onRequestHandler, onResponseHandler, chatModel, instructions, verbose, preserveChat } = options;
-
-        const payload = {
+        const operationParams = {
             operation: 'modify',
+            ...(chatModel && { operationModel: chatModel }),
+            ...(instructions && { operationInstructions: instructions }),
+            ...(onRequestHandler && { operationRequestHandler: await fs.readFile(onRequestHandler, 'utf8') }),
+            ...(onResponseHandler && { operationResponseHandler: await fs.readFile(onResponseHandler, 'utf8') })
+        }
+        const payload = {
             token: kbToken,
             message: encrypt(prompt + '\n\n###\n\n' + fileContentString, key),
             chatTitle: 'operation request',
             encrypted: true,
             AESKey: key,
-            ...(chatModel && { operationModel: chatModel }),
-            ...(instructions && { operationInstructions: instructions }),
-            ...(onRequestHandler && { operationRequestHandler: await fs.readFile(onRequestHandler, 'utf8') }),
-            ...(onResponseHandler && { operationResponseHandler: await fs.readFile(onResponseHandler, 'utf8') })
+            ...operationParams
         };
 
         startLoading();
@@ -374,7 +376,8 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
                 message: encrypt(message, key),
                 chatId: createdChatId,
                 encrypted: true,
-                AESKey: key
+                AESKey: key,
+                ...operationParams
             });
         };
 
