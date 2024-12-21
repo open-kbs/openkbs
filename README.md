@@ -114,7 +114,7 @@ Enhance your UI with Material-UI components:
 
    ```js
     return (
-        <AppBar position="absolute" style={{ zIndex: 2000, flexGrow: 1, textAlign: 'left' }}>
+        <AppBar position="absolute" style={{ zIndex: 1300, flexGrow: 1, textAlign: 'left' }}>
             <Toolbar>
                 <IconButton edge="start" color="inherit" aria-label="menu" style={{ marginRight: '16px' }}>
                     <MenuIcon />
@@ -132,7 +132,7 @@ Enhance your UI with Material-UI components:
 
 3. Observe real-time rendering by refreshing your browser at http://{kbId}.apps.localhost:38593/
 
-4. Push the changes to your remote KB:
+4. Push the changes to your remote app instance:
 
    ```bash
    openkbs push 

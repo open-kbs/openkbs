@@ -77,7 +77,7 @@ export const handler = async (event) => {
     const actions = getActions({
         _meta_actions: event?.payload?.messages?.length > maxSelfInvokeMessagesCount
             ? ["REQUEST_CHAT_MODEL_EXCEEDED"]
-            : []
+            : ["REQUEST_CHAT_MODEL"]
     });
 
     for (let [regex, action] of actions) {
@@ -393,7 +393,7 @@ The `openkbs` object provides a set of utility functions and services to interac
 
 * **`openkbs.detectLanguage(text, params)`:** Detects the language of the provided text.
 
-* **`openkbs.textToSpeech(text, params)`:** Converts text to speech.
+* **`openkbs.textToSpeech(text, params)`:** Converts text to speech. Returns `response.audioContent` which automatically plays in the chat interface.
 
 * **`openkbs.encrypt(plaintext)`:** Encrypts data using the provided AES key.
 

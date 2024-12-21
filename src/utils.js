@@ -370,7 +370,7 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
 
         const sendMessage = async (message) => {
             return makePostRequest(url, {
-                rootToken: kbToken,
+                token: kbToken,
                 message: encrypt(message, key),
                 chatId: createdChatId,
                 encrypted: true,
