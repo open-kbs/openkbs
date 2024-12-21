@@ -1,6 +1,11 @@
 # OpenKBS &middot; [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/open-kbs/openkbs-chat/blob/main/LICENSE) [![npm version](https://img.shields.io/badge/npm-v0.0.20-orange.svg)](https://www.npmjs.com/package/openkbs)
 
-OpenKBS is an extendable open-source platform designed to build, deploy and integrate AI agents anywhere, from websites to IoT devices. Its event-driven architecture enables full customization of backend and frontend components, while the LLM abstraction layer allows seamless switching between language models.
+OpenKBS is an extendable open-source platform designed to build, 
+deploy and integrate AI agents anywhere, from websites to IoT devices. 
+Its event-driven architecture enables full customization of backend and 
+frontend components, while the LLM abstraction layer allows seamless
+switching between language models. With its powerful CLI, OpenKBS turns
+complex tasks into simple prompt commands, letting developers focus on what matters.
 
 ## Table of Contents
 
@@ -8,6 +13,7 @@ OpenKBS is an extendable open-source platform designed to build, deploy and inte
 - [Create App](#create-app)
 - [Deploy](#deploy)
 - [Extend Frontend](#extend-frontend)
+   - [Chat Render](#chat-render)
    - [Setup Local Development](#setup-local-development)
    - [Use Built-in MUI Components](#use-built-in-mui-components)
    - [AI-Powered Generation](#ai-powered-frontend-generation)
@@ -33,6 +39,8 @@ Create a new application using the OpenKBS CLI:
 openkbs create my-agent
 
 cd my-agent
+
+git init && git stage . && git commit -m "First commit" 
 ```
 
 ## Deploy
@@ -55,8 +63,10 @@ cd my-agent
 
 ## Extend Frontend
 
-To improve your application's user interface, you can use libraries like `react-markdown` for example.
+Let's enhance your application with additional libraries and features.
+For example, to properly render chat messages with Markdown, you can integrate `react-markdown`:
 
+### Chat Render
 1. Add `react-markdown` to your dependencies:
 
    ```bash
@@ -137,6 +147,21 @@ Enhance your UI with Material-UI components:
    ```bash
    openkbs push 
    ```
+
+### AI-Powered Frontend Generation
+
+OpenKBS provides simple AI-powered code generation. Use the `openkbs modify` command followed by your requirement:
+
+```bash
+openkbs modify "Implementing UI to manage renderSettings"
+```
+
+If you need to revert changes:
+```bash
+git checkout -- .
+```
+
+## Extend Backend
 
 ## License
 
