@@ -632,18 +632,18 @@ This file contains essential configuration settings for the AI agent.
 
 ```json
 {
-  "userId": "public", // Unique Knowledge Base ID (application id)
-  "chatVendor": "your-vendor",   // (e.g., openai, bedrock)
+  "userId": "public",
+  "chatVendor": "your-vendor",
   "kbDescription": "Description of your KB",
   "kbTitle": "Title of your KB",
-  "model": "your-llm-model",   // LLM model to use
-  "inputTools": [             // Input tools to enable (e.g., "speechToText")
+  "model": "your-llm-model",
+  "inputTools": [
     "speechToText"
   ],
   "embeddingModel": "your-embedding-model",
   "embeddingDimension": 1536,
   "searchEngine": "your-search-engine",
-  "itemTypes": { },           // Define your custom item types and their attributes
+  "itemTypes": { }
 }
 ```
 
