@@ -18,6 +18,7 @@ complex tasks into simple prompt commands, letting developers focus on what matt
    - [Use Built-in MUI Components](#use-built-in-mui-components)
    - [AI-Powered Generation](#ai-powered-frontend-generation)
 - [Extend Backend](#extend-backend)
+- [Install Your App on Mobile](#install-your-app-on-mobile)
 - [Framework Documentation](#framework-documentation)
 - [License](#license)
 - [Contributing](#contributing)
@@ -181,7 +182,20 @@ Example usage in chat:
 /getContent("https://api.example.com/data")
 ```
 
-Response returns either parsed JSON or text content
+## Install Your App on Mobile
+
+Turn any OpenKBS-powered application into a mobile app:
+
+### On Mobile (Android/iOS)
+1. Open your app URL in browser
+2. Tap browser menu (⋮)
+3. Select "Add To Home Screen"
+
+### On Desktop
+1. Click install icon (➕) in address bar
+2. Select "Install"
+
+> 💡 Your app will be available on the home screen with full-screen experience!
 
 ## License
 
