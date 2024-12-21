@@ -163,6 +163,26 @@ git checkout -- .
 
 ## Extend Backend
 
+Extend backend functionality using `openkbs modify` followed by your requirements. Add file paths to scope AI changes to specific files:
+
+```bash
+openkbs modify "Implement getContent backend tool that returns text or JSON from a given URL" src/Events/actions.js app/instructions.txt
+openkbs push
+```
+
+This adds a new backend tool in `actions.js` that:
+- Fetches content from URLs
+- Handles JSON and HTML responses
+- Auto-registers in `instructions.txt` (enabling LLM to understand and use it)
+- Available to users and LLM through chat
+
+Example usage in chat:
+```
+/getContent("https://api.example.com/data")
+```
+
+Response returns either parsed JSON or text content
+
 ## License
 
 This project is licensed under the MIT License. For more details, please refer to the [LICENSE](https://github.com/open-kbs/openkbs-chat/blob/main/LICENSE) file.
