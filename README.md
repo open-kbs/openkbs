@@ -1,4 +1,7 @@
-# OpenKBS &middot; [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/open-kbs/openkbs-chat/blob/main/LICENSE) [![npm version](https://img.shields.io/badge/npm-v0.0.20-orange.svg)](https://www.npmjs.com/package/openkbs)
+# OpenKBS
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://img.shields.io/npm/v/openkbs.svg?style=flat)](https://www.npmjs.com/package/openkbs)
 
 OpenKBS is an extendable open-source platform designed to build, 
 deploy and integrate AI agents anywhere, from websites to IoT devices. 
