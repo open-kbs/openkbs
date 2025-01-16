@@ -8,7 +8,8 @@ const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
     fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
     reset, bold, red, yellow, green, createKB, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB
+    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB,
+    listKBsSharedWithMe
 } = require("./utils");
 
 const TEMPLATE_DIR = path.join(__dirname, '../templates');
@@ -312,8 +313,11 @@ async function registerKBAndPush(options) {
 async function lsAction(kbId, prop) {
     try {
         const apps = await listKBs();
+        const sharedApps = await listKBsSharedWithMe();
+
         if (kbId) {
-            const app = apps.find(app => app.kbId === kbId);
+            // Look in both owned and shared apps
+            const app = [...apps, ...sharedApps].find(app => app.kbId === kbId);
             if (app) {
                 if (prop) {
                     if (app[prop] === undefined) return console.red('Non existing property ' + prop);
@@ -325,11 +329,19 @@ async function lsAction(kbId, prop) {
                 console.red(`KB with ID ${kbId} not found on the remote service.`);
             }
         } else {
-            const maxTitleLength = Math.max(...apps.map(app => app.kbTitle.length));
-            apps.forEach(app => {
+            // Combine and mark owned vs shared apps
+            const allApps = [
+                ...apps.map(app => ({ ...app, type: 'owned' })),
+                ...sharedApps.map(app => ({ ...app, type: 'shared' }))
+            ];
+
+            const maxTitleLength = Math.max(...allApps.map(app => app.kbTitle.length));
+
+            allApps.forEach(app => {
                 const date = new Date(app.createdAt).toISOString().replace('T', ' ').replace(/\..+/, '');
                 const paddedTitle = app.kbTitle.padEnd(maxTitleLength, ' ');
-                console.log(`${date}  ${paddedTitle}  ${app.kbId}`);
+                const typeIndicator = app.type === 'shared' ? '[shared]' : '       ';
+                console.log(`${date}  ${paddedTitle}  ${app.kbId}  ${typeIndicator}`);
             });
         }
     } catch (error) {

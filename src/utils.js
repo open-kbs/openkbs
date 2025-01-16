@@ -506,14 +506,14 @@ async function signPayload(payload, accountId, publicKey, privateKey, expiresInS
 }
 
 const buildPackage = async (namespace, kbId, moduleName) => {
-    const token = await getClientJWT();
+    const { kbToken } = await fetchKBJWT(kbId);
 
     return await makePostRequest('https://kb.openkbs.com/', {
-        token,
+        token: kbToken,
         kbId,
         namespace,
         moduleName,
-        action:  namespace === 'frontend' ? 'buildWebpackPackage' : 'buildNodePackage'
+        action:  namespace === 'frontend' ? 'buildWebpackPackageWithKBToken' : 'buildNodePackageWithKBToken'
     });
 }
 
@@ -601,6 +601,19 @@ async function listKBs() {
     try {
         const clientJWT = await getClientJWT();
         const encryptedKBData = await makePostRequest(KB_API_URL, { token: clientJWT, action: 'list' });
+
+        return encryptedKBData.map(KBData => decryptKBFields(KBData))
+    } catch (error) {
+        console.error('API request error:', error);
+        throw error;
+    }
+}
+
+async function listKBsSharedWithMe() {
+    try {
+        const clientJWT = await getClientJWT();
+        const encryptedKBData = await makePostRequest(KB_API_URL, { token: clientJWT, action: 'getKBsSharedWithMe' });
+
         return encryptedKBData.map(KBData => decryptKBFields(KBData))
     } catch (error) {
         console.error('API request error:', error);
@@ -1043,5 +1056,5 @@ module.exports = {
     KB_API_URL, AUTH_API_URL, decryptKBFields, fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload,
     listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, updateKB, uploadFiles, generateKey,
     generateMnemonic, reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB
+    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB, listKBsSharedWithMe
 }

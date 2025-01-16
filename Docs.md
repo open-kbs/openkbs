@@ -516,6 +516,7 @@ The `contentRender.js` file is the heart of frontend customization. It can expor
   - `sendButtonRef`: A reference to the send button element.
   - `sendButtonRippleRef`: A reference to the send button ripple effect.
   - `setInputValue`: A function to set the value of the input field.
+  - `isStreaming`: Returns true if LLM is still generating chat tokens
   - `renderSettings`: An object containing rendering settings.
   - `axios`: The axios library for making HTTP requests.
   - `itemsAPI`: Functions for manipulating KB items.
