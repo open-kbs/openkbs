@@ -1,8 +1,7 @@
 # OpenKBS &middot; [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/open-kbs/openkbs-chat/blob/main/LICENSE) [![npm version](https://img.shields.io/badge/npm-v0.0.20-orange.svg)](https://www.npmjs.com/package/openkbs)
 
 OpenKBS is an extendable open-source platform designed to build, 
-deploy and integrate AI agents anywhere, from websites to IoT devices. 
-Its event-driven architecture enables full customization of backend and 
+deploy and integrate AI agents and applications. Its event-driven architecture enables full customization of backend and 
 frontend components, while the LLM abstraction layer allows seamless
 switching between language models. With its powerful CLI, OpenKBS turns
 complex tasks into simple prompt commands, letting developers focus on what matters.
@@ -34,6 +33,12 @@ complex tasks into simple prompt commands, letting developers focus on what matt
         - [Frontend Module Loading](#frontend-module-loading)
         - [Built-in UI Libraries](#built-in-ui-libraries)
         - [Common Frontend Components and Utilities](#common-frontend-components-and-utilities)
+- [API](#api)
+    - [Encryption and Decryption](#encryption-and-decryption)
+    - [API Endpoints](#api-endpoints)
+        - [Start New Chat](#start-new-chat)
+        - [Get Chat Messages](#get-chat-messages)
+        - [Add Messages to Chat](#add-messages-to-chat)
 - [License](#license)
 - [Contributing](#contributing)
 - [Contact](#contact)
@@ -978,6 +983,132 @@ const onRenderChatMessage = async (params) => {
     console.log(`User data: ${JSON.stringify(userData)}`);
 };
 ```
+
+## API
+
+OpenKBS provides APIs to interact programmatically with your knowledge base.  These APIs allow you to perform actions like starting new chats, retrieving chat messages, and managing data within your application.  Data exchanged with these APIs can be encrypted and decrypted using AES-256 encryption.
+
+### Encryption and Decryption
+
+OpenKBS utilizes AES-256 encryption to secure sensitive data. The encryption process involves generating a salt, deriving a key and initialization vector (IV) from a passphrase using a key derivation function (KDF), and then encrypting the data using AES-256 in CBC mode. The encrypted data is then prepended with the salt and a marker, and finally base64 encoded.  Decryption reverses this process.
+
+**Example in JavaScript (using CryptoJS):**
+
+```javascript
+import CryptoJS from 'crypto-js';
+
+export const encrypt = (text, key) => {
+    return CryptoJS.AES.encrypt(text, key).toString();
+};
+
+export const decrypt = (ciphertext, key) => {
+    const bytes = CryptoJS.AES.decrypt(ciphertext, key);
+    return bytes.toString(CryptoJS.enc.Utf8);
+};
+```
+
+### API Endpoints
+
+#### Start New Chat
+
+This endpoint initiates a new chat session with a specific title and initial message.
+
+**Endpoint:** `https://chat.openkbs.com/`
+
+**Method:** `POST`
+
+**Request Body (JSON):**
+
+```json
+{
+  "kbId": "YOUR_KB_ID",
+  "apiKey": "YOUR_API_KEY",
+  "chatTitle": "Chat Title",
+  "encrypted": true, // Set to true if the message is encrypted
+  "message": "Initial message content (can be encrypted)" 
+}
+```
+
+**Response (JSON):**
+
+```json
+[
+  {
+    "createdChatId": "Newly created chat ID",
+    "other_data": "..." // Other potential data returned by the API
+  }
+]
+```
+
+
+#### Get Chat Messages
+
+This endpoint retrieves messages from a specified chat.
+
+**Endpoint:** `https://chat.openkbs.com/`
+
+**Method:** `POST`
+
+**Request Body (JSON):**
+
+```json
+{
+  "kbId": "YOUR_KB_ID",
+  "action": "getChatMessages",
+  "apiKey": "YOUR_API_KEY",
+  "chatId": "Chat ID"
+}
+```
+
+**Response (JSON):**
+
+```json
+[
+  {
+    "data": {
+      "messages": [
+        {
+          "content": "Message content (potentially encrypted)",
+          "role": "sender_role (e.g., 'user', 'assistant')",
+          "msgId": "message_id",
+          // ... other message properties
+        },
+        // ... other messages
+      ]
+      // ... other chat data
+    },
+    "other_data": "..." // Other potential data returned by the API
+  }
+]
+```
+
+#### Add Messages to Chat
+
+This endpoint allows adding messages to a specified chat, which is useful for integrating with external systems or logging events.  Combined with the `onAddMessages` event handler, these added messages can trigger actions within your OpenKBS application.
+
+**Endpoint:** `https://chat.openkbs.com/`
+
+**Method:** `POST`
+
+**Request Body (JSON):**
+
+```json
+{
+  "action": "chatAddMessages",
+  "chatId": "Chat ID",
+  "messages": [
+    {
+      "role": "Sender role (e.g., 'user', 'assistant', 'system')",
+      "content": "Message content",
+      "msgId": "Unique message ID (recommended to include a timestamp)"
+    },
+    // ... more messages can be added to this array
+  ],
+  "apiKey": "YOUR_API_KEY", // Required for authentication
+  "kbId": "YOUR_KB_ID"
+}
+```
+
 
 
 ## License
