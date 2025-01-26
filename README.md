@@ -1,10 +1,7 @@
 # OpenKBS &middot; [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/open-kbs/openkbs-chat/blob/main/LICENSE) [![npm version](https://img.shields.io/badge/npm-v0.0.20-orange.svg)](https://www.npmjs.com/package/openkbs)
 
-OpenKBS is an extendable open-source platform designed to build, 
-deploy and integrate AI agents and applications. Its event-driven architecture enables full customization of backend and 
-frontend components, while the LLM abstraction layer allows seamless
-switching between language models. With its powerful CLI, OpenKBS turns
-complex tasks into simple prompt commands, letting developers focus on what matters.
+OpenKBS is an extendable AI service designed to build, 
+deploy and integrate AI agents and applications.
 
 ## Table of Contents
 
@@ -34,11 +31,15 @@ complex tasks into simple prompt commands, letting developers focus on what matt
         - [Built-in UI Libraries](#built-in-ui-libraries)
         - [Common Frontend Components and Utilities](#common-frontend-components-and-utilities)
 - [API](#api)
+    - [Keys and Authentication](#keys-and-authentication)
     - [Encryption and Decryption](#encryption-and-decryption)
     - [API Endpoints](#api-endpoints)
-        - [Start New Chat](#start-new-chat)
-        - [Get Chat Messages](#get-chat-messages)
-        - [Add Messages to Chat](#add-messages-to-chat)
+        - [Start New Task](#start-new-task)
+        - [Agent getChatMessages](#getChatMessages)
+        - [Agent chatAddMessages](#chatAddMessages)
+        - [Ledger signTransaction](#signTransaction)
+        - [Ledger account-balances](#account-balances)
+        - [Ledger transactions](#transactions)
 - [License](#license)
 - [Contributing](#contributing)
 - [Contact](#contact)
@@ -986,7 +987,13 @@ const onRenderChatMessage = async (params) => {
 
 ## API
 
-OpenKBS provides APIs to interact programmatically with your knowledge base.  These APIs allow you to perform actions like starting new chats, retrieving chat messages, and managing data within your application.  Data exchanged with these APIs can be encrypted and decrypted using AES-256 encryption.
+OpenKBS provides APIs to interact programmatically with your application. These APIs allow you to perform actions like starting new chats, retrieving chat messages, and managing data within your application. Data exchanged with these APIs is encrypted and decrypted using AES-256 encryption.
+
+### Keys and Authentication
+
+- **kbId**: Agent ID from OpenKBS app > Access > kbId.
+- **apiKey**: API key from OpenKBS app > Access > API Keys.
+- **AESKey**: Encryption key from OpenKBS app > Access > AES.
 
 ### Encryption and Decryption
 
@@ -997,26 +1004,24 @@ OpenKBS utilizes AES-256 encryption to secure sensitive data. The encryption pro
 ```javascript
 import CryptoJS from 'crypto-js';
 
-export const encrypt = (text, key) => {
-    return CryptoJS.AES.encrypt(text, key).toString();
+export const encrypt = (text, AESKey) => {
+    return CryptoJS.AES.encrypt(text, AESKey).toString();
 };
 
-export const decrypt = (ciphertext, key) => {
-    const bytes = CryptoJS.AES.decrypt(ciphertext, key);
+export const decrypt = (ciphertext, AESKey) => {
+    const bytes = CryptoJS.AES.decrypt(ciphertext, AESKey);
     return bytes.toString(CryptoJS.enc.Utf8);
 };
 ```
 
 ### API Endpoints
 
-#### Start New Chat
+#### Start New Task
 
-This endpoint initiates a new chat session with a specific title and initial message.
+This endpoint initiates a new task (chat session) with a specific title and initial message.
 
 **Endpoint:** `https://chat.openkbs.com/`
-
 **Method:** `POST`
-
 **Request Body (JSON):**
 
 ```json
@@ -1024,8 +1029,8 @@ This endpoint initiates a new chat session with a specific title and initial mes
   "kbId": "YOUR_KB_ID",
   "apiKey": "YOUR_API_KEY",
   "chatTitle": "Chat Title",
-  "encrypted": true, // Set to true if the message is encrypted
-  "message": "Initial message content (can be encrypted)" 
+  "encrypted": true,
+  "message": "Initial task content (must be encrypted)" 
 }
 ```
 
@@ -1034,29 +1039,27 @@ This endpoint initiates a new chat session with a specific title and initial mes
 ```json
 [
   {
-    "createdChatId": "Newly created chat ID",
-    "other_data": "..." // Other potential data returned by the API
-  }
+    "createdChatId": "1737908556342-603701"
+  },
+  { "id":1, "content": "other content"}
 ]
 ```
 
 
-#### Get Chat Messages
+#### getChatMessages
 
 This endpoint retrieves messages from a specified chat.
 
 **Endpoint:** `https://chat.openkbs.com/`
-
 **Method:** `POST`
-
 **Request Body (JSON):**
 
 ```json
 {
-  "kbId": "YOUR_KB_ID",
   "action": "getChatMessages",
+  "kbId": "YOUR_KB_ID",
   "apiKey": "YOUR_API_KEY",
-  "chatId": "Chat ID"
+  "chatId": "createdChatId"
 }
 ```
 
@@ -1068,21 +1071,114 @@ This endpoint retrieves messages from a specified chat.
     "data": {
       "messages": [
         {
-          "content": "Message content (potentially encrypted)",
+          "content": "Message content (encrypted)",
           "role": "sender_role (e.g., 'user', 'assistant')",
-          "msgId": "message_id",
-          // ... other message properties
+          "msgId": "message_id"
         },
         // ... other messages
       ]
-      // ... other chat data
-    },
-    "other_data": "..." // Other potential data returned by the API
+    }
   }
 ]
 ```
 
-#### Add Messages to Chat
+#### signTransaction
+
+This endpoint is used to sign a JWT, which is necessary for accessing the ledger endpoint to retrieve transactions and account balances.
+
+- **Endpoint:** `https://kb.openkbs.com/`
+- **Method:** `POST`
+- **Request Body (JSON):**
+
+```json
+{
+  "kbId": "YOUR_KB_ID",
+  "action": "signTransaction",
+  "apiKey": "YOUR_API_KEY"
+}
+```
+
+- **Response:**
+
+The response contains a signed JWT used for authenticating requests to the ledger and account balance endpoints.
+
+
+```json
+{
+  "transactionJWT": "xxx"
+}
+```
+
+#### account-balances
+
+This endpoint retrieves the account balance for a specific resource, such as credits.
+
+- **Endpoint:** `https://ledger.openkbs.com/account-balances`
+- **Method:** `POST`
+- **Request Body (JSON):**
+
+```json
+{
+  "apiKey": "YOUR_API_KEY",
+  "transactionJWT": "SIGNED_JWT_FROM_SIGN_TRANSACTION"
+}
+```
+
+- **Response:**
+
+The response is a JSON object containing account balance details:
+
+```json
+{
+  "balance": 1000000, // 1000 credits === 1 cent
+  "accountId": "0000da3b669a3426019ffc8ddae93c2e",
+  "resourceId": "credits",
+  "lastTransactionSubject": "kbId",
+  "userId": "xxx646594380230f",
+  "accountName": "User Account"
+}
+```
+
+#### transactions
+
+This endpoint retrieves a list of transactions associated with the specified agent.
+
+- **Endpoint:** `https://ledger.openkbs.com/transactions`
+- **Method:** `POST`
+- **Request Body (JSON):**
+
+```json
+{
+  "lastEvaluatedKey": null,
+  "limit": 25, // or any specified limit
+  "apiKey": "YOUR_API_KEY",
+  "transactionJWT": "SIGNED_JWT_FROM_SIGN_TRANSACTION"
+}
+```
+
+- **Response:**
+
+The response is a JSON object containing a `transactions` array. Each transaction object includes:
+
+```json
+{
+  "transactions": [
+    {
+      "subject": "kbId",
+      "accountId": "0000da3b669a3426019ffc8ddae93c2e",
+      "resourceId": "credits",
+      "subjectId": "xxxx2sxeobc9",
+      "amount": -6024,
+      "message": "Input: 11816 tokens, Output: 649 tokens",
+      "remoteAccount": "xxx1b21a831389b59bbc263face0e41d",
+      "transactionId": "1737909703561-305239"
+    }
+    // ... other transactions
+  ]
+}
+```
+
+#### chatAddMessages
 
 This endpoint allows adding messages to a specified chat, which is useful for integrating with external systems or logging events.  Combined with the `onAddMessages` event handler, these added messages can trigger actions within your OpenKBS application.
 
