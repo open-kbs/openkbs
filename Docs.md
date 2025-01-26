@@ -475,7 +475,7 @@ Here's a breakdown of the key objects and utilities available within the OpenKBS
 
 * **`openkbs`:** The OpenKBS SDK, documented previously, provides utility functions for interacting with the OpenKBS platform and various external services.
 
-* **`AWS: AWS_SDK`:**  The AWS SDK provides access to a wide range of AWS services directly within your event handlers.  This allows integration with S3, DynamoDB, Lambda, and other AWS resources.  Pre-configured and ready to use.
+* **`AWS: AWS_SDK`:**  The AWS SDK provides access to a wide range of AWS services
 
 * **`axios`:**  Powerful HTTP client for making requests to external APIs and services.  Simplifies handling responses and errors compared to the built-in `https` module.
 
