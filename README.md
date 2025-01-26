@@ -34,7 +34,7 @@ deploy and integrate AI agents and applications.
     - [Keys and Authentication](#keys-and-authentication)
     - [Encryption and Decryption](#encryption-and-decryption)
     - [API Endpoints](#api-endpoints)
-        - [Agent newTask](#new-task)
+        - [Agent newTask](#newTask)
         - [Agent getChatMessages](#getChatMessages)
         - [Agent chatAddMessages](#chatAddMessages)
         - [Ledger signTransaction](#signTransaction)
