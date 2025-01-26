@@ -34,7 +34,7 @@ deploy and integrate AI agents and applications.
     - [Keys and Authentication](#keys-and-authentication)
     - [Encryption and Decryption](#encryption-and-decryption)
     - [API Endpoints](#api-endpoints)
-        - [Agent newTask](#newTask)
+        - [Agent newChat](#newChat)
         - [Agent getChatMessages](#getChatMessages)
         - [Agent chatAddMessages](#chatAddMessages)
         - [Ledger signTransaction](#signTransaction)
@@ -1016,7 +1016,7 @@ export const decrypt = (ciphertext, AESKey) => {
 
 ### API Endpoints
 
-#### newTask
+#### newChat
 
 This endpoint initiates a new task (chat session) with a specific title and initial message.
 
