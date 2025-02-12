@@ -1,6 +1,6 @@
 {
   "name": "openkbs",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "description": "OpenKBS - Command Line Interface",
   "main": "src/index.js",
   "scripts": {
@@ -22,6 +22,9 @@
       "node18-macos-arm64",
       "node18-win-arm64",
       "node18-linux-arm64"
+    ],
+    "assets": [
+      "templates/**/*"
     ],
     "outputPath": "build/"
   },
