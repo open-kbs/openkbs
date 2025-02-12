@@ -1048,7 +1048,7 @@ async function initByTemplateAction(params) {
             }
         });
     } catch (error) {
-        console.red(`Error during create operation:`, error.message);
+        console.error(`Error during create operation:`, error.message);
     }
 }
 

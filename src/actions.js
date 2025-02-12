@@ -126,7 +126,7 @@ async function pullAction(location = 'origin', targetFile) {
             }
         }
     } catch (error) {
-        console.red('Error during pull operation:', error.message);
+        console.error('Error during pull operation:', error.message);
     }
 }
 
@@ -241,7 +241,7 @@ async function pushAction(location = 'origin', targetFile, options) {
             }
         }
     } catch (error) {
-        console.red('Error during push operation:', error.message);
+        console.error('Error during push operation:', error.message);
     }
 }
 
@@ -263,7 +263,7 @@ async function cloneAction(kbId) {
         await downloadFiles(['functions', 'frontend'], kbId, kbToken);
         console.green('Cloning complete!');
     } catch (error) {
-        console.red('Error during clone operation:', error.message);
+        console.error('Error during clone operation:', error.message);
     }
 }
 
@@ -280,7 +280,7 @@ async function createByTemplateAction(name) {
 
         console.log(`Application ${name} created successfully.`);
     } catch (error) {
-        console.red(`Error during create operation:`, error.message);
+        console.error(`Error during create operation:`, error.message);
     }
 }
 
