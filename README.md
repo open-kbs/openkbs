@@ -1297,9 +1297,9 @@ openkbsWidget('init', {
 
     // Session management
     initSession: async () => {
-        // Initialize or retrieve chat session
+        // Initialize or retrieve chat session (use createPublicChatToken to generate the session)
         const chatSession = {
-            token: 'JWT_TOKEN_FROM_SERVER',
+            token: 'JWT_TOKEN_FROM_SERVER', 
             chatId: 'CHAT_ID',
             kbId: 'YOUR_KB_ID'
         };
