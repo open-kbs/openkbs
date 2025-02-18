@@ -1203,6 +1203,120 @@ This endpoint allows adding messages to a specified chat, which is useful for in
 }
 ```
 
+#### createPublicChatToken
+
+This endpoint allows third-party systems (like WordPress, e-commerce platforms, etc.) to generate signed JWT tokens for their users to interact with the OpenKBS agent. This enables secure, limited access to the agent while maintaining user context and authorization.
+ 
+- **Endpoint:** `https://chat.openkbs.com/`
+-  **Method:** `POST`
+-  **Request Body (JSON):**
+
+For new chat session:
+```json
+{
+  "action": "createPublicChatToken",
+  "kbId": "YOUR_KB_ID",
+  "apiKey": "YOUR_API_KEY",
+  "title": "Chat Title (must be encrypted)",
+  "variables": {
+    "publicUserName": "User's Name",
+    "publicUserId": "User's ID",
+    "publicUserEmail": "User's Email (optional)",
+    // Additional custom variables can be added here
+  },
+  "maxMessages": 50, // Limit messages per chat session
+  "maxTokens": 64000, // Limit token usage
+  "tokenExpiration": 3600000, // Token validity period in milliseconds
+  "messages": [
+    {
+      "msgId": "unique_message_id",
+      "role": "assistant",
+      "content": "Welcome message"
+    }
+  ]
+}
+```
+
+For existing chat:
+```json
+{
+  "action": "createPublicChatToken",
+  "kbId": "YOUR_KB_ID",
+  "apiKey": "YOUR_API_KEY",
+  "chatId": "EXISTING_CHAT_ID",
+  "variables": {
+    "publicUserName": "User's Name",
+    "publicUserId": "User's ID",
+    "publicUserEmail": "User's Email (optional)"
+  },
+  "maxMessages": 50,
+  "maxTokens": 64000,
+  "tokenExpiration": 3600000
+}
+```
+
+**Parameters:**
+- `title`: (Required for new chat) Encrypted chat title
+- `chatId`: (Required for existing chat) ID of existing chat session
+- `variables`: Object containing user information
+- `maxMessages`: Maximum number of messages allowed in the chat
+- `maxTokens`: Maximum number of tokens allowed for LLM processing
+- `tokenExpiration`: Token expiration time in milliseconds
+- `messages`: (Optional) Initial messages for new chat sessions
+
+**Key Features:**
+- Enables third-party systems to create authorized chat sessions for their users
+- Variables passed in the token can be accessed in agent event handlers using `{{variables.variableName}}`
+- Enforces usage limits per user/session
+- Maintains security by signing user context in JWT
+
+This token can be used for subsequent client-side interactions with the chat system.
+
+### OpenKBS Chat Widget Integration
+
+#### Basic Setup
+
+First, include the OpenKBS Chat Widget script in your HTML:
+
+```html
+<script src="https://openkbs.com/widget.js"></script>
+```
+
+#### Widget Initialization
+
+```javascript
+openkbsWidget('init', {
+    app: 'YOUR_KB_ID', // Your Knowledge Base ID
+    endChatMessage: 'Are you sure you want to end this chat session?',
+    
+    // Optional prompt configuration
+    promptTitle: "Can't find what you're looking for?",
+    promptDescription: "Let me help!",
+    showPromptAfter: 5000, // Show prompt after 5 seconds
+    removePromptAfter: 10000, // Remove prompt after 10 seconds
+
+    // Session management
+    initSession: async () => {
+        // Initialize or retrieve chat session
+        const chatSession = {
+            token: 'JWT_TOKEN_FROM_SERVER',
+            chatId: 'CHAT_ID',
+            kbId: 'YOUR_KB_ID'
+        };
+        localStorage.setItem('openkbsChatSession', JSON.stringify(chatSession));
+        return;
+    },
+
+    // Custom actions that can be triggered by the agent
+    actions: {
+        setFormValue: (data) => {
+            const element = document.querySelector(data.selector);
+            if (element) {
+                element.value = data.value;
+            }
+        },
+    }
+});
 
 
 ## License
