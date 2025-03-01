@@ -673,6 +673,11 @@ $InputLabel = """Let me Search in Google!"""
 $InputValue = """Search in google for the latest news"""
 
 /someCommand("param")
+
+$Comment = """
+Any instructions or comments placed here will be removed before sending to the LLM.
+These can span multiple lines and contain any characters, code, or formatting.
+"""
 ...
 
 ```
