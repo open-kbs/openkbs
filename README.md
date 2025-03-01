@@ -693,7 +693,7 @@ These features provide quick command access and pre-populate inputs, enhancing u
 
 #### Execution Environment
 
-The OpenKBS backend provides a pre-configured execution environment for your event handlers, including a set of globally available objects and libraries. This eliminates the need to explicitly declare these as dependencies in your `onRequest.json` or `onResponse.json` files.  These predefined resources facilitate various operations, from interacting with AWS services to manipulating data and making HTTP requests.
+The OpenKBS backend provides a pre-configured execution environment for your event handlers, including a set of globally available objects and libraries. This eliminates the need to explicitly declare these as dependencies in your `onRequest.json` or `onResponse.json` files.  These predefined resources facilitate various operations:
 
 Here's a breakdown of the key objects and utilities available within the OpenKBS backend environment:
 
