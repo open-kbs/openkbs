@@ -690,6 +690,26 @@ Command definitions may include \$InputLabel and \$InputValue which are invisiab
 
 These features provide quick command access and pre-populate inputs, enhancing user interaction.
 
+`zipMessages` and  `unzipMessages` command instructions allow the LLM to manage the chat size by summarizing or restoring portions of the conversation, optimizing context retention and token usage.
+
+Instructions:
+```
+/zipMessages([{"MSG_ID": 1234567890123, "zipSummary": "Optional summary"}])
+
+Description: """
+Compresses specified messages to optimize chat memory and reduce costs.
+Include message IDs with optional summaries to maintain context while using fewer tokens.
+"""
+```
+
+```
+/unzipMessages([{ "MSG_ID" : 1234567890123 }])
+Description: """
+Uncompresses the message associated with the provided `MSG_ID`, restoring its original content to the chat. 
+"""
+```
+
+**Important:** `MSG_ID` value must be a unique identifier present anywhere in the message content. The OpenKBS platform automatically handles the zipping and unzipping of messages based on these commands. No custom implementation is required.
 
 #### Execution Environment
 
