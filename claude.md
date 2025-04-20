@@ -2,6 +2,8 @@
 
 This guide provides a comprehensive overview of the OpenKBS framework for AI agents and applications, focusing on practical development patterns and key functionality.
 
+> **Note**: Full source code for reference applications is available at the URLs listed at the end of this document. You can examine these implementations for detailed examples.
+
 ## Core Concepts
 
 OpenKBS is a framework for building and deploying AI agents with:
@@ -316,6 +318,8 @@ setRenderSettings({
 }],
 ```
 
+> Reference: Full implementation available at https://openkbs.com/apps/ai-tools/
+
 ### 2. Data Collection & Form Processing
 
 ```javascript
@@ -340,6 +344,8 @@ axios.post('https://chat.openkbs.com/publicAPIRequest', formItem)
     });
 ```
 
+> Reference: Form implementations available in https://openkbs.com/apps/ai-web-maker/
+
 ### 3. Tracking Applications (Calorie Counter Example)
 
 ```javascript
@@ -358,6 +364,8 @@ const { itemId } = await itemsAPI.createItem({
     item: formData 
 });
 ```
+
+> Reference: Complete tracking implementation at https://openkbs.com/apps/calorie-counter/
 
 ### 4. Document Processing (Invoice Reader)
 
@@ -381,6 +389,8 @@ if (jsonResult && jsonResult.data.invoice) {
     />;
 }
 ```
+
+> Reference: Full invoice processing implementation at https://openkbs.com/apps/ai-invoice/
 
 ### 5. Web Development Tools
 
@@ -414,6 +424,8 @@ const initializeEditor = useCallback((content) => {
 }, [grapesjs]);
 ```
 
+> Reference: Complete web builder implementation at https://openkbs.com/apps/ai-web-maker/
+
 ### 6. Cloud Automation (Cloud Master Example)
 
 ```javascript
@@ -431,6 +443,9 @@ const runCode = async () => {
     }
 };
 ```
+
+> Reference: Full cloud automation implementation at https://openkbs.com/apps/ai-cloud-master/
+
 
 ## LLM Instructions
 
@@ -569,5 +584,7 @@ Description of what the command does.
 $InputLabel = """Custom Command"""
 $InputValue = """Example usage"""
 ```
+
+You can visit all application URLs to view and explore the complete source code for each application. Studying these implementations will provide practical examples of the patterns and techniques described in this guide.
 
 This guide provides practical knowledge for developing with the OpenKBS framework. Refer to specific examples for implementation details of various application types.
