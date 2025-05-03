@@ -652,6 +652,7 @@ async function fetchAndSaveSettings(localKBData, kbId, kbToken) {
         chatVendor, kbDescription, kbTitle, model, kbInstructions, inputTools,
         installation,
         itemTypes,
+        options,
         embeddingModel, embeddingDimension, searchEngine
     } = decryptKBFields(KBData);
 
@@ -673,6 +674,7 @@ async function fetchAndSaveSettings(localKBData, kbId, kbToken) {
     }
 
     if (itemTypes) params.itemTypes = itemTypes;
+    if (options) params.options = options;
 
     await saveLocalKBData(params);
     console.log(`Downloading: app/settings.json`);
@@ -752,7 +754,7 @@ async function buildFilesMap(namespaces, kbId, kbToken) {
 async function createKB(localKBData, AESKey, isSelfManagedKey = false) {
     const {
         kbId, chatVendor, kbDescription, kbTitle, model, kbInstructions, inputTools, installation,
-        itemTypes, embeddingModel, embeddingDimension, searchEngine
+        itemTypes, options, embeddingModel, embeddingDimension, searchEngine
     } = localKBData;
 
     const token = await getClientJWT();
@@ -790,6 +792,7 @@ async function createKB(localKBData, AESKey, isSelfManagedKey = false) {
     if (!isSelfManagedKey) params.key = AESKey;
 
     if (itemTypes) params.itemTypes = itemTypes;
+    if (options) params.options = options;
 
     if (embeddingModel !== undefined && embeddingDimension !== undefined && searchEngine !== undefined) {
         params.embeddingModel = embeddingModel;
@@ -803,7 +806,7 @@ async function createKB(localKBData, AESKey, isSelfManagedKey = false) {
 async function updateKB(localKBData, KBData, kbToken, withIcon = true) {
     const {
         kbId, chatVendor, kbDescription, kbTitle, model, kbInstructions, inputTools, installation,
-        itemTypes, embeddingModel, embeddingDimension, searchEngine
+        itemTypes, options, embeddingModel, embeddingDimension, searchEngine
     } = localKBData;
 
     // Read and encode the icon file
@@ -825,6 +828,7 @@ async function updateKB(localKBData, KBData, kbToken, withIcon = true) {
     };
 
     if (itemTypes) params.itemTypes = itemTypes;
+    if (options) params.options = options;
 
     if (embeddingModel !== undefined && embeddingDimension !== undefined && searchEngine !== undefined) {
         params.embeddingModel = embeddingModel;
