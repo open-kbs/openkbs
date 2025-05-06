@@ -23,6 +23,7 @@ deploy and integrate AI agents and applications.
         - [onAddMessages Event Handler](#onaddmessages-event-handler)
         - [Meta Actions](#meta-actions)
         - [SDK](#sdk)
+        - [Managing Secrets](#managing-secrets)
         - [Application Settings](#application-settings)
         - [LLM Instructions](#llm-instructions)
         - [Execution Environment](#execution-environment)
@@ -630,6 +631,17 @@ const image = await openkbs.textToImage('a cat sitting on a mat');
 const encryptedValue = await openkbs.encrypt(userData);
 
 ```
+
+#### Managing Secrets
+To securely manage sensitive information like API keys or database passwords within your backend event handlers (`onRequest`, `onResponse`, etc.), use the `{{secrets.your_secret_name}}` syntax.
+
+Define the placeholder in your code:
+
+```javascript
+const apiKey = '{{secrets.external_api_key}}';
+const dbPassword = '{{secrets.db_password}}';
+```
+The actual values for `external_api_key` and `db_password` are set securely within the OpenKBS platform's file manager for your application. These values are injected at runtime and are never committed to your code repository, ensuring your secrets remain confidential.
 
 #### Application Settings
 `app/settings.json`
