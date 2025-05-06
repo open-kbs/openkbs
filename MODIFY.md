@@ -34,7 +34,8 @@ A typical OpenKBS project has the following key directories:
 
 #### Important Coding guidelines
 Organize new features across multiple files (like Events/utils.js) rather than adding everything to actions.js; export functionality from separate modules and import them in actions.js as needed.
-
+Similar for Frontend: keep newly implemented React components outside contentRender.js for maintainability.
+Keep in mind onRenderChatMessage is not a React component but simple JS function
 #### onRequest and onResponse Handlers
 
 The core of the OpenKBS backend framework revolves around the `onRequest` and `onResponse` event handlers.  
