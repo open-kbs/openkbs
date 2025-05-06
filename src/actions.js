@@ -247,12 +247,31 @@ async function pushAction(location = 'origin', targetFile, options) {
 }
 
 async function cloneAction(kbId) {
+    // Store the original directory so we can restore it if needed
+    const originalDir = process.cwd();
+    
     try {
+        // Create a subdirectory with the name of the kbId
+        const targetDir = path.join(originalDir, kbId);
+        
+        // Check if directory already exists
+        if (fs.existsSync(targetDir)) {
+            console.red(`Directory ${kbId} already exists.`);
+            return;
+        }
+        
+        // Create the subdirectory
+        fs.mkdirSync(targetDir);
+        
+        // Change to the new directory
+        process.chdir(targetDir);
+        
         const localKBData = await fetchLocalKBData({forceInit: true});
 
         if (localKBData?.kbId) {
             console.red(`KB ${localKBData?.kbId} already saved in settings.json.`);
             console.yellow(`To pull the changes from OpenKBS remote use "openkbs pull"`);
+            process.chdir(originalDir); // Change back to original directory
             return;
         }
 
@@ -262,9 +281,18 @@ async function cloneAction(kbId) {
         await fetchAndSaveSettings({ kbId }, kbId, kbToken);
         await downloadIcon(kbId);
         await downloadFiles(['functions', 'frontend'], kbId, kbToken);
-        console.green('Cloning complete!');
+        console.green(`Cloning complete! Files created in directory: ${kbId}`);
     } catch (error) {
         console.error('Error during clone operation:', error.message);
+        // Make sure we return to the original directory in case of error
+        if (process.cwd() !== originalDir) {
+            process.chdir(originalDir);
+        }
+    } finally {
+        // Always ensure we return to the original directory
+        if (process.cwd() !== originalDir) {
+            process.chdir(originalDir);
+        }
     }
 }
 
