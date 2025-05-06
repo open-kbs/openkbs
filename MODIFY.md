@@ -81,3 +81,20 @@ OpenKBS also provides a secure way to handle sensitive information using the `{{
 ## Secrets Management
 Define `news_api_key` in your application's secrets manager on the OpenKBS platform.
 The platform will inject the actual value at runtime, keeping your credentials secure while enabling you to make API calls with authenticated services.
+
+#### LLM Instructions
+`app/instructions.txt`
+This file contains the instructions for the agent
+
+**Example Instructions:**
+
+```
+You are an AI assistant.
+
+You can execute the following commands:
+
+/googleSearch("query")
+Description: """
+Get results from Google Search API.
+"""
+```
