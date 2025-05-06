@@ -54,13 +54,13 @@ These handlers act as middleware, intercepting messages before and after they ar
 
 To use external NPM packages in your backend event handlers, you must declare them in the corresponding `.json` file.
 
-**Example: Using node-fetch with an API key**
+**Example: Using https module with an API key**
 
 1. **Declare dependencies** in both `src/Events/onRequest.json` and `src/Events/onResponse.json` (as each handler have separate build):
     ```json
     {
       "dependencies": {
-        "node-fetch": "^2.6.7"
+        "got": "^11.8.5"
       }
     }
     ```
@@ -71,15 +71,10 @@ To use external NPM packages in your backend event handlers, you must declare th
 export const getActions = (meta) => {
     return [
         [/\/?getNews\("(.*)"\)/, async (match) => {
-            const topic = match[1];
-            const url = new URL('https://newsapi.org/v2/everything');
-            url.searchParams.append('q', topic);
-            url.searchParams.append('apiKey', '{{secrets.news_api_key}}'); // Securely injected at runtime by secret manager
+            const { body } = await got(`https://newsapi.org/v2/everything?q=${match[1]}&apiKey={{secrets.news_api_key}}`, 
+                { responseType: 'json' });
             
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            return { result: data.articles, ...meta };
+            return { result: body.articles, ...meta };
         }],
         // ... other actions
     ];
