@@ -667,7 +667,7 @@ async function fetchAndSaveSettings(localKBData, kbId, kbToken) {
         installation,
     }
 
-    if (embeddingModel && embeddingDimension && searchEngine) {
+    if (embeddingModel !== undefined && embeddingDimension !== undefined && searchEngine !== undefined) {
         params.embeddingModel = embeddingModel;
         params.embeddingDimension = embeddingDimension;
         params.searchEngine = searchEngine;
