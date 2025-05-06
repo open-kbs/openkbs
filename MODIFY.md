@@ -15,7 +15,7 @@ A typical OpenKBS project has the following key directories:
 
 *   **`src/`**: Contains your custom source code.
     *   **`Events/`**: Houses backend event handlers.
-        *   `actions.js`: Example file for shared logic. You can create any JS files here, not just actions.js.
+        *   `actions.js`: Example file commonly used for shared logic/tools definitions. You can create any JS files here, not just actions.js.
         *   `onRequest.js`: Handles incoming user messages before LLM processing.
         *   `onRequest.json`: NPM dependencies for `onRequest.js`.
         *   `onResponse.js`: Handles LLM responses before sending to the user.
@@ -31,6 +31,9 @@ A typical OpenKBS project has the following key directories:
     *   `settings.json`: Core application settings (model, vendor, etc.).
     *   `instructions.txt`: Instructions for the LLM.
     *   `icon.png`: Application icon.
+
+#### Coding guidelines
+When adding more logic, try to separate code across multiple files (e.g. utils.js, etc.) instead of putting everything in actions.js
 
 #### onRequest and onResponse Handlers
 
