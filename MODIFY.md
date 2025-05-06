@@ -32,8 +32,8 @@ A typical OpenKBS project has the following key directories:
     *   `instructions.txt`: Instructions for the LLM.
     *   `icon.png`: Application icon.
 
-#### Coding guidelines
-When adding new features, try to separate the code across multiple files (e.g. Events/utils.js, etc.) instead of putting everything in actions.js
+#### Important Coding guidelines
+Organize new features across multiple files (like Events/utils.js) rather than adding everything to actions.js; export functionality from separate modules and import them in actions.js as needed.
 
 #### onRequest and onResponse Handlers
 
