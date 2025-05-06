@@ -332,10 +332,10 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
             console.error('Error getting files from directories:', error);
         }
     }
-    
+
     // Add MODIFY.md to files list if it exists
     if (hasModifyFile && !files.includes(modifyFilePath)) {
-        files.push(modifyFilePath);
+        files.unshift(modifyFilePath);
     }
 
     const fileContents = await Promise.all(files.map(async (filePath) => {
