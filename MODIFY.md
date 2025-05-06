@@ -45,7 +45,6 @@ These handlers act as middleware, intercepting messages before and after they ar
 ## Backend Dependencies
 
 To use external NPM packages in your backend event handlers, you must declare them in the corresponding `.json` file.
-OpenKBS also provides a secure way to handle sensitive information using the `{{secrets.your_secret_name}}` syntax.
 
 **Example: Using axios with an API key**
 
@@ -78,10 +77,11 @@ OpenKBS also provides a secure way to handle sensitive information using the `{{
         ];
     };
     ```
+    
 ## Secrets Management
-Define `news_api_key` in your application's secrets manager on the OpenKBS platform.
-The platform will inject the actual value at runtime, keeping your credentials secure while enabling you to make API calls with authenticated services.
-
+OpenKBS provides a secure way to handle sensitive information using the `{{secrets.your_secret_name}}` syntax.
+Never hardcode secrets in the code, if any secrets are provided by the user replace them with syntax above.
+The user will later insert the values using the secrets manager
 #### LLM Instructions
 `app/instructions.txt`
 This file contains the instructions for the agent
@@ -93,8 +93,8 @@ You are an AI assistant.
 
 You can execute the following commands:
 
-/googleSearch("query")
+/getNews("query")
 Description: """
-Get results from Google Search API.
+Get the latest news
 """
 ```
