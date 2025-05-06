@@ -3,6 +3,7 @@ const os = require('os');
 const path = require('path');
 const express = require('express');
 const { exec, execSync } = require('child_process');
+const https = require('https');
 
 const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
@@ -359,6 +360,20 @@ async function deleteKBAction(kbId) {
 }
 
 async function modifyAction(prompt, files, options) {
+    // Check if MODIFY.md file exists in current directory
+    const modifyFilePath = path.join(process.cwd(), 'MODIFY.md');
+    const modifyFileExists = await fs.pathExists(modifyFilePath);
+    
+    // If MODIFY.md doesn't exist, download it first
+    if (!modifyFileExists) {
+        console.yellow('MODIFY.md file not found. Downloading it first...');
+        try {
+            await downloadModifyAction();
+        } catch (error) {
+            console.yellow('Could not download MODIFY.md, continuing without it...');
+        }
+    }
+    
     const { kbId } = await fetchLocalKBData();
     const {kbToken} = await fetchKBJWT(kbId);
     const kbData = await getKB(kbToken);
@@ -455,6 +470,43 @@ function installFrontendPackageAction(packageName) {
     }
 }
 
+async function downloadModifyAction() {
+    const url = 'https://raw.githubusercontent.com/open-kbs/openkbs/refs/heads/main/MODIFY.md';
+    const filePath = path.join(process.cwd(), 'MODIFY.md');
+    
+    console.log(`Downloading MODIFY.md template from GitHub...`);
+    
+    return new Promise((resolve, reject) => {
+        https.get(url, (response) => {
+            if (response.statusCode === 200) {
+                const file = fs.createWriteStream(filePath);
+                response.pipe(file);
+                
+                file.on('finish', () => {
+                    file.close();
+                    console.green(`Successfully downloaded MODIFY.md to ${filePath}`);
+                    resolve();
+                });
+                
+                file.on('error', (err) => {
+                    fs.unlink(filePath, () => {}); // Delete the file if there was an error
+                    console.red(`Error writing to file: ${err.message}`);
+                    reject(err);
+                });
+            } else if (response.statusCode === 404) {
+                console.red(`File not found at ${url}`);
+                reject(new Error('File not found'));
+            } else {
+                console.red(`Failed to download file. Status code: ${response.statusCode}`);
+                reject(new Error(`HTTP Status Code: ${response.statusCode}`));
+            }
+        }).on('error', (err) => {
+            console.red(`Error downloading file: ${err.message}`);
+            reject(err);
+        });
+    });
+}
+
 module.exports = {
     signAction,
     loginAction,
@@ -470,5 +522,6 @@ module.exports = {
     initByTemplateAction,
     logoutAction,
     installFrontendPackageAction,
-    modifyAction
+    modifyAction,
+    downloadModifyAction
 };

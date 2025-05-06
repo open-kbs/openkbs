@@ -311,6 +311,18 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
     const { kbId, key } = kbData;
     const url = options?.chatURL || CHAT_API_URL;
 
+    // Try to find and add MODIFY.md file
+    const modifyFilePath = path.join(process.cwd(), 'MODIFY.md');
+    let hasModifyFile = false;
+    
+    try {
+        if (await fs.pathExists(modifyFilePath)) {
+            hasModifyFile = true;
+        }
+    } catch (error) {
+        console.error('Error checking for MODIFY.md:', error);
+    }
+    
     if (!files || files.length === 0) {
         try {
             const srcFiles = await getAllFiles('./src');
@@ -319,6 +331,11 @@ async function modifyKB(kbToken, kbData, prompt, files, options) {
         } catch (error) {
             console.error('Error getting files from directories:', error);
         }
+    }
+    
+    // Add MODIFY.md to files list if it exists
+    if (hasModifyFile && !files.includes(modifyFilePath)) {
+        files.push(modifyFilePath);
     }
 
     const fileContents = await Promise.all(files.map(async (filePath) => {

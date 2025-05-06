@@ -12,7 +12,7 @@ const {
     deleteKBAction,
     deleteFileAction,
     describeAction, deployAction, createByTemplateAction, initByTemplateAction,
-    logoutAction, installFrontendPackageAction, modifyAction
+    logoutAction, installFrontendPackageAction, modifyAction, downloadModifyAction
 } = require('./actions');
 
 
@@ -140,5 +140,17 @@ program
     .command('logout')
     .description('Log out from OpenKBS by deleting the locally stored session token.')
     .action(logoutAction);
+
+program
+    .command('prepare-modify')
+    .description('Download the latest MODIFY.md template from GitHub to help with KB modifications')
+    .action(downloadModifyAction)
+    .addHelpText('after', `
+Examples:
+  $ openkbs prepare-modify
+  
+This will download the MODIFY.md template file from the OpenKBS GitHub repository to your current directory.
+This file will be automatically included when you run the 'openkbs modify' command.
+`);
 
 program.parse(process.argv);
