@@ -142,12 +142,12 @@ program
     .action(logoutAction);
 
 program
-    .command('prepare-modify')
+    .command('init-modify')
     .description('Download the latest MODIFY.md template from GitHub to help with KB modifications')
     .action(downloadModifyAction)
     .addHelpText('after', `
 Examples:
-  $ openkbs prepare-modify
+  $ openkbs init-modify
   
 This will download the MODIFY.md template file from the OpenKBS GitHub repository to your current directory.
 This file will be automatically included when you run the 'openkbs modify' command.
