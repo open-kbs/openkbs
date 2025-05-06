@@ -15,7 +15,7 @@ A typical OpenKBS project has the following key directories:
 
 *   **`src/`**: Contains your custom source code.
     *   **`Events/`**: Houses backend event handlers.
-        *   `actions.js`: Often used to export shared logic/tool definitions, imported by onRequest.js and onResponse.js handlers
+        *   `actions.js`: Example file for shared logic. You can create any JS files here, not just actions.js.
         *   `onRequest.js`: Handles incoming user messages before LLM processing.
         *   `onRequest.json`: NPM dependencies for `onRequest.js`.
         *   `onResponse.js`: Handles LLM responses before sending to the user.
@@ -43,60 +43,54 @@ These handlers act as middleware, intercepting messages before and after they ar
 
 #### NPM Dependencies for Handlers
 
-**Important**: Each handler has its own Node.js build process, which means:
+**Important**: Files with names starting with "on" (like onRequest.js) are entry points for Node.js builds:
 
-1. When `actions.js` uses an NPM dependency (e.g., axios, lodash), this dependency must be defined in all handler JSON files that import `actions.js`.
-
-2. Dependencies are declared in the corresponding JSON files:
-   - `onRequest.json` for the `onRequest.js` handler
-   - `onResponse.json` for the `onResponse.js` handler
-   - Any other handler JSON files that import shared code
-
-3. Each handler is built separately, so shared code like `actions.js` gets bundled into each handler that imports it.
-
-**Example**: If `actions.js` uses `axios` and is imported by both `onRequest.js` and `onResponse.js`, then `axios` must be declared in both `onRequest.json` and `onResponse.json`.
+1. Each handler has its own build process
+2. If a file imports node-fetch, then node-fetch must be in that handler's JSON file
+3. Example: If utils.js uses node-fetch and is imported by onRequest.js, then node-fetch must be in onRequest.json
 
 
 ## Backend Dependencies
 
 To use external NPM packages in your backend event handlers, you must declare them in the corresponding `.json` file.
 
-**Example: Using axios with an API key**
+**Example: Using node-fetch with an API key**
 
 1. **Declare dependencies** in both `src/Events/onRequest.json` and `src/Events/onResponse.json` (as each handler have separate build):
     ```json
     {
       "dependencies": {
-        "axios": "^1.6.2"
+        "node-fetch": "^2.6.7"
       }
     }
     ```
 
-2.  **Implement and use in `src/Events/actions.js`**:
-    ```javascript
-    import axios from 'axios';
+2.  **Implement in any JavaScript file** (actions.js is just an example name):
 
-    export const getActions = (meta) => {
-        return [
-            [/\/?getNews\("(.*)"\)/, async (match) => {
-                const topic = match[1];
-                const response = await axios.get('https://newsapi.org/v2/everything', {
-                    params: {
-                        q: topic,
-                        apiKey: '{{secrets.news_api_key}}' // Securely injected at runtime
-                    }
-                });
-                return { result: response.data.articles, ...meta };
-            }],
-            // ... other actions
-        ];
-    };
-    ```
+```javascript
+export const getActions = (meta) => {
+    return [
+        [/\/?getNews\("(.*)"\)/, async (match) => {
+            const topic = match[1];
+            const url = new URL('https://newsapi.org/v2/everything');
+            url.searchParams.append('q', topic);
+            url.searchParams.append('apiKey', '{{secrets.news_api_key}}'); // Securely injected at runtime by secret manager
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            return { result: data.articles, ...meta };
+        }],
+        // ... other actions
+    ];
+};
+```
     
 ## Secrets Management
 OpenKBS provides a secure way to handle sensitive information using the `{{secrets.your_secret_name}}` syntax.
-Never hardcode secrets in the code, if any secrets are provided by the user replace them with syntax above.
-The user will later insert the values using the secrets manager
+Never hardcode secrets in the code, if any secrets are provided by the user replace them with placeholders syntax above.
+The user will later insert the secrets using the secrets manager
+
 #### LLM Instructions
 `app/instructions.txt`
 This file contains the instructions for the agent
