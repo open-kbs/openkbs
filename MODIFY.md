@@ -105,7 +105,7 @@ Get the latest news
 
 #### Important Coding guidelines
 - Browser-specific APIs like fetch() are not allowed in the backend handlers
-- axios is available in all backend files and handlers, no need to be imported or defined as dependency, you can use it if you need http client
+- axios is available (built-in) in the NodeJS execution env, use it if you need http client
 - Organize new features across multiple files (like Events/utils.js) rather than adding everything to actions.js
 - Similar for Frontend: keep newly implemented React components outside contentRender.js for maintainability.
 - Keep in mind onRenderChatMessage is not a React component but simple JS function
