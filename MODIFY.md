@@ -48,7 +48,7 @@ These handlers act as middleware, intercepting user messages and messages genera
 #### NPM Dependencies for Backend Handlers
 
 1. If a file imports an NPM dependency and is then imported by a handler, this dependency must be defined in the handler's corresponding json file
-2. Example: If actions.js imports node-fetch and onRequest.js imports actions.js, then node-fetch must be in onRequest.json
+2. Example: If actions.js imports got and onRequest.js imports actions.js, then got must be in onRequest.json
 
 
 ## Backend Dependencies
@@ -69,6 +69,7 @@ To use external NPM packages in your backend event handlers, you must declare th
 2.  **Implement in any JavaScript file** (actions.js is just an example name):
 
 ```javascript
+import got from 'got';
 export const getActions = (meta) => {
     return [
         [/\/?getNews\("(.*)"\)/, async (match) => {
