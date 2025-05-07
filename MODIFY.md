@@ -36,13 +36,13 @@ A typical OpenKBS project has the following key directories:
 Organize new features across multiple files (like Events/utils.js) rather than adding everything to actions.js; export functionality from separate modules and import them in actions.js as needed.
 Similar for Frontend: keep newly implemented React components outside contentRender.js for maintainability.
 Keep in mind onRenderChatMessage is not a React component but simple JS function
-#### onRequest and onResponse Handlers
 
-The core of the OpenKBS backend framework revolves around the `onRequest` and `onResponse` event handlers.  
+#### onRequest and onResponse Backend Handlers
+
+The core of the OpenKBS backend framework revolves around the `onRequest` and `onResponse` Node.js backend event handlers.  
 These handlers act as middleware, intercepting messages before and after they are processed by the LLM.
 
 * **`onRequest` Handler:** This handler is invoked every time a user sends a message to the chat. It provides an opportunity to pre-process the user's input, extract commands and perform actions based on the user's message. The `onRequest.js` file must export a function that receives `request` and `metadata` parameters and returns a modified request object.
-
 * **`onResponse` Handler:** This handler is invoked after the LLM generates a response. It allows post-processing of the LLM's output, execution of commands based on the LLM's intentions. The `onResponse.js` file must export a function that receives `response` and `metadata` parameters and returns a modified response object.
 
 #### NPM Dependencies for Handlers
@@ -60,7 +60,7 @@ To use external NPM packages in your backend event handlers, you must declare th
 
 **Example: Using https module with an API key**
 
-1. **Declare dependencies** in both `src/Events/onRequest.json` and `src/Events/onResponse.json` (as each handler have separate build):
+1. **Declare dependencies** in both `src/Events/onRequest.json` and `src/Events/onResponse.json` (as each handler have separate Node.js build):
     ```json
     {
       "dependencies": {
