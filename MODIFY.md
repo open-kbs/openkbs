@@ -109,3 +109,24 @@ Get the latest news
 - Organize new features across multiple files (like Events/utils.js) rather than adding everything to actions.js
 - Similar for Frontend: keep newly implemented React components outside contentRender.js for maintainability.
 - Keep in mind onRenderChatMessage is not a React component but simple JS function
+
+
+#### onRenderChatMessage injected functions
+These functions are automatically injected by the framework to onRenderChatMessage, providing access to system features
+```
+// Where functions are injected
+const onRenderChatMessage = async (params) => {
+    const { APIResponseComponent, theme, setBlockingLoading, setSystemAlert, RequestChatAPI,
+    kbUserData, generateMsgId, messages, msgIndex } = params;
+    ...
+}
+```
+
+```
+// Shows toast notifications in top-right corner
+setSystemAlert({
+    msg: 'Payment successful',
+    type: 'success', //'error'|'success'|'info'
+    duration: 5000
+});
+```
