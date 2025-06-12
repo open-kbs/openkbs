@@ -597,6 +597,8 @@ The `openkbs` object provides a set of utility functions and services to interac
 
 * **`openkbs.googleSearch(q, params)`:** Performs a Google search using the provided query and parameters.
 
+* **`openkbs.sendMail(email, subject, content)`:** Sends an email to the specified recipient
+
 * **`openkbs.documentToText(documentURL, params)`:** Extracts text from various document formats.
 
 * **`openkbs.imageToText(imageUrl, params)`:** Extracts text from an image.
