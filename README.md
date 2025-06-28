@@ -621,6 +621,8 @@ The `openkbs` object provides a set of utility functions and services to interac
 
 * **`openkbs.clientHeaders`:** Exposes client headers for accessing information like IP address, location, etc. (e.g., `openkbs.clientHeaders['x-forwarded-for']`).
 
+* **`openkbs.createEmbeddings(input, model)`:** Create embeddings from input text
+
 **Example SDK Usage:**
 
 ```javascript
