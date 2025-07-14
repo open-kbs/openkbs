@@ -1052,14 +1052,15 @@ async function downloadTemplatesFromS3(targetDir) {
         Prefix: prefix
     }));
     
-    // Download each file
-    for (const obj of listResponse.Contents || []) {
+    // Download all files in parallel
+    const downloadPromises = (listResponse.Contents || []).map(async (obj) => {
         const key = obj.Key;
         const relativePath = key.substring(prefix.length);
-        const localPath = path.join(targetDir, relativePath);
         
         // Skip if it's a directory marker
-        if (relativePath.endsWith('/')) continue;
+        if (relativePath.endsWith('/')) return;
+        
+        const localPath = path.join(targetDir, relativePath);
         
         // Ensure directory exists
         await fs.ensureDir(path.dirname(localPath));
@@ -1073,7 +1074,10 @@ async function downloadTemplatesFromS3(targetDir) {
         const fileContent = await streamToBuffer(response.Body);
         await fs.writeFile(localPath, fileContent);
         console.log(`Downloaded: ${relativePath}`);
-    }
+    });
+    
+    // Wait for all downloads to complete
+    await Promise.all(downloadPromises);
 }
 
 const generateKey = (passphrase) => {
