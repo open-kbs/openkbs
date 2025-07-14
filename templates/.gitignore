@@ -1,7 +1,7 @@
 node_modules
 src/Events/dist
 src/Frontend/dist
-
+.openkbs/
 # IntelliJ project files
 *.iml
 *.iws

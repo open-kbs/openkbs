@@ -10,10 +10,10 @@ const {
     fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
     reset, bold, red, yellow, green, createKB, saveLocalKBData, listKBs, deleteKBFile,
     deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB,
-    listKBsSharedWithMe
+    listKBsSharedWithMe, downloadTemplates
 } = require("./utils");
 
-const TEMPLATE_DIR = path.join(__dirname, '../templates');
+const TEMPLATE_DIR = path.join(os.homedir(), '.openkbs', 'templates');
 const jwtPath = path.join(os.homedir(), '.openkbs', 'clientJWT');
 const generateTransactionId = () => `${+new Date()}-${Math.floor(100000 + Math.random() * 900000)}`;
 
@@ -298,6 +298,9 @@ async function cloneAction(kbId) {
 
 async function createByTemplateAction(name) {
     try {
+        // Download templates from S3 first
+        await downloadTemplates();
+        
         const targetDir = path.join(process.cwd(), name);
 
         if (fs.existsSync(targetDir)) {

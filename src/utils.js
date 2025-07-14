@@ -10,7 +10,7 @@ const { exec } = require('child_process');
 const readline = require('readline');
 const Spinner = require('cli-spinner').Spinner;
 
-const TEMPLATE_DIR = path.join(__dirname, '../templates');
+const TEMPLATE_DIR = path.join(os.homedir(), '.openkbs', 'templates');
 
 /**
  * Encrypts the given text using AES encryption with a passphrase.
@@ -1021,6 +1021,61 @@ async function buildLocalFilesMap(localDir, namespaces) {
     return filesMap;
 }
 
+async function downloadTemplates() {
+    try {
+        const templatesDir = TEMPLATE_DIR;
+        await fs.ensureDir(templatesDir);
+        
+        // Clear existing templates
+        await fs.emptyDir(templatesDir);
+        
+        // Download templates from S3
+        await downloadTemplatesFromS3(templatesDir);
+        
+        console.log('Templates downloaded successfully');
+    } catch (error) {
+        console.error('Error downloading templates:', error);
+        throw error;
+    }
+}
+
+async function downloadTemplatesFromS3(targetDir) {
+    const s3Client = new S3Client({ region: 'us-east-1' });
+    const { ListObjectsV2Command, GetObjectCommand } = require('@aws-sdk/client-s3');
+    
+    const bucket = 'openkbs-downloads';
+    const prefix = 'templates/';
+    
+    // List all objects in templates folder
+    const listResponse = await s3Client.send(new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix
+    }));
+    
+    // Download each file
+    for (const obj of listResponse.Contents || []) {
+        const key = obj.Key;
+        const relativePath = key.substring(prefix.length);
+        const localPath = path.join(targetDir, relativePath);
+        
+        // Skip if it's a directory marker
+        if (relativePath.endsWith('/')) continue;
+        
+        // Ensure directory exists
+        await fs.ensureDir(path.dirname(localPath));
+        
+        // Download file
+        const response = await s3Client.send(new GetObjectCommand({
+            Bucket: bucket,
+            Key: key
+        }));
+        
+        const fileContent = await streamToBuffer(response.Body);
+        await fs.writeFile(localPath, fileContent);
+        console.log(`Downloaded: ${relativePath}`);
+    }
+}
+
 const generateKey = (passphrase) => {
     const salt = 'salt';
     const iterations = 1000;
@@ -1054,6 +1109,9 @@ const replacePlaceholderInFiles = (dir, name) => {
 
 async function initByTemplateAction(params) {
     try {
+        // Download templates from S3 first
+        await downloadTemplates();
+        
         const targetDir = process.cwd();
 
         // Copy all files and folders, skipping existing ones
@@ -1077,5 +1135,6 @@ module.exports = {
     KB_API_URL, AUTH_API_URL, decryptKBFields, fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload,
     listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, updateKB, uploadFiles, generateKey,
     generateMnemonic, reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData, listKBs, deleteKBFile,
-    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB, listKBsSharedWithMe
+    deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB, listKBsSharedWithMe,
+    downloadTemplates
 }
