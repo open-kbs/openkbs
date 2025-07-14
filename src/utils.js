@@ -1032,7 +1032,6 @@ async function downloadTemplates() {
         // Download templates from S3
         await downloadTemplatesFromS3(templatesDir);
         
-        console.log('Templates downloaded successfully');
     } catch (error) {
         console.error('Error downloading templates:', error);
         throw error;
@@ -1073,7 +1072,7 @@ async function downloadTemplatesFromS3(targetDir) {
         
         const fileContent = await streamToBuffer(response.Body);
         await fs.writeFile(localPath, fileContent);
-        console.log(`Downloaded: ${relativePath}`);
+        console.log(relativePath);
     });
     
     // Wait for all downloads to complete
