@@ -70,7 +70,7 @@ export const getActions = (meta = {}) => [
             })).filter(item => item.link.includes('youtu'));
             return { data, ...meta };
         } catch (e) {
-            return { error: e.message };
+            return { error: e.message, ...meta };
         }
     }],
 
@@ -90,7 +90,7 @@ export const getActions = (meta = {}) => [
             });
             return { data, ...meta };
         } catch (e) {
-            return { error: e.message };
+            return { error: e.message, ...meta };
         }
     }],
 
@@ -105,7 +105,7 @@ export const getActions = (meta = {}) => [
             if(!response?.url) return { data: { error: "Unable to read website" } };
             return { data: response, ...meta };
         } catch (e) {
-            return { error: e.response?.data || e };
+            return { error: (e.response?.data || e), ...meta };
         }
     }],
 
@@ -120,7 +120,7 @@ export const getActions = (meta = {}) => [
 
             return { data: response, ...meta };
         } catch (e) {
-            return { error: e.response.data };
+            return { error: e.response.data, ...meta };
         }
     }],
 
@@ -134,7 +134,7 @@ export const getActions = (meta = {}) => [
 
             return { data: response, ...meta };
         } catch (e) {
-            return { error: e.response.data };
+            return { error: e.response.data, ...meta };
         }
     }]
 ];
