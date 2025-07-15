@@ -1,17 +1,17 @@
-# OpenKBS Development Guidelines
+# OpenKBS Agent Development Guidelines
 
 ## MANDATORY FIRST STEP
-
 **READ EVERY SINGLE FILE IN THE EXAMPLES FOLDER**
 
-Use the Read tool to read ALL files in `.openkbs/knowledge/examples/` directory and ALL subdirectories.
+Read the content of ALL files in `.openkbs/knowledge/examples/` directory and ALL subdirectories (without the images)
 
 ## Development Flow
 
-1. **Read ALL example files first**
-2. **Read existing code:**
+1. **Read ALL example files first** to get familiar with OpenKBS framework for building AI agents
+2. **Read existing agent code:**
    - `./app/` folder (settings, instructions, etc.)
    - `./src/` folder (all Events and Frontend files)
+   - `./run_agent.js` any files starting with "run"
 3. **Implement using knowledge from examples**
 
 ## Critical Rules
