@@ -8,10 +8,10 @@
 
 2. **Assess implementation requirements:**
    - **Minor changes only**: Simple modifications to existing code that don't require framework knowledge
-   - **Framework implementation needed**: New features, new event handlers, new frontend components, or placeholder app development
+   - **Framework implementation needed**: New features, new event handlers, new frontend components, or new app development
 
 3. **For framework implementation:**
-   - Read all source code in `.openkbs/knowledge/examples/`
+   - Read all source code in `.openkbs/knowledge/examples/`, read every file (except the icon)
    - Study complete working applications to understand OpenKBS patterns
    - Never guess framework methods or variables - always reference examples
 
