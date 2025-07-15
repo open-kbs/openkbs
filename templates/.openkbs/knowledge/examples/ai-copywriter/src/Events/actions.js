@@ -40,8 +40,6 @@ export const getActions = () => [
                 chatIcon: '🔴',
                 chatId: event?.payload?.chatId
             })
-
-            return json
         }
     }],
 
