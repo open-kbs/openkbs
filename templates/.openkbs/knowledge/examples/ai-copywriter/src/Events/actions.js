@@ -26,7 +26,7 @@ export const getActions = (meta = {}) => [
                 chatId: event?.payload?.chatId
             })
 
-            return {parsedData, ...meta};
+            return {...parsedData, ...meta};
         }
     }],
 
