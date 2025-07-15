@@ -11,7 +11,7 @@
    - **Framework implementation needed**: New features, new event handlers, new frontend components, or new app development
 
 3. **For framework implementation:**
-   - Read all source code in `.openkbs/knowledge/examples/`, read every file (except the icon)
+   - Read all source code in `.openkbs/knowledge/examples/`
    - Study complete working applications to understand OpenKBS patterns
    - Never guess framework methods or variables - always reference examples
 
