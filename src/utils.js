@@ -970,8 +970,14 @@ async function uploadFiles(namespaces, kbId, kbToken, location = 'origin', targe
     const localDir = dist ? path.join(process.cwd(), 'cache') : path.join(process.cwd(), 'src');
     const filesMap = await buildLocalFilesMap(localDir, namespaces);
     let filesToUpload = [];
+    const isInOpenKBSFolder = (fileName) => fileName.startsWith('.openkbs/') || fileName.includes('/.openkbs/');
 
     if (targetFile) {
+        // Skip if target file is in .openkbs folder
+        if (isInOpenKBSFolder(targetFile)) {
+            console.log(`Skipping file in .openkbs folder: ${targetFile}`);
+            return false;
+        }
         const isDistFile = targetFile.startsWith('Events/dist') || targetFile.startsWith('Frontend/dist');
         if (filesMap[targetFile] && ((dist && isDistFile) || (!dist && !isDistFile))) {
             filesToUpload.push({ ...filesMap[targetFile], fileName: targetFile });
@@ -979,8 +985,10 @@ async function uploadFiles(namespaces, kbId, kbToken, location = 'origin', targe
             return false; // File not found locally or not in the correct folder
         }
     } else {
-        // No target file, upload all files based on the dist parameter
+        // No target file, upload all files based on the dist parameter, excluding .openkbs files
         filesToUpload = Object.keys(filesMap).filter(fileName => {
+            // Skip files in .openkbs folder
+            if (isInOpenKBSFolder(fileName)) return false;
             const isDistFile = fileName.startsWith('Events/dist') || fileName.startsWith('Frontend/dist');
             return dist ? isDistFile : !isDistFile;
         }).map(fileName => {
