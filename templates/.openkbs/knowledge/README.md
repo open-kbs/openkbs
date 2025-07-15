@@ -66,7 +66,7 @@ The React-based frontend allows UI customization via the `contentRender.js` modu
 
 #### contentRender.js
 This file exports functions for custom rendering.
-- **`onRenderChatMessage(params)`:** Renders each chat message. Returns a React component. If it returns `undefined`, default rendering is used.
+- **`onRenderChatMessage(params)`:** Renders each chat message. Returns a React component. If it returns `undefined`, default rendering is used. This function itself is not a React component and cannot use hooks like `useState`. However, it can construct and return any valid React component.
    - **`params` object includes:** `msgIndex`, `messages`, `setMessages`, `iframeRef`, `KB`, `chatContainerRef`, `RequestChatAPI`, `setSystemAlert`, `setBlockingLoading`, `blockingLoading`, `sendButtonRef`, `sendButtonRippleRef`, `setInputValue`, `renderSettings`, `axios`, `itemsAPI`, `createEmbeddingItem`, `indexedDB`, `chatAPI`, `generateMsgId`, `kbUserData`, `executeNodejs`.
 
 #### Meta Actions
