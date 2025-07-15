@@ -12,7 +12,8 @@ const {
     deleteKBAction,
     deleteFileAction,
     describeAction, deployAction, createByTemplateAction, initByTemplateAction,
-    logoutAction, installFrontendPackageAction, modifyAction, downloadModifyAction
+    logoutAction, installFrontendPackageAction, modifyAction, downloadModifyAction,
+    updateKnowledgeAction
 } = require('./actions');
 
 
@@ -151,6 +152,26 @@ Examples:
   
 This will download the MODIFY.md template file from the OpenKBS GitHub repository to your current directory.
 This file will be automatically included when you run the 'openkbs modify' command.
+`);
+
+program
+    .command('update')
+    .argument('<target>', 'The target to update (currently supports: knowledge)')
+    .description('Update project components from remote repository')
+    .action((target) => {
+        if (target === 'knowledge') {
+            updateKnowledgeAction();
+        } else {
+            console.error(`Unknown update target: ${target}. Currently supported: knowledge`);
+            process.exit(1);
+        }
+    })
+    .addHelpText('after', `
+Examples:
+  $ openkbs update knowledge
+  
+This will check if your local .openkbs/knowledge directory is up to date with the remote repository
+and update it if necessary.
 `);
 
 program.parse(process.argv);

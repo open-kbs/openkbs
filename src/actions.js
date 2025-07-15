@@ -538,6 +538,119 @@ async function downloadModifyAction() {
     });
 }
 
+async function updateKnowledgeAction() {
+    try {
+        const knowledgeDir = path.join(process.cwd(), '.openkbs', 'knowledge');
+        const metadataPath = path.join(knowledgeDir, 'metadata.json');
+        
+        // Check if .openkbs/knowledge directory exists
+        if (!fs.existsSync(knowledgeDir)) {
+            console.red('Knowledge directory not found. Please ensure you are in an OpenKBS project directory.');
+            return;
+        }
+        
+        // Get local metadata version
+        let localVersion = null;
+        if (fs.existsSync(metadataPath)) {
+            try {
+                const localMetadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+                localVersion = localMetadata.version;
+            } catch (error) {
+                console.red('Error reading local metadata.json:', error.message);
+                return;
+            }
+        }
+        
+        // Check remote version from S3
+        const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+        const s3Client = new S3Client({ region: 'us-east-1' });
+        const bucket = 'openkbs-downloads';
+        const remoteMetadataKey = 'templates/.openkbs/knowledge/metadata.json';
+        
+        let remoteVersion = null;
+        try {
+            const response = await s3Client.send(new GetObjectCommand({
+                Bucket: bucket,
+                Key: remoteMetadataKey
+            }));
+            
+            const remoteMetadataContent = await response.Body.transformToString();
+            const remoteMetadata = JSON.parse(remoteMetadataContent);
+            remoteVersion = remoteMetadata.version;
+        } catch (error) {
+            console.red('Error fetching remote metadata:', error.message);
+            return;
+        }
+        
+        // Compare versions
+        if (localVersion === remoteVersion) {
+            console.green('Knowledge base is already up to date.');
+            return;
+        }
+        
+        console.log(`Updating knowledge base from version ${localVersion || 'unknown'} to ${remoteVersion}...`);
+        
+        // Download updated knowledge files from S3
+        await downloadKnowledgeFromS3(knowledgeDir);
+        
+        console.green('Knowledge base updated successfully!');
+        
+    } catch (error) {
+        console.red('Error updating knowledge base:', error.message);
+    }
+}
+
+async function downloadKnowledgeFromS3(targetDir) {
+    const { S3Client, ListObjectsV2Command, GetObjectCommand } = require("@aws-sdk/client-s3");
+    const s3Client = new S3Client({ region: 'us-east-1' });
+    const bucket = 'openkbs-downloads';
+    const prefix = 'templates/.openkbs/knowledge/';
+    
+    try {
+        // List all objects in knowledge folder
+        const listResponse = await s3Client.send(new ListObjectsV2Command({
+            Bucket: bucket,
+            Prefix: prefix
+        }));
+        
+        if (!listResponse.Contents || listResponse.Contents.length === 0) {
+            console.yellow('No knowledge files found in remote repository.');
+            return;
+        }
+        
+        // Download all files in parallel
+        const downloadPromises = listResponse.Contents.map(async (obj) => {
+            const key = obj.Key;
+            const relativePath = key.substring(prefix.length);
+            
+            // Skip if it's a directory marker
+            if (relativePath.endsWith('/') || relativePath === '') return;
+            
+            const localPath = path.join(targetDir, relativePath);
+            
+            // Ensure directory exists
+            await fs.ensureDir(path.dirname(localPath));
+            
+            // Download file
+            const response = await s3Client.send(new GetObjectCommand({
+                Bucket: bucket,
+                Key: key
+            }));
+            
+            const fileContent = await response.Body.transformToByteArray();
+            await fs.writeFile(localPath, fileContent);
+            
+            console.log(`Downloaded: ${relativePath}`);
+        });
+        
+        await Promise.all(downloadPromises);
+        
+    } catch (error) {
+        console.red('Error downloading knowledge files from S3:', error.message);
+        throw error;
+    }
+}
+
 module.exports = {
     signAction,
     loginAction,
@@ -554,5 +667,6 @@ module.exports = {
     logoutAction,
     installFrontendPackageAction,
     modifyAction,
-    downloadModifyAction
+    downloadModifyAction,
+    updateKnowledgeAction
 };
