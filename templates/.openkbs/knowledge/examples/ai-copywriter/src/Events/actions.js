@@ -15,7 +15,7 @@ const extractJSONFromText = (text) => {
     return null;
 }
 
-export const getActions = () => [
+export const getActions = (meta = {}) => [
     [/[\s\S]*"type"\s*:\s*"JOB_COMPLETED"[\s\S]*/, async (match, event) => {
         const parsedData = extractJSONFromText(match[0]);
         if (parsedData && parsedData.type === "JOB_COMPLETED") {
@@ -26,7 +26,7 @@ export const getActions = () => [
                 chatId: event?.payload?.chatId
             })
 
-            return parsedData;
+            return {parsedData, ...meta};
         }
     }],
 
@@ -50,7 +50,7 @@ export const getActions = () => [
             const data = response?.map(({ title, link, snippet, pagemap }) => ({
                 title, link, snippet, image: pagemap?.metatags?.[0]?.["og:image"]
             }));
-            return { data };
+            return { data, ...meta };
         } catch (e) {
             return { error: e.message };
         }
@@ -68,7 +68,7 @@ export const getActions = () => [
                 duration: pagemap?.videoobject?.[0]?.duration,
                 channel: pagemap?.metatags?.[0]?.["og:site_name"],
             })).filter(item => item.link.includes('youtu'));
-            return { data };
+            return { data, ...meta };
         } catch (e) {
             return { error: e.message };
         }
@@ -88,7 +88,7 @@ export const getActions = () => [
                     image: thumbnail
                 };
             });
-            return { data };
+            return { data, ...meta };
         } catch (e) {
             return { error: e.message };
         }
@@ -103,7 +103,7 @@ export const getActions = () => [
                 response.content = response.content.substring(0, 5000);
             }
             if(!response?.url) return { data: { error: "Unable to read website" } };
-            return { data: response };
+            return { data: response, ...meta };
         } catch (e) {
             return { error: e.response?.data || e };
         }
@@ -118,7 +118,7 @@ export const getActions = () => [
                 response.text = response.text.substring(0, 5000);
             }
 
-            return { data: response };
+            return { data: response, ...meta };
         } catch (e) {
             return { error: e.response.data };
         }
@@ -132,7 +132,7 @@ export const getActions = () => [
                 response = { detections: response?.detections?.[0]?.txt };
             }
 
-            return { data: response };
+            return { data: response, ...meta };
         } catch (e) {
             return { error: e.response.data };
         }

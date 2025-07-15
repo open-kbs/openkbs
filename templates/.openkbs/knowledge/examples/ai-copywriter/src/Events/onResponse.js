@@ -5,17 +5,17 @@ export const handler = async (event) => {
     const lastMessage = messages[messages.length - 1];
     
     const isJobFinished = /"type"\s*:\s*"JOB_(COMPLETED|FAILED)"/.test(lastMessage.content);
-    
-    const matchingActions = getActions().flatMap(([regex, action]) => 
-        [...lastMessage.content.matchAll(new RegExp(regex, 'g'))].map(match => action(match, event))
-    );
 
     const meta = {
         _meta_actions: (
             messages.length > 60 ||
-            isJobFinished && (matchingActions.length === 1 || lastMessage.role === 'system')
+            isJobFinished && lastMessage.role === 'system'
         ) ? [] : ["REQUEST_CHAT_MODEL"]
     };
+
+    const matchingActions = getActions(meta).flatMap(([regex, action]) =>
+        [...lastMessage.content.matchAll(new RegExp(regex, 'g'))].map(match => action(match, event))
+    );
 
     if (matchingActions.length > 0) {
         try {
