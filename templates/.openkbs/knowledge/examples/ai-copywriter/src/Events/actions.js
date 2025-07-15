@@ -15,7 +15,7 @@ const extractJSONFromText = (text) => {
     return null;
 }
 
-export const getActions = (meta = {}) => [
+export const getActions = () => [
     [/[\s\S]*"type"\s*:\s*"JOB_COMPLETED"[\s\S]*/, async (match, event) => {
         const parsedData = extractJSONFromText(match[0]);
         if (parsedData && parsedData.type === "JOB_COMPLETED") {
@@ -26,7 +26,7 @@ export const getActions = (meta = {}) => [
                 chatId: event?.payload?.chatId
             })
 
-            return {...parsedData, ...meta};
+            return parsedData;
         }
     }],
 
@@ -40,6 +40,8 @@ export const getActions = (meta = {}) => [
                 chatIcon: '🔴',
                 chatId: event?.payload?.chatId
             })
+
+            return json
         }
     }],
 
@@ -50,7 +52,7 @@ export const getActions = (meta = {}) => [
             const data = response?.map(({ title, link, snippet, pagemap }) => ({
                 title, link, snippet, image: pagemap?.metatags?.[0]?.["og:image"]
             }));
-            return { data, ...meta };
+            return { data };
         } catch (e) {
             return { error: e.message };
         }
@@ -68,9 +70,9 @@ export const getActions = (meta = {}) => [
                 duration: pagemap?.videoobject?.[0]?.duration,
                 channel: pagemap?.metatags?.[0]?.["og:site_name"],
             })).filter(item => item.link.includes('youtu'));
-            return { data, ...meta };
+            return { data };
         } catch (e) {
-            return { error: e.message, ...meta };
+            return { error: e.message };
         }
     }],
 
@@ -88,9 +90,9 @@ export const getActions = (meta = {}) => [
                     image: thumbnail
                 };
             });
-            return { data, ...meta };
+            return { data };
         } catch (e) {
-            return { error: e.message, ...meta };
+            return { error: e.message };
         }
     }],
 
@@ -103,9 +105,9 @@ export const getActions = (meta = {}) => [
                 response.content = response.content.substring(0, 5000);
             }
             if(!response?.url) return { data: { error: "Unable to read website" } };
-            return { data: response, ...meta };
+            return { data: response };
         } catch (e) {
-            return { error: (e.response?.data || e), ...meta };
+            return { error: e.response?.data || e };
         }
     }],
 
@@ -118,9 +120,9 @@ export const getActions = (meta = {}) => [
                 response.text = response.text.substring(0, 5000);
             }
 
-            return { data: response, ...meta };
+            return { data: response };
         } catch (e) {
-            return { error: e.response.data, ...meta };
+            return { error: e.response.data };
         }
     }],
 
@@ -132,9 +134,9 @@ export const getActions = (meta = {}) => [
                 response = { detections: response?.detections?.[0]?.txt };
             }
 
-            return { data: response, ...meta };
+            return { data: response };
         } catch (e) {
-            return { error: e.response.data, ...meta };
+            return { error: e.response.data };
         }
-    }]
+    }],
 ];

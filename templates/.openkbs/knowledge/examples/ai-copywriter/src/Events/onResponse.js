@@ -1,35 +1,59 @@
 import {getActions} from './actions.js';
 
 export const handler = async (event) => {
-    const {messages} = event.payload;
-    const lastMessage = messages[messages.length - 1];
+    const maxSelfInvokeMessagesCount = 60;
+    const lastMessage = event.payload.messages[event.payload.messages.length - 1].content;
     
-    const isJobFinished = /"type"\s*:\s*"JOB_(COMPLETED|FAILED)"/.test(lastMessage.content);
+    // Check if this is a JOB_COMPLETED or JOB_FAILED event
+    const isJobCompleted = /"type"\s*:\s*"JOB_COMPLETED"/.test(lastMessage);
+    const isJobFailed = /"type"\s*:\s*"JOB_FAILED"/.test(lastMessage);
+
+    const actions = getActions();
+
+    const matchingActions = actions.reduce((acc, [regex, action]) => {
+        const matches = [...lastMessage.matchAll(new RegExp(regex, 'g'))];
+        matches.forEach(match => {
+            acc.push(action(match, event));
+        });
+        return acc;
+    }, []);
+
+    const isJobFinished = isJobCompleted || isJobFailed;
 
     const meta = {
-        _meta_actions: (
-            messages.length > 60 ||
-            isJobFinished && lastMessage.role === 'system'
-        ) ? [] : ["REQUEST_CHAT_MODEL"]
-    };
-
-    const matchingActions = getActions(meta).flatMap(([regex, action]) =>
-        [...lastMessage.content.matchAll(new RegExp(regex, 'g'))].map(match => action(match, event))
-    );
+        _meta_actions:
+            (
+                event?.payload?.messages?.length > maxSelfInvokeMessagesCount ||
+                isJobFinished && (matchingActions.length === 1 || lastMessage.role === 'system')
+            )
+                ? []
+                : ["REQUEST_CHAT_MODEL"]
+    }
 
     if (matchingActions.length > 0) {
         try {
             const results = await Promise.all(matchingActions);
-            
+
             if (results?.[0]?.data?.some?.(o => o?.type === 'image_url')) {
-                return {...results[0], ...meta};
+                return {
+                    ...results[0],
+                    ...meta
+                };
             }
 
-            return {type: 'RESPONSE', data: results, ...meta};
+            return {
+                type: 'RESPONSE',
+                data: results,
+                ...meta
+            };
         } catch (error) {
-            return {type: 'ERROR', error: error.message, ...meta};
+            return {
+                type: 'ERROR',
+                error: error.message,
+                ...meta
+            };
         }
     }
 
-    return {type: 'CONTINUE'};
+    return { type: 'CONTINUE' };
 };
