@@ -43,26 +43,21 @@ export const getActions = () => [
         }
     }],
 
-    [/\/?googleSearch\("(.*?)"(?:,\s*(\d+))?\)/, async (match) => {
+    [/\/?googleSearch\("(.*?)"\)/, async (match) => {
         const q = match[1];
-        const limit = match[2] ? parseInt(match[2]) : 5;
-
         try {
             const response = await openkbs.googleSearch(q, {});
             const data = response?.map(({ title, link, snippet, pagemap }) => ({
                 title, link, snippet, image: pagemap?.metatags?.[0]?.["og:image"]
-            })).slice(0, limit);
-
-            if(!data?.length) return { data: { error: "No results found" } };
+            }));
             return { data };
         } catch (e) {
             return { error: e.message };
         }
     }],
 
-    [/\/?youtubeSearch\("(.*?)"(?:,\s*(\d+))?\)/, async (match) => {
+    [/\/?youtubeSearch\("(.*?)"\)/, async (match) => {
         const q = match[1];
-        const limit = match[2] ? parseInt(match[2]) : 5;
         try {
             const response = await openkbs.googleSearch(q + ' site:youtube.com', { videoOnly: true });
             const data = response?.map(({ title, link, snippet, pagemap }) => ({
@@ -72,19 +67,15 @@ export const getActions = () => [
                 thumbnail: pagemap?.videoobject?.[0]?.thumbnailurl || pagemap?.metatags?.[0]?.["og:image"],
                 duration: pagemap?.videoobject?.[0]?.duration,
                 channel: pagemap?.metatags?.[0]?.["og:site_name"],
-            })).filter(item => item.link.includes('youtu')).slice(0, limit);
-
-            if(!data?.length) return { data: { error: "No YouTube videos found" } };
+            })).filter(item => item.link.includes('youtu'));
             return { data };
         } catch (e) {
             return { error: e.message };
         }
     }],
 
-    [/\/?googleImageSearch\("(.*?)"(?:,\s*(\d+))?\)/, async (match) => {
+    [/\/?googleImageSearch\("(.*?)"\)/, async (match) => {
         const q = match[1];
-        const limit = match[2] ? parseInt(match[2]) : 10;
-
         try {
             const response = await openkbs.googleSearch(q, { searchType: 'image' });
             const data = response?.map(({ title, link, snippet, pagemap }) => {
@@ -96,11 +87,8 @@ export const getActions = () => [
                     snippet,
                     image: thumbnail
                 };
-            })?.slice(0, limit);
-
-            if (!data?.length) return { data: { error: "No image results found" } };
+            });
             return { data };
-
         } catch (e) {
             return { error: e.message };
         }

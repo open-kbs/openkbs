@@ -7,7 +7,9 @@ const settings = JSON.parse(fs.readFileSync('app/settings.json', 'utf8'));
 const secretsPath = path.join('.openkbs', 'secrets.json');
 let apiKey;
 
-const message = `PROCESS_PRODUCT:
+const message = `Today's Date: ${new Date().toLocaleDateString()}
+
+PROCESS_PRODUCT:
     Product Name: iPhone 14 Pro Max
     Product Code: MQ9X3RX/A
     ID: 97649

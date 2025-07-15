@@ -11,7 +11,7 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 2. **Read existing agent code:**
    - `./app/` folder (settings, instructions, etc.)
    - `./src/` folder (all Events and Frontend files)
-   - `./run_agent.js` any files starting with "run"
+   - `./run_job.js` any files starting with "run"
 3. **Implement using knowledge from examples**
 
 ## Critical Rules
