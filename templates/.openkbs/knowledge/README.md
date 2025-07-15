@@ -1,34 +1,23 @@
 # OpenKBS Development Guidelines
 
+## MANDATORY FIRST STEP
+
+**READ EVERY SINGLE FILE IN THE EXAMPLES FOLDER**
+
+Use the Read tool to read ALL files in `.openkbs/knowledge/examples/` directory and ALL subdirectories.
+
 ## Development Flow
 
-1. **Read existing code first:**
+1. **Read ALL example files first**
+2. **Read existing code:**
    - `./app/` folder (settings, instructions, etc.)
    - `./src/` folder (all Events and Frontend files)
+3. **Implement using knowledge from examples**
 
-2. **Assess implementation requirements:**
-   - **Minor changes only**: Simple modifications to existing code that don't require framework knowledge
-   - **Framework implementation needed**: New features, new event handlers, new frontend components, or new app development
+## Critical Rules
 
-3. **For framework implementation:**
-   - Read all source code in `.openkbs/knowledge/examples/`
-   - Study complete working applications to understand OpenKBS patterns
-   - Never guess framework methods or variables - always reference examples
+- Never skip reading examples
+- Never guess framework methods - reference the examples
+- Study the complete working applications in examples to understand OpenKBS patterns
 
-## When Examples Are Required
 
-- New OpenKBS application development (placeholder app)
-- Adding new event handlers (onRequest, onResponse, etc.)
-- Creating new frontend components
-- Implementing OpenKBS-specific functionality
-- Any framework-related implementation
-
-## When Examples May Not Be Needed
-
-- Simple text changes to existing files
-- Minor bug fixes in existing code
-- Configuration adjustments that don't involve framework methods
-
-## Critical Rule
-
-**When in doubt, read the examples.** They contain all necessary framework knowledge for proper OpenKBS implementation.
