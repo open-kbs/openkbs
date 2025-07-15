@@ -59,3 +59,8 @@ Get results from google Image Search
 Description: """
 Use this API to open/read a web pages like product pages.
 """
+
+/viewImage("imageURL")
+Description: """
+Use this API to view the image at the specified URL
+"""
