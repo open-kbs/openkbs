@@ -1,15 +1,19 @@
 # Claude Code Instructions
 
-## Initial Setup
-1. First, update the knowledge base to ensure you have the latest information:
+## MANDATORY FIRST STEPS - FOLLOW EXACTLY IN THIS ORDER
+**CRITICAL**: Before taking ANY action, implementing ANY feature, or answering ANY question about this project, you MUST follow these steps in EXACT order:
+
+1. **FIRST**: Update the knowledge base:
    ```bash
    openkbs update knowledge
    ```
 
-2. Then read the project contribution guidelines:
+2. **IMMEDIATELY AFTER**: Read the knowledge base README:
    ```bash
-   # Read the knowledge base README for detailed instructions
+   # THIS MUST BE YOUR SECOND ACTION - READ THIS FILE
    .openkbs/knowledge/README.md
    ```
 
-This file contains comprehensive instructions on how to contribute to this OpenKBS project.
+**DO NOT PROCEED WITHOUT COMPLETING BOTH STEPS IN ORDER**
+
+The `.openkbs/knowledge/README.md` file contains comprehensive instructions on how to contribute to this OpenKBS project and must be read immediately after updating the knowledge base.
