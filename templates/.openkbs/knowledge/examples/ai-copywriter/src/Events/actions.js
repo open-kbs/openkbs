@@ -136,15 +136,5 @@ export const getActions = () => [
         } catch (e) {
             return { error: e.response.data };
         }
-    }],
-
-    [/\/?viewImage\("(.*)"\)/, async (match) => {
-        const url = match[1];
-        return {
-            data: [
-                { type: "text", text: "Image URL: " + url },
-                { type: "image_url", image_url: { url } }
-            ]
-        };
-    }],
+    }]
 ];
