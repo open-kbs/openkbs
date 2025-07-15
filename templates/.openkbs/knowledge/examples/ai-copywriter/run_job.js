@@ -1,3 +1,5 @@
+// Start new agent job via API call
+
 const https = require('https');
 const fs = require('fs');
 const readline = require('readline');
@@ -22,7 +24,6 @@ if (!settings.kbId) {
     return;
 }
 
-// Function to read the API key from secrets.json
 function getApiKey() {
     if (fs.existsSync(secretsPath)) {
         const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
