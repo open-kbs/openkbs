@@ -1,0 +1,13 @@
+{
+  "chatVendor": "anthropic",
+  "kbDescription": "An autonomous AI powerhouse for content generation",
+  "kbTitle": "Copywriter",
+  "model": "claude-3-5-haiku-20241022",
+  "inputTools": [
+    "imageToText"
+  ],
+  "embeddingModel": "none",
+  "embeddingDimension": "none",
+  "searchEngine": "IndexedDB",
+  "itemTypes": {}
+}

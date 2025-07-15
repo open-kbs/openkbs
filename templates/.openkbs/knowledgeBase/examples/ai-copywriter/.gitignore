@@ -1,6 +1,7 @@
 node_modules
 src/Events/dist
 src/Frontend/dist
+.openkbs/
 
 # IntelliJ project files
 *.iml
@@ -15,6 +16,7 @@ src/Frontend/dist
 
 # NetBeans specific
 nbproject/private/
+build/
 nbbuild/
 nbdist/
 nbactions.xml

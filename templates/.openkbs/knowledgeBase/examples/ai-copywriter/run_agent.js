@@ -1,0 +1,120 @@
+const https = require('https');
+const fs = require('fs');
+const readline = require('readline');
+const path = require('path');
+
+const settings = JSON.parse(fs.readFileSync('app/settings.json', 'utf8'));
+const secretsPath = path.join('.openkbs', 'secrets.json');
+let apiKey;
+
+const message = `PROCESS_PRODUCT:
+    Product Name: iPhone 14 Pro Max
+    Product Code: MQ9X3RX/A
+    ID: 97649
+    
+    find at least 2 images and 2 videos
+`;
+
+if (!settings.kbId) {
+    console.log('First use: "openkbs push" To create the agent')
+    return;
+}
+
+// Function to read the API key from secrets.json
+function getApiKey() {
+    if (fs.existsSync(secretsPath)) {
+        const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
+        return secrets.apiKey;
+    }
+    return null;
+}
+
+function promptForApiKey() {
+    return new Promise((resolve) => {
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+
+        console.log(`Please generate an API key from: https://${settings.kbId}.apps.openkbs.com/?tab=access&createAPIKey=api-${+new Date()}`);
+
+        rl.question('Enter your API key: ', (key) => {
+            rl.close();
+            resolve(key);
+        });
+
+        rl._writeToOutput = (str) => rl.output.write(rl.line ? "*" : str);
+    });
+}
+
+function saveApiKey(key) {
+    if (!fs.existsSync('.openkbs')) {
+        fs.mkdirSync('.openkbs');
+    }
+    fs.writeFileSync(secretsPath, JSON.stringify({ apiKey: key }, null, 2));
+}
+
+async function main() {
+    apiKey = getApiKey();
+
+    if (!apiKey) {
+        apiKey = await promptForApiKey();
+        console.log('\n')
+        saveApiKey(apiKey);
+    }
+
+    const app = { kbId: settings.kbId, apiKey };
+
+    const chatTitle = "Task " + new Date().getTime();
+    startJob(chatTitle, message, app).then(chatId => {
+        console.log(`Job ${chatId} created.\nWorking ...`);
+        pollForMessages(chatId, app);
+    }).catch(console.error);
+}
+
+function startJob(chatTitle, data, app) {
+    return makeRequest('https://chat.openkbs.com/', { ...app, chatTitle, message: data })
+        .then(res => {
+            try {
+                return JSON.parse(res)[0].createdChatId;
+            } catch (error) {
+                fs.unlinkSync(secretsPath);
+                throw 'Authentication failed.';
+            }
+        });
+}
+
+function makeRequest(url, payload) {
+    return new Promise((resolve, reject) => {
+        const { hostname, pathname } = new URL(url);
+        const req = https.request({
+            hostname, path: pathname, method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        }, res => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => resolve(data));
+        }).on('error', reject);
+
+        req.write(JSON.stringify(payload));
+        req.end();
+    });
+}
+
+function pollForMessages(chatId, app) {
+    const payload = { ...app, action: 'getChatMessages', chatId, decryptContent: true };
+    const interval = setInterval(() => {
+        makeRequest('https://chat.openkbs.com/', payload).then(jsonString => {
+            const messages = JSON.parse(jsonString)[0].data.messages;
+            for (const message of messages) {
+                if (message.role === 'system' && /{"type"\s*:\s*"(JOB_COMPLETED|JOB_FAILED)".*?}/s.test(message.content)) {
+                    console.log(JSON.parse(message.content).data[0]);
+                    clearInterval(interval);
+                    return;
+                }
+            }
+        }).catch(console.error);
+    }, 1000);
+}
+
+main();
