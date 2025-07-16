@@ -3,7 +3,7 @@
 ## MANDATORY FIRST STEPS - FOLLOW EXACTLY IN THIS ORDER
 **CRITICAL**: Before taking ANY action, implementing ANY feature, or answering ANY question about this project, you MUST follow these steps in EXACT order:
 
-1. **FIRST**: Update the knowledge base:
+1. **FIRST**: Update the knowledge base (Run it once at the beginning of the chat session):
    ```bash
    openkbs update knowledge
    ```
