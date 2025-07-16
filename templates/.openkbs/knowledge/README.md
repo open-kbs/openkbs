@@ -12,7 +12,7 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
    - `./app/` folder (settings, instructions, etc.)
    - `./src/` folder (all Events and Frontend files)
    - `./run_job.js` any files starting with "run"
-3. **Plan and Implement requested features using knowledge from examples**
+3. **Implement requested features using knowledge from examples**
 
 
 ## **Critical** Rules (**IMPORTANT**)

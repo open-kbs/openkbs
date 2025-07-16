@@ -14,4 +14,6 @@
    .openkbs/knowledge/README.md
    ```
 
-`.openkbs/knowledge/README.md` contains comprehensive instructions which will help you plan and execute the implementation.
+**DO NOT PROCEED WITHOUT COMPLETING BOTH STEPS IN ORDER**
+
+`.openkbs/knowledge/README.md` contains comprehensive instructions on how to implement openkbs agents
