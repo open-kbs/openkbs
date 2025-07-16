@@ -26,10 +26,7 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 - To add npm dependency to backend handlers, add it to onRequest.json and onResponse.json
 - To add npm dependency to the frontend, add it to contentRender.json
 - Valid values for the _meta_actions key are [] or ["REQUEST_CHAT_MODEL"].
-If the `_meta_actions` key is set to `["REQUEST_CHAT_MODEL"]`, it prompts the model to right after the response. Without this flag, the chat would stop.
 - Add and use npm dependencies only if necessary, some of those shown in the examples are purely demonstrative
-- Feel free to install new dependencies and integrate them into both the backend and frontend as needed.
-
 
 ### Backend
 The OpenKBS backend framework is for developing AI agents with custom tools, using Node.js. It integrates with chat services via `onRequest` and `onResponse` handlers for custom actions and service integration.
