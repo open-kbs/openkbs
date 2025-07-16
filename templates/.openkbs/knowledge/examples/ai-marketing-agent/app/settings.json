@@ -2,7 +2,7 @@
   "chatVendor": "anthropic",
   "kbDescription": "AI Marketing Assistant",
   "kbTitle": "AI Marketing Assistant",
-  "model": "gemini-2.5-pro-preview-03-25",
+  "model": "gemini-2.5-pro",
   "inputTools": [
     "speechToText"
   ],
