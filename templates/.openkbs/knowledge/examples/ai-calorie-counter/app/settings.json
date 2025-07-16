@@ -180,25 +180,5 @@
         }
       ]
     }
-  },
-  "userId": "public",
-  "appId": "28172dg12t7s",
-  "active": true,
-  "category": "health",
-  "slug": "calorie-counter",
-  "optionalServices": [
-    {
-      "interface": "speech-to-text",
-      "type": "chat-input-tool"
-    }
-  ],
-  "requiredServices": [
-    {
-      "interface": "text-generation",
-      "type": "main-chat-model"
-    },
-    {
-      "interface": "items-search-engine"
-    }
-  ]
+  }
 }

@@ -52,17 +52,5 @@
         }
       ]
     }
-  },
-  "userId": "public",
-  "appId": "c73f3a1g41c",
-  "active": true,
-  "category": "technology",
-  "requiredServices": [
-    {
-      "interface": "text-generation",
-      "type": "main-chat-model"
-    }
-  ],
-  "optionalServices": [],
-  "slug": "ai-marketing-assistant"
+  }
 }
