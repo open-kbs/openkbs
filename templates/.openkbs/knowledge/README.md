@@ -22,7 +22,7 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 - Think hard before the implementation
 
 ## Development Guidelines
-- Implement the run_job.js script to provide a backend-to-backend agent invocation
+- If developing new agent, search for run_job.js in the .openkbs/knowledge/examples folder, and implement run_job.js script to provide a backend-to-backend agent invocation 
 - To add npm dependency to backend handlers, add it to onRequest.json and onResponse.json
 - To add npm dependency to the frontend, add it to contentRender.json
 - Valid values for the _meta_actions key are [] or ["REQUEST_CHAT_MODEL"].
