@@ -21,7 +21,7 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 - Never guess framework methods, settings or variables — always reference the examples.
 - Think hard before the implementation
 
-## Development Guidelines
+## Development Guidelines 
 - Implement the run_job.js script to provide a backend-to-backend agent invocation
 - To add npm dependency to backend handlers, add it to onRequest.json and onResponse.json
 - To add npm dependency to the frontend, add it to contentRender.json

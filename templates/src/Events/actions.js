@@ -1,3 +1,4 @@
+// This is a template code
 export const getActions = (meta) => [
     [/\/?googleSearch\("(.*?)"\)/, async (match) => {
         const q = match[1];
@@ -11,5 +12,5 @@ export const getActions = (meta) => [
             return { error: e.message };
         }
     }],
-    // write your tool calls here
+    // write more actions here
 ];
