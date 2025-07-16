@@ -17,14 +17,11 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 
 ## **Critical** Rules (**IMPORTANT**)
 - Never skip reading examples
+- Study the complete working examples to understand OpenKBS patterns
 - Never guess framework methods, settings or variables — always reference the examples.
-- Study the complete working applications in examples to understand OpenKBS patterns
-- Example agents are thoroughly tested and offer stable UI and backend tools. You are encouraged to extend them or implement similar patterns. However, strive to adhere closely to or reuse implementations from the examples folder, as they are well-tested and reliable.
-- Avoid excessive experimentation.
 - Think hard before the implementation
 
 ## Development Tips
-- When trying to parse JSON data in onRenderChatMessage, keep in mind that it may be mixed with free text from the agent, so implement extractJSONFromText function provided in the examples.
 
 ## Framework Documentation
 
