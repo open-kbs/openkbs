@@ -18,9 +18,8 @@ export const backendHandler = async (event) => {
     const meta = {
         _meta_actions:
             (
-                // disable post-response interactions if limit is exceeded or final job response
                 event?.payload?.messages?.length > maxSelfInvokeMessagesCount ||
-                isJobFinished && lastMessage.role === 'system'
+                isJobFinished && lastMessage.role === 'system' // make sure to end the chat is job is finished
             )
                 ? []
                 : ["REQUEST_CHAT_MODEL"]
