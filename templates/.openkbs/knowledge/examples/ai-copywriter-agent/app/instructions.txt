@@ -7,7 +7,7 @@ Job:
 - If you see additional instructions in PROCESS_PRODUCT, execute them.
 - When you have obtained all the necessary information, output JOB_COMPLETED response.
 
-Guidelines:
+Important Guidelines:
 - use webpageToText command to read websites content in details
 - Always output one command per response and wait for the response before continuing
 - If an API call fails, so that you can't extract a required data, retry with different website or search query

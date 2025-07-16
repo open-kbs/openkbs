@@ -32,14 +32,15 @@ export const getActions = () => [
 
 
     [/[\s\S]*"type"\s*:\s*"JOB_FAILED"[\s\S]*/, async (match, event) => {
-        const json = extractJSONFromText(match[0]);
-        if (json && json.type === "JOB_FAILED") {
+        const parsedData = extractJSONFromText(match[0]);
+        if (parsedData && parsedData.type === "JOB_FAILED") {
             await openkbs.chats({
                 action: "updateChat",
-                title: await openkbs.encrypt(json.reason),
+                title: await openkbs.encrypt(parsedData.reason),
                 chatIcon: '🔴',
                 chatId: event?.payload?.chatId
             })
+            return parsedData;
         }
     }],
 

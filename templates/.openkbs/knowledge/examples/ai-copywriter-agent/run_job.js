@@ -1,4 +1,4 @@
-// Start new agent job via API call
+// Start new agent job via API call to openkbs cloud service
 
 const https = require('https');
 const fs = require('fs');
