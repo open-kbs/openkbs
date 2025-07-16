@@ -1080,7 +1080,6 @@ async function downloadTemplatesFromS3(targetDir) {
         
         const fileContent = await streamToBuffer(response.Body);
         await fs.writeFile(localPath, fileContent);
-        console.log(relativePath);
     });
     
     // Wait for all downloads to complete
