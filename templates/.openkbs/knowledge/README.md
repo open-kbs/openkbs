@@ -22,11 +22,11 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 - Think hard before the implementation
 
 ## Development Guidelines
-- If develop new agent from scratch, implement the run_job.js script to provide a backend-to-backend agent invocation
 - To add npm dependency to backend handlers, add it to onRequest.json and onResponse.json
 - To add npm dependency to the frontend, add it to contentRender.json
 - Valid values for the _meta_actions key are [] or ["REQUEST_CHAT_MODEL"].
 - Add and use npm dependencies only if necessary, some of those shown in the examples are purely demonstrative
+- If implementing new agent, generate run_job.js script similar to the examples to provide the user quick job execution via API
 
 ### Backend
 The OpenKBS backend framework is for developing AI agents with custom tools, using Node.js. It integrates with chat services via `onRequest` and `onResponse` handlers for custom actions and service integration.
