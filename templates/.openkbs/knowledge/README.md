@@ -55,3 +55,6 @@ The OpenKBS frontend framework, built with React and MUI, offers a flexible plat
 The `contentRender.js` file is central to frontend customization, exporting key functions for interface adjustments.
 - **`onRenderChatMessage(params)`:** function called every time a chat message is rendered.
 
+#### OpenKBS commands
+`openkbs push` - deploy the agent to openkbs cloud
+`openkbs create my-agent` - creates a directory structure for a new agent
