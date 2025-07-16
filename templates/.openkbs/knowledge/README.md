@@ -23,6 +23,9 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 - Avoid excessive experimentation.
 - Think hard before the implementation
 
+## Development Tips
+- When trying to parse JSON data in onRenderChatMessage, keep in mind that it may be mixed with free text from the agent, so implement extractJSONFromText function provided in the examples.
+
 ## Framework Documentation
 
 ### Directory Structure
