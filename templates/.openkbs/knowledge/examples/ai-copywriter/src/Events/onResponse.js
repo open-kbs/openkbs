@@ -24,10 +24,10 @@ export const handler = async (event) => {
         _meta_actions:
             (
                 event?.payload?.messages?.length > maxSelfInvokeMessagesCount ||
-                isJobFinished && (matchingActions.length === 1 || lastMessage.role === 'system')
+                isJobFinished && lastMessage.role === 'system'
             )
                 ? []
-                : ["REQUEST_CHAT_MODEL"]
+                : ["REQUEST_CHAT_MODEL"] // Important Flag: enables agent's post-response interaction
     }
 
     if (matchingActions.length > 0) {

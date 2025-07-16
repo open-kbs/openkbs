@@ -1,7 +1,9 @@
 # OpenKBS Agent Development Guidelines
 
 ## MANDATORY FIRST STEP
-Read the content of ALL files in `.openkbs/knowledge/examples/` directory and ALL subdirectories (without the images)
+**READ EVERY SINGLE FILE IN THE EXAMPLES FOLDER**
+
+Read the content of ALL files in `.openkbs/knowledge/examples/` directory and ALL subdirectories (without the icon.png)
 
 ## Development Flow
 
@@ -15,14 +17,8 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 ## Critical Rules
 
 - Never skip reading examples
-- Never guess framework methods - reference the examples and documentation below
+- Never guess framework methods - reference the examples
 - Study the complete working applications in examples to understand OpenKBS patterns
 
-## Other OpenKBS commands
-- `openkbs push` - deploy the agent to the cloud
-- `openkbs pull` - pull locally any agent changes from the cloud
-
-## OpenKBS Documentation
-
-### Available Models for (`settings.json`)
-`claude-sonnet-4-20250514`, `claude-3-5-haiku-20241022`, `gemini-2.5-pro`, `gpt-4o`
+### Available Models in (`settings.json`)
+`claude-sonnet-4-20250514`, `claude-3-5-haiku-20241022`, `gemini-2.5-pro`
