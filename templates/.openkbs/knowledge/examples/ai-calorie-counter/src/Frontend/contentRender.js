@@ -449,7 +449,7 @@ const Header = ({ setRenderSettings, indexedDB, itemsAPI, KB, setBlockingLoading
             disableMobileLeftButton: true,
             disableBalanceView: true,
             disableChatModelsSelect: true,
-            chatContainerHeight: window.innerHeight - 355,
+            chatContainerHeight: window.innerHeight - 355, // compensate for the height of the header content to avoid overlapping
         });
     }, [setRenderSettings]);
 
