@@ -14,12 +14,13 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
    - `./run_job.js` any files starting with "run"
 3. **Implement requested features using knowledge from examples**
 
-## Critical Rules
 
+## **Critical** Rules (**IMPORTANT**)
 - Never skip reading examples
 - Never guess framework methods, settings or variables — always reference the examples.
 - Study the complete working applications in examples to understand OpenKBS patterns
-
+- Example agents are thoroughly tested and offer stable UI and backend tools. You are encouraged to extend them or implement similar patterns. However, strive to adhere closely to or reuse implementations from the examples folder, as they are well-tested and reliable.
+- Avoid excessive experimentation.
 
 ## Framework Documentation
 
@@ -55,6 +56,18 @@ The framework's core uses `onRequest` and `onResponse` handlers as middleware fo
 - **`onResponse` Handler:** Activated after the LLM generates a message, enabling command extraction, and action execution.
 - **`onRequest` Handler:** Triggered on user message to allow the user to execute action
 
+#### NPM Dependencies for Backend Handlers
+
+1. If a file imports an NPM dependency and is then imported by a handler, this dependency must be defined in the handler's corresponding json file
+Example: If actions.js imports mysql2 and onResponse.js imports actions.js, then mysql2 must be in onResponse.json:
+{
+   "dependencies": {
+      "mysql2": "^3.14.2"
+   }
+}
+
+Similarly, we need to create onRequest.json for onRequest.js as each handler have separate Node.js build with separate dependencies
+   
 ### Frontend Overview
 The OpenKBS frontend framework, built with React, offers a flexible platform for custom chat interfaces. Developers can customize chat appearance and behavior via the `contentRender` module.
 
