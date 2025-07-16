@@ -23,7 +23,6 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 - Avoid excessive experimentation.
 - Think hard before the implementation
 
-
 ## Framework Documentation
 
 ### Directory Structure
