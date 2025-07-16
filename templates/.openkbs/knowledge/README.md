@@ -22,7 +22,7 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 - Think hard before the implementation
 
 ## Development Guidelines
-- Implement the run_job.js script to provide a backend-to-backend example of how to invoke an agent via the API
+- Implement the run_job.js script to provide a backend-to-backend agent invocation
 - To add npm dependency to backend handlers, add it to onRequest.json and onResponse.json
 - To add npm dependency to the frontend, add it to contentRender.json
 - Add and use npm dependencies only if necessary, some of those shown in the examples are purely demonstrative
