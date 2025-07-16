@@ -21,6 +21,8 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 - Study the complete working applications in examples to understand OpenKBS patterns
 - Example agents are thoroughly tested and offer stable UI and backend tools. You are encouraged to extend them or implement similar patterns. However, strive to adhere closely to or reuse implementations from the examples folder, as they are well-tested and reliable.
 - Avoid excessive experimentation.
+- Think hard before the implementation
+
 
 ## Framework Documentation
 
