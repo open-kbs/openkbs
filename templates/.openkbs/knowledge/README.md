@@ -17,5 +17,5 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 ## Critical Rules
 
 - Never skip reading examples
-- Never guess framework methods - reference the examples
+- Never guess framework methods, settings, variables, or any other components — always reference the examples.
 - Study the complete working applications in examples to understand OpenKBS patterns

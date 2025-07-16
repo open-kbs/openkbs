@@ -1,0 +1,69 @@
+{
+  "kbId": "1cewhs81naus",
+  "chatVendor": "anthropic",
+  "kbDescription": "AI Marketing Assistant",
+  "kbTitle": "AI Marketing Assistant",
+  "model": "gemini-2.5-pro-preview-03-25",
+  "inputTools": [
+    "speechToText"
+  ],
+  "embeddingModel": "text-embedding-3-large",
+  "embeddingDimension": 1536,
+  "searchEngine": "IndexedDB",
+  "itemTypes": {
+    "memoryRecord": {
+      "embeddingTemplate": "${item.title} ${item.content}",
+      "attributes": [
+        {
+          "unit": "",
+          "label": "title",
+          "placeholder": "title",
+          "encrypted": true,
+          "attrName": "title",
+          "attrType": "keyword1"
+        },
+        {
+          "unit": "",
+          "label": "content",
+          "placeholder": "content",
+          "encrypted": true,
+          "attrName": "content",
+          "attrType": "text1"
+        }
+      ]
+    },
+    "interview": {
+      "embeddingTemplate": "${item.content}",
+      "attributes": [
+        {
+          "unit": "",
+          "label": "itemId",
+          "placeholder": "itemId",
+          "encrypted": false,
+          "attrName": "itemId",
+          "attrType": "itemId"
+        },
+        {
+          "unit": "",
+          "label": "content",
+          "placeholder": "content",
+          "encrypted": true,
+          "attrName": "content",
+          "attrType": "text1"
+        }
+      ]
+    }
+  },
+  "userId": "public",
+  "appId": "c73f3a1g41c",
+  "active": true,
+  "category": "technology",
+  "requiredServices": [
+    {
+      "interface": "text-generation",
+      "type": "main-chat-model"
+    }
+  ],
+  "optionalServices": [],
+  "slug": "ai-marketing-assistant"
+}
