@@ -30,3 +30,31 @@ If the `_meta_actions` key is set to `["REQUEST_CHAT_MODEL"]`, it prompts the mo
 - Add and use npm dependencies only if necessary, some of those shown in the examples are purely demonstrative
 - Feel free to install new dependencies and integrate them into both the backend and frontend as needed.
 
+
+### Backend
+The OpenKBS backend framework is for developing AI agents with custom tools, using Node.js. It integrates with chat services via `onRequest` and `onResponse` handlers for custom actions and service integration.
+
+#### Backend Handlers
+The framework's core uses `onRequest` and `onResponse` handlers as middleware for message tool call parsing and execution.
+- **`onResponse` Handler:** Activated after the LLM generates a message, enabling command extraction, and action execution.
+- **`onRequest` Handler:** Triggered on user message to allow the user to execute action
+
+#### NPM Dependencies for onRequest.js or onResponse.js Backend Handlers
+1. If a file imports an NPM dependency and is then imported by onRequest.js or onResponse.js, this dependency must be defined in the handler's corresponding json file
+Example: If actions.js imports mysql2 and onResponse.js imports actions.js, then mysql2 must be in onResponse.json:
+{
+   "dependencies": {
+      "mysql2": "^3.14.2"
+   }
+}
+
+Similarly, we need to create onRequest.json for onRequest.js as each handler have separate Node.js build with separate dependencies
+
+
+### Frontend Overview
+The OpenKBS frontend framework, built with React and MUI, offers a flexible platform for custom chat interfaces. Developers can customize chat appearance and behavior via the `contentRender` module.
+
+#### contentRender
+The `contentRender.js` file is central to frontend customization, exporting key functions for interface adjustments.
+- **`onRenderChatMessage(params)`:** function called every time a chat message is rendered.
+
