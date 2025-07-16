@@ -19,7 +19,6 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 - Never skip reading examples
 - Study the complete working examples to understand OpenKBS patterns
 - Never guess framework methods, settings or variables — always reference the examples.
-- Think hard before the implementation
 
 ## Development Guidelines
 - To add npm dependency to backend handlers, add it to onRequest.json and onResponse.json
