@@ -19,6 +19,3 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 - Never skip reading examples
 - Never guess framework methods - reference the examples
 - Study the complete working applications in examples to understand OpenKBS patterns
-
-### Available Models in (`settings.json`)
-`claude-sonnet-4-20250514`, `claude-3-5-haiku-20241022`, `gemini-2.5-pro`
