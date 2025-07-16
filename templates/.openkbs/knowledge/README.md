@@ -62,7 +62,8 @@ The OpenKBS frontend framework, built with React, offers a flexible platform for
 
 The `contentRender.js` file is central to frontend customization, exporting key functions for interface adjustments.
 - **`onRenderChatMessage(params)`:** function called every time a chat message is rendered.
-This function should return a React component representing the rendered message. If function is not defined or return undefined, the default rendering mechanism is used.
+onRenderChatMessage should return a React component or string representing the rendered message.
+If function is not defined or return undefined, the default rendering mechanism is used.
 
 ### settings.json itemTypes
 
