@@ -1,8 +1,8 @@
 {
-  "chatVendor": "openai",
+  "chatVendor": "anthropic",
   "kbDescription": "{{{openkbsAppName}}}",
   "kbTitle": "{{{openkbsAppName}}}",
-  "model": "gpt-4o",
+  "model": "claude-sonnet-4-20250514",
   "inputTools": [
     "imageToText",
     "speechToText"
