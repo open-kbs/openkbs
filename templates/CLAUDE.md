@@ -8,13 +8,14 @@
 openkbs update knowledge
 ```
 
-**SECOND**: Please read every file located in the 'examples' folder:
-Read the content of ALL files in `.openkbs/knowledge/examples/` directory and ALL subdirectories (without the icon.png)
+**SECOND**: Read every file in the examples folder using the Read tool:
+- First discover all files in the `.openkbs/knowledge/examples/` directory and ALL subdirectories.
+- Then, use the Read tool to examine the content of EACH file individually (skip only icon.png files).
+- You must read ALL files directly
 
-**THIRD**: Read existing agent code:
-- `./app/` folder (settings, instructions, etc.)
-- `./src/` folder (all Events and Frontend files)
-- `./scripts/` folder (user run scripts including run_job.js)
+**THIRD**: Read existing agent code using the Read tool:
+- First discover all files in the `./app/`, `./src/`, and `./scripts/` folders.
+- Then, use the Read tool to examine each file individually
 
 # OpenKBS Agent Development Guidelines
 
