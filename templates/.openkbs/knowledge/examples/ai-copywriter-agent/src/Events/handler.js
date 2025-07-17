@@ -13,7 +13,7 @@ export const backendHandler = async (event) => {
         return acc;
     }, []);
 
-    // For Coding Agents: Add this logic to end the chat when a final system response is detected, to avoid unnecessary LLM reactions
+    // For Coding Agents: avoid unnecessary LLM reactions after job is finished
     const isJobFinished = /"JOB_COMPLETED"|"JOB_FAILED"/.test(lastMessage.content);
 
     const meta = {
