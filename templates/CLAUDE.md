@@ -1,7 +1,7 @@
 # Claude Code Instructions
 
 # MANDATORY FIRST STEPS
-**CRITICAL**: Before taking ANY action, implementing ANY feature, doing ANY planing or answering ANY question about this project, you must perform the following steps:
+**CRITICAL**: Before taking ANY action, implementing ANY feature, planing the implementation or answering ANY question about this project, you must perform the following steps:
 
 **FIRST**: Update the knowledge base:
 ```bash
@@ -15,7 +15,6 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 - `./app/` folder (settings, instructions, etc.)
 - `./src/` folder (all Events and Frontend files)
 - `./scripts/` folder (user run scripts including run_job.js)
-
 
 # OpenKBS Agent Development Guidelines
 
