@@ -1,28 +1,23 @@
 # Claude Code Instructions
 
 # MANDATORY FIRST STEPS
-**CRITICAL**: Before taking your first action, implementing ANY feature, or answering ANY question about this project:
+**CRITICAL**: Before taking ANY action, implementing ANY feature, doing ANY planing or answering ANY question about this project, you must perform the following steps:
+
 **FIRST**: Update the knowledge base:
 ```bash
 openkbs update knowledge
 ```
 
-# MANDATORY SECOND STEP
-**READ EVERY SINGLE FILE IN THE EXAMPLES FOLDER**
-
+**SECOND**: Please read every file located in the 'examples' folder:
 Read the content of ALL files in `.openkbs/knowledge/examples/` directory and ALL subdirectories (without the icon.png)
 
+**THIRD**: Read existing agent code:
+- `./app/` folder (settings, instructions, etc.)
+- `./src/` folder (all Events and Frontend files)
+- `./scripts/` folder (user run scripts including run_job.js)
+
+
 # OpenKBS Agent Development Guidelines
-
-## Development Flow
-
-1. **Read ALL example files first** to get familiar with OpenKBS framework for building AI agents
-2. **Read existing agent code:**
-   - `./app/` folder (settings, instructions, etc.)
-   - `./src/` folder (all Events and Frontend files)
-   - `./scripts/` folder (user run scripts including run_job.js)
-3. **Implement requested features using knowledge from examples**
-
 
 ## **Critical** Rules (**IMPORTANT**)
 - Never skip reading examples
