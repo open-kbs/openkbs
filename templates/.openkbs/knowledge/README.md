@@ -22,9 +22,9 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 
 ## Development Guidelines
 - To add npm dependency to backend handlers, add it to onRequest.json and onResponse.json
-- in src/Events and src/Frontend always use Imports (not Require)
+- In src/Events and src/Frontend always use Imports (not Require)
 - To add npm dependency to the frontend, add it to contentRender.json
-- Valid values for the _meta_actions key are [] or ["REQUEST_CHAT_MODEL"].
+- Valid values for the _meta_actions key are [] or ["REQUEST_CHAT_MODEL"]
 - Add and use npm dependencies only if necessary, some of those shown in the examples are purely demonstrative
 - If developing new agent, generate it's own ./scripts/run_job.js
 
