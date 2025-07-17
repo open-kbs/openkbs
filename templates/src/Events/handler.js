@@ -13,11 +13,17 @@ export const backendHandler = async (event) => {
         return acc;
     }, []);
 
+    // Avoid unnecessary LLM reactions if job is finished
+    const isJobFinished = /"JOB_COMPLETED"|"JOB_FAILED"/.test(lastMessage.content);
+
     const meta = {
         _meta_actions:
-            event?.payload?.messages?.length > maxSelfInvokeMessagesCount
-                ? [] // Ends the chat
-                : ["REQUEST_CHAT_MODEL"] // Triggers the LLM to react after the response
+            (
+                event?.payload?.messages?.length > maxSelfInvokeMessagesCount ||
+                isJobFinished && lastMessage.role === 'system'
+            )
+                ? []
+                : ["REQUEST_CHAT_MODEL"]
     }
 
     if (matchingActions.length > 0) {
