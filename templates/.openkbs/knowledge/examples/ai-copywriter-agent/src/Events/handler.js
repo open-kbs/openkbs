@@ -13,13 +13,14 @@ export const backendHandler = async (event) => {
         return acc;
     }, []);
 
+    // For Coding Agents: Add this logic to end the chat when a final system response is detected, to avoid unnecessary LLM reactions
     const isJobFinished = /"JOB_COMPLETED"|"JOB_FAILED"/.test(lastMessage.content);
 
     const meta = {
         _meta_actions:
             (
                 event?.payload?.messages?.length > maxSelfInvokeMessagesCount ||
-                isJobFinished && lastMessage.role === 'system' // make sure to end the chat is job is finished
+                isJobFinished && lastMessage.role === 'system'
             )
                 ? []
                 : ["REQUEST_CHAT_MODEL"]
