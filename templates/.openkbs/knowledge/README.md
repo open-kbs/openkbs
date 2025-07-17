@@ -32,7 +32,8 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 The OpenKBS backend framework is for developing AI agents with custom tools, using Node.js. It integrates with chat services via `onRequest` and `onResponse` handlers for custom actions and service integration.
 
 #### Backend Handlers
-The framework's core uses `onRequest` and `onResponse` handlers as middleware for message tool call parsing and execution.
+The OpenKBS framework's core uses `onRequest` and `onResponse` handlers as middleware for message tool call parsing and execution.
+All these event handlers are executed on-demand by the OpenKBS cloud platform, where user production agents are deployed.
 - **`onResponse` Handler:** Activated after the LLM generates a message, enabling command extraction, and action execution.
 - **`onRequest` Handler:** Triggered on user message to allow the user to execute action
 
@@ -48,7 +49,7 @@ Example: If actions.js imports mysql2 and onResponse.js imports actions.js, then
 Similarly, we need to create onRequest.json for onRequest.js as each handler have separate Node.js build with separate dependencies
 
 #### NPM Dependencies for User-Run Scripts
-Scripts outside `./src`, like `./run_job.js`, are run directly by users, not the OpenKBS platform.
+Scripts outside `./src`, like `./run_job.js`, are run directly by users, not the OpenKBS cloud platform.
 Add needed NPM dependencies to `package.json`.
 
 ### Frontend Overview
