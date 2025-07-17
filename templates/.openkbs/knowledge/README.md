@@ -11,7 +11,7 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 2. **Read existing agent code:**
    - `./app/` folder (settings, instructions, etc.)
    - `./src/` folder (all Events and Frontend files)
-   - `./run_job.js` any files starting with "run"
+   - `./scripts/` folder (user run scripts including run_job.js)
 3. **Implement requested features using knowledge from examples**
 
 
@@ -26,30 +26,57 @@ Read the content of ALL files in `.openkbs/knowledge/examples/` directory and AL
 - To add npm dependency to the frontend, add it to contentRender.json
 - Valid values for the _meta_actions key are [] or ["REQUEST_CHAT_MODEL"].
 - Add and use npm dependencies only if necessary, some of those shown in the examples are purely demonstrative
-- If developing new agent, search for run_job.js in the .openkbs/knowledge/examples folder, and generate the same script for the new agent (please follow the same logic)
+- If developing new agent, generate it's own ./scripts/run_job.js
+
+## Architecture Overview
+OpenKBS agents have **two execution environments**:
+
+### 1. Cloud Environment (`./src/`)
+- **Event handlers** (`onRequest.js`, `onResponse.js`) run on OpenKBS cloud platform
+- **Purpose**: Process user messages, execute AI actions, return responses
+- **Deployment**: Code is deployed via `openkbs push`
+
+### 2. Local Environment (`./scripts/`)
+- **User-run scripts** execute locally on user's machine
+- **Purpose**: Call cloud agents via API, orchestrate multi-agent workflows, integrate with external systems
+- **Execution**: Run directly with `node scripts/script-name.js`
 
 ### Backend
-The OpenKBS backend framework is for developing AI agents with custom tools, using Node.js. It integrates with chat services via `onRequest` and `onResponse` handlers for custom actions and service integration.
+The OpenKBS backend framework is for developing AI agents with custom tools, using Node.js. 
+It integrates with openkbs chat service via `onRequest` and `onResponse` handlers for custom actions and service integration.
 
 #### Backend Handlers
 The OpenKBS framework's core uses `onRequest` and `onResponse` handlers as middleware for message tool call parsing and execution.
-All these event handlers are executed on-demand by the OpenKBS cloud platform, where user production agents are deployed.
+All these event handlers are executed on-demand (upon API request) by the OpenKBS cloud platform, where user production agents are deployed.
 - **`onResponse` Handler:** Activated after the LLM generates a message, enabling command extraction, and action execution.
 - **`onRequest` Handler:** Triggered on user message to allow the user to execute action
 
 #### NPM Dependencies for onRequest.js or onResponse.js Backend Handlers
 1. If a file imports an NPM dependency and is then imported by onRequest.js or onResponse.js, this dependency must be defined in the handler's corresponding json file
-Example: If actions.js imports mysql2 and onResponse.js imports actions.js, then mysql2 must be in onResponse.json:
-{
-   "dependencies": {
+   Example: If actions.js imports mysql2 and onResponse.js imports actions.js, then mysql2 must be in onResponse.json:
+   {
+      "dependencies": {
       "mysql2": "^3.14.2"
+      }
    }
-}
 
 Similarly, we need to create onRequest.json for onRequest.js as each handler have separate Node.js build with separate dependencies
 
+#### User-Run Scripts
+**User-run scripts** are located in `./scripts/` folder and communicate with cloud agents via API calls.
+
+**Key Components:**
+- `scripts/run_job.js` - Main job runner for calling the cloud agent
+- `scripts/utils/agent_client.js` - Shared utility using `OpenKBSAgentClient` class
+- Custom workflow scripts for multi-agent orchestration
+
+**Architecture:**
+- Scripts use `OpenKBSAgentClient` to communicate with deployed cloud agents
+- **Path Resolution**: Automatically finds `app/settings.json` and `.openkbs/secrets.json` by walking up directories
+- **Usage**: `const client = new OpenKBSAgentClient(); await client.runJob(message);`
+- **Multi-agent support**: Each agent (base or related) finds its own settings and secrets in its directory structure
+
 #### NPM Dependencies for User-Run Scripts
-Scripts outside `./src`, like `./run_job.js`, are run directly by users, not the OpenKBS cloud platform.
 Add needed NPM dependencies to `package.json`.
 
 ### Frontend Overview
@@ -62,3 +89,13 @@ The `contentRender.js` file is central to frontend customization, exporting key 
 #### OpenKBS commands
 `openkbs push` - deploy the agent to openkbs cloud
 `openkbs create my-agent` - creates a directory structure for a new agent
+
+### Creating Related Agents
+To create related agents that work alongside the main agent:
+
+1. **Create in related-agents/ folder**: `cd related-agents && openkbs create agent-name`
+2. **Each related agent gets**: Own `app/settings.json`, `src/` folder, and `.openkbs/secrets.json`
+3. **Script usage**: Related agents use same `OpenKBSAgentClient` - it automatically finds their settings and secrets
+4. **Multi-agent workflows**: Scripts can orchestrate multiple agents by creating separate client instances
+
+Related agents are independent but can share the base agent's script utilities.
