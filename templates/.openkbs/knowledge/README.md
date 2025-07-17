@@ -47,6 +47,9 @@ Example: If actions.js imports mysql2 and onResponse.js imports actions.js, then
 
 Similarly, we need to create onRequest.json for onRequest.js as each handler have separate Node.js build with separate dependencies
 
+#### NPM Dependencies for External Scripts
+Scripts outside the `./src` folder, such as `./run_job.js`, aren't executed by the OpenKBS cloud platform. 
+Add any required NPM dependencies for these scripts directly to `package.json`.
 
 ### Frontend Overview
 The OpenKBS frontend framework, built with React and MUI, offers a flexible platform for custom chat interfaces. Developers can customize chat appearance and behavior via the `contentRender` module.
