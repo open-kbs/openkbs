@@ -31,6 +31,7 @@ openkbs update knowledge
 - Valid values for the _meta_actions key are [] or ["REQUEST_CHAT_MODEL"]
 - Add and use npm dependencies only if necessary, some of those shown in the examples are purely demonstrative
 - If developing new agent, generate it's own ./scripts/run_job.js
+- Before using third-party services in onRequest and onResponse handlers, ask the user for permission
 
 ## Architecture Overview
 OpenKBS agents have **two execution environments**:
@@ -65,6 +66,9 @@ All these event handlers are executed on-demand (upon API request) by the OpenKB
    }
 
 Similarly, we need to create onRequest.json for onRequest.js as each handler have separate Node.js build with separate dependencies
+
+#### Managing Secrets
+To securely manage sensitive information like API keys or database passwords within your backend event handlers (onRequest, onResponse, etc.), use the {{secrets.your_secret_name}} syntax.
 
 #### User-Run Scripts
 **User-run scripts** are located in `./scripts/` folder and communicate with cloud agents via API calls.
