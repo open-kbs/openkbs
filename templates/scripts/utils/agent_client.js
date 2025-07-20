@@ -67,7 +67,17 @@ class OpenKBSAgentClient {
                 resolve(key);
             });
 
-            rl._writeToOutput = (str) => rl.output.write(rl.line ? "*" : str);
+            rl._writeToOutput = (str) => {
+                if (str === '\n' || str === '\r\n') {
+                    rl.output.write(str);
+                } else if (str.match(/[\x08\x7f]/)) {
+                    rl.output.write(str);
+                } else if (rl.line && str.length === 1) {
+                    rl.output.write('*');
+                } else {
+                    rl.output.write(str);
+                }
+            };
         });
     }
 
