@@ -668,14 +668,14 @@ async function downloadClaudeMdFromS3(claudeMdPath, s3Client, bucket) {
         const fileContent = await response.Body.transformToByteArray();
         await fs.writeFile(claudeMdPath, fileContent);
         
-        // console.log('Downloaded: CLAUDE.md');
+        console.log('Downloaded: CLAUDE.md');
         
     } catch (error) {
         if (error.name === 'NoSuchKey') {
             console.yellow('CLAUDE.md not found in remote repository, skipping...');
         } else {
             console.red('Error downloading CLAUDE.md from S3:', error.message);
-            throw error;
+            // Don't throw the error, just log it and continue
         }
     }
 }
