@@ -542,6 +542,7 @@ async function updateKnowledgeAction() {
     try {
         const knowledgeDir = path.join(process.cwd(), '.openkbs', 'knowledge');
         const metadataPath = path.join(knowledgeDir, 'metadata.json');
+        const claudeMdPath = path.join(process.cwd(), 'CLAUDE.md');
         
         // Check if .openkbs/knowledge directory exists
         if (!fs.existsSync(knowledgeDir)) {
@@ -593,7 +594,10 @@ async function updateKnowledgeAction() {
         // Download updated knowledge files from S3
         await downloadKnowledgeFromS3(knowledgeDir);
         
-        console.green('Knowledge base updated successfully!');
+        // Download CLAUDE.md file from S3
+        await downloadClaudeMdFromS3(claudeMdPath, s3Client, bucket);
+        
+        console.green('Knowledge base and CLAUDE.md updated successfully!');
         
     } catch (error) {
         console.red('Error updating knowledge base:', error.message);
@@ -648,6 +652,31 @@ async function downloadKnowledgeFromS3(targetDir) {
     } catch (error) {
         console.red('Error downloading knowledge files from S3:', error.message);
         throw error;
+    }
+}
+
+async function downloadClaudeMdFromS3(claudeMdPath, s3Client, bucket) {
+    const claudeMdKey = 'templates/CLAUDE.md';
+    
+    try {
+        // Download CLAUDE.md file from S3
+        const response = await s3Client.send(new GetObjectCommand({
+            Bucket: bucket,
+            Key: claudeMdKey
+        }));
+        
+        const fileContent = await response.Body.transformToByteArray();
+        await fs.writeFile(claudeMdPath, fileContent);
+        
+        // console.log('Downloaded: CLAUDE.md');
+        
+    } catch (error) {
+        if (error.name === 'NoSuchKey') {
+            console.yellow('CLAUDE.md not found in remote repository, skipping...');
+        } else {
+            console.red('Error downloading CLAUDE.md from S3:', error.message);
+            throw error;
+        }
     }
 }
 
