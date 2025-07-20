@@ -595,9 +595,9 @@ async function updateKnowledgeAction() {
         await downloadKnowledgeFromS3(knowledgeDir);
         
         // Download CLAUDE.md file from S3
-        await downloadClaudeMdFromS3(claudeMdPath, s3Client, bucket);
+        await downloadClaudeMdFromS3(claudeMdPath);
         
-        console.green('Knowledge base and CLAUDE.md updated successfully!');
+        console.green('Knowledge base updated successfully!');
         
     } catch (error) {
         console.red('Error updating knowledge base:', error.message);
@@ -655,7 +655,10 @@ async function downloadKnowledgeFromS3(targetDir) {
     }
 }
 
-async function downloadClaudeMdFromS3(claudeMdPath, s3Client, bucket) {
+async function downloadClaudeMdFromS3(claudeMdPath) {
+    const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+    const s3Client = new S3Client({ region: 'us-east-1' });
+    const bucket = 'openkbs-downloads';
     const claudeMdKey = 'templates/CLAUDE.md';
     
     try {
@@ -674,8 +677,8 @@ async function downloadClaudeMdFromS3(claudeMdPath, s3Client, bucket) {
         if (error.name === 'NoSuchKey') {
             console.yellow('CLAUDE.md not found in remote repository, skipping...');
         } else {
-            console.red('Error downloading CLAUDE.md from S3:', error.message);
-            // Don't throw the error, just log it and continue
+            console.red('Error downloading CLAUDE.md:', error.message);
+            throw error;
         }
     }
 }
