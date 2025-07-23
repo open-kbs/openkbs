@@ -1,6 +1,6 @@
 {
   "name": "openkbs",
-  "version": "0.0.44",
+  "version": "0.0.45",
   "description": "OpenKBS - Command Line Interface",
   "main": "src/index.js",
   "scripts": {
@@ -10,7 +10,8 @@
     "deploy:macos": "aws s3 cp build/openkbs-macos-arm64 s3://openkbs-downloads/cli/macos/openkbs && aws s3 cp build/openkbs-macos-x64 s3://openkbs-downloads/cli/macos/openkbs-x64",
     "deploy:win": "aws s3 cp build/openkbs-win-x64.exe s3://openkbs-downloads/cli/windows/openkbs.exe && aws s3 cp build/openkbs-win-arm64.exe s3://openkbs-downloads/cli/windows/openkbs-arm64.exe",
     "deploy:templates": "node scripts/deploy-templates.js",
-    "postinstall": "node src/install.js"
+    "postinstall": "node src/install.js",
+    "postupdate": "node src/install.js"
   },
   "bin": {
     "openkbs": "src/index.js"
