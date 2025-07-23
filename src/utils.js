@@ -1047,28 +1047,34 @@ async function downloadTemplates() {
 }
 
 async function downloadTemplatesFromS3(targetDir) {
-    const s3Client = new S3Client({ 
-        region: 'us-east-1',
-        credentials: false
-    });
-    const { ListObjectsV2Command, GetObjectCommand } = require('@aws-sdk/client-s3');
+    const https = require('https');
     
     const bucket = 'openkbs-downloads';
     const prefix = 'templates/';
+    const baseUrl = `https://${bucket}.s3.amazonaws.com`;
     
-    // List all objects in templates folder
-    const listResponse = await s3Client.send(new ListObjectsV2Command({
-        Bucket: bucket,
-        Prefix: prefix
-    }));
+    // List all objects in templates folder using S3 REST API
+    const listUrl = `${baseUrl}/?list-type=2&prefix=${prefix}`;
+    
+    const listXml = await new Promise((resolve, reject) => {
+        https.get(listUrl, (res) => {
+            let data = '';
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => resolve(data));
+        }).on('error', reject);
+    });
+    
+    // Parse XML to extract object keys
+    const keyMatches = listXml.match(/<Key>([^<]+)<\/Key>/g) || [];
+
+    const keys = keyMatches.map(match => match.replace(/<\/?Key>/g, ''));
     
     // Download all files in parallel
-    const downloadPromises = (listResponse.Contents || []).map(async (obj) => {
-        const key = obj.Key;
+    const downloadPromises = keys.map(async (key) => {
         const relativePath = key.substring(prefix.length);
         
         // Skip if it's a directory marker
-        if (relativePath.endsWith('/')) return;
+        if (relativePath.endsWith('/') || !relativePath) return;
         
         const localPath = path.join(targetDir, relativePath);
         
@@ -1076,12 +1082,15 @@ async function downloadTemplatesFromS3(targetDir) {
         await fs.ensureDir(path.dirname(localPath));
         
         // Download file
-        const response = await s3Client.send(new GetObjectCommand({
-            Bucket: bucket,
-            Key: key
-        }));
+        const fileUrl = `${baseUrl}/${key}`;
+        const fileContent = await new Promise((resolve, reject) => {
+            https.get(fileUrl, (res) => {
+                const chunks = [];
+                res.on('data', (chunk) => chunks.push(chunk));
+                res.on('end', () => resolve(Buffer.concat(chunks)));
+            }).on('error', reject);
+        });
         
-        const fileContent = await streamToBuffer(response.Body);
         await fs.writeFile(localPath, fileContent);
     });
     

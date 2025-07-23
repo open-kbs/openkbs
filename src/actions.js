@@ -563,19 +563,21 @@ async function updateKnowledgeAction() {
         }
         
         // Check remote version from S3
-        const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
-        const s3Client = new S3Client({ region: 'us-east-1' });
+        const https = require('https');
         const bucket = 'openkbs-downloads';
         const remoteMetadataKey = 'templates/.openkbs/knowledge/metadata.json';
         
         let remoteVersion = null;
         try {
-            const response = await s3Client.send(new GetObjectCommand({
-                Bucket: bucket,
-                Key: remoteMetadataKey
-            }));
+            const fileUrl = `https://${bucket}.s3.amazonaws.com/${remoteMetadataKey}`;
+            const remoteMetadataContent = await new Promise((resolve, reject) => {
+                https.get(fileUrl, (res) => {
+                    let data = '';
+                    res.on('data', (chunk) => data += chunk);
+                    res.on('end', () => resolve(data));
+                }).on('error', reject);
+            });
             
-            const remoteMetadataContent = await response.Body.transformToString();
             const remoteMetadata = JSON.parse(remoteMetadataContent);
             remoteVersion = remoteMetadata.version;
         } catch (error) {
@@ -605,26 +607,33 @@ async function updateKnowledgeAction() {
 }
 
 async function downloadKnowledgeFromS3(targetDir) {
-    const { S3Client, ListObjectsV2Command, GetObjectCommand } = require("@aws-sdk/client-s3");
-    const s3Client = new S3Client({ region: 'us-east-1' });
+    const https = require('https');
     const bucket = 'openkbs-downloads';
     const prefix = 'templates/.openkbs/knowledge/';
+    const baseUrl = `https://${bucket}.s3.amazonaws.com`;
     
     try {
         // List all objects in knowledge folder
-        const listResponse = await s3Client.send(new ListObjectsV2Command({
-            Bucket: bucket,
-            Prefix: prefix
-        }));
+        const listUrl = `${baseUrl}/?list-type=2&prefix=${prefix}`;
+        const listXml = await new Promise((resolve, reject) => {
+            https.get(listUrl, (res) => {
+                let data = '';
+                res.on('data', (chunk) => data += chunk);
+                res.on('end', () => resolve(data));
+            }).on('error', reject);
+        });
         
-        if (!listResponse.Contents || listResponse.Contents.length === 0) {
+        // Parse XML to extract object keys
+        const keyMatches = listXml.match(/<Key>([^<]+)<\/Key>/g) || [];
+        const keys = keyMatches.map(match => match.replace(/<\/?Key>/g, ''));
+        
+        if (keys.length === 0) {
             console.yellow('No knowledge files found in remote repository.');
             return;
         }
         
         // Download all files in parallel
-        const downloadPromises = listResponse.Contents.map(async (obj) => {
-            const key = obj.Key;
+        const downloadPromises = keys.map(async (key) => {
             const relativePath = key.substring(prefix.length);
             
             // Skip if it's a directory marker
@@ -636,12 +645,14 @@ async function downloadKnowledgeFromS3(targetDir) {
             await fs.ensureDir(path.dirname(localPath));
             
             // Download file
-            const response = await s3Client.send(new GetObjectCommand({
-                Bucket: bucket,
-                Key: key
-            }));
-            
-            const fileContent = await response.Body.transformToByteArray();
+            const fileUrl = `${baseUrl}/${key}`;
+            const fileContent = await new Promise((resolve, reject) => {
+                https.get(fileUrl, (res) => {
+                    const chunks = [];
+                    res.on('data', (chunk) => chunks.push(chunk));
+                    res.on('end', () => resolve(Buffer.concat(chunks)));
+                }).on('error', reject);
+            });
             await fs.writeFile(localPath, fileContent);
             
             console.log(`Downloaded: ${relativePath}`);
@@ -656,25 +667,31 @@ async function downloadKnowledgeFromS3(targetDir) {
 }
 
 async function downloadClaudeMdFromS3(claudeMdPath) {
-    const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
-    const s3Client = new S3Client({ region: 'us-east-1' });
+    const https = require('https');
     const bucket = 'openkbs-downloads';
     const claudeMdKey = 'templates/CLAUDE.md';
     
     try {
         // Download CLAUDE.md file from S3
-        const response = await s3Client.send(new GetObjectCommand({
-            Bucket: bucket,
-            Key: claudeMdKey
-        }));
+        const fileUrl = `https://${bucket}.s3.amazonaws.com/${claudeMdKey}`;
+        const fileContent = await new Promise((resolve, reject) => {
+            https.get(fileUrl, (res) => {
+                if (res.statusCode === 404) {
+                    reject(new Error('NoSuchKey'));
+                    return;
+                }
+                const chunks = [];
+                res.on('data', (chunk) => chunks.push(chunk));
+                res.on('end', () => resolve(Buffer.concat(chunks)));
+            }).on('error', reject);
+        });
         
-        const fileContent = await response.Body.transformToByteArray();
         await fs.writeFile(claudeMdPath, fileContent);
         
         console.log('Downloaded: CLAUDE.md');
         
     } catch (error) {
-        if (error.name === 'NoSuchKey') {
+        if (error.message === 'NoSuchKey') {
             console.yellow('CLAUDE.md not found in remote repository, skipping...');
         } else {
             console.red('Error downloading CLAUDE.md:', error.message);
