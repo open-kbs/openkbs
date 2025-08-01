@@ -13,7 +13,7 @@ const {
     deleteFileAction,
     describeAction, deployAction, createByTemplateAction, initByTemplateAction,
     logoutAction, installFrontendPackageAction, modifyAction, downloadModifyAction,
-    updateKnowledgeAction
+    updateKnowledgeAction, updateCliAction
 } = require('./actions');
 
 
@@ -155,11 +155,12 @@ This file will be automatically included when you run the 'openkbs modify' comma
 `);
 
 program
-    .command('update')
-    .argument('<target>', 'The target to update (currently supports: knowledge)')
-    .description('Update project components from remote repository')
+    .command('update [target]')
+    .description('Update OpenKBS CLI or project components from remote repository')
     .action((target) => {
-        if (target === 'knowledge') {
+        if (!target) {
+            updateCliAction();
+        } else if (target === 'knowledge') {
             updateKnowledgeAction();
         } else {
             console.error(`Unknown update target: ${target}. Currently supported: knowledge`);
@@ -168,10 +169,12 @@ program
     })
     .addHelpText('after', `
 Examples:
-  $ openkbs update knowledge
+  $ openkbs update
+  This will check for CLI updates and install them if available.
   
-This will check if your local .openkbs/knowledge directory is up to date with the remote repository
-and update it if necessary.
+  $ openkbs update knowledge
+  This will check if your local .openkbs/knowledge directory is up to date with the remote repository
+  and update it if necessary.
 `);
 
 program.parse(process.argv);

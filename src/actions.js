@@ -538,7 +538,7 @@ async function downloadModifyAction() {
     });
 }
 
-async function updateKnowledgeAction() {
+async function updateKnowledgeAction(silent = false) {
     try {
         const knowledgeDir = path.join(process.cwd(), '.openkbs', 'knowledge');
         const metadataPath = path.join(knowledgeDir, 'metadata.json');
@@ -546,7 +546,9 @@ async function updateKnowledgeAction() {
         
         // Check if .openkbs/knowledge directory exists
         if (!fs.existsSync(knowledgeDir)) {
-            console.red('Knowledge directory not found. Please ensure you are in an OpenKBS project directory.');
+            if (!silent) {
+                console.red('Knowledge directory not found. Please ensure you are in an OpenKBS project directory.');
+            }
             return;
         }
         
@@ -557,7 +559,9 @@ async function updateKnowledgeAction() {
                 const localMetadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
                 localVersion = localMetadata.version;
             } catch (error) {
-                console.red('Error reading local metadata.json:', error.message);
+                if (!silent) {
+                    console.red('Error reading local metadata.json:', error.message);
+                }
                 return;
             }
         }
@@ -581,7 +585,9 @@ async function updateKnowledgeAction() {
             const remoteMetadata = JSON.parse(remoteMetadataContent);
             remoteVersion = remoteMetadata.version;
         } catch (error) {
-            console.red('Error fetching remote metadata:', error.message);
+            if (!silent) {
+                console.red('Error fetching remote metadata:', error.message);
+            }
             return;
         }
         
@@ -602,8 +608,166 @@ async function updateKnowledgeAction() {
         console.green('Knowledge base updated successfully!');
         
     } catch (error) {
-        console.red('Error updating knowledge base:', error.message);
+        if (!silent) {
+            console.red('Error updating knowledge base:', error.message);
+        }
     }
+}
+
+async function updateCliAction() {
+    try {
+        const packageJson = require('../package.json');
+        const currentVersion = packageJson.version;
+        
+        console.log(`Current OpenKBS CLI version: ${currentVersion}`);
+        console.log('Checking for updates...');
+        
+        // Check remote version from S3
+        const https = require('https');
+        const bucket = 'openkbs-downloads';
+        const versionMetadataKey = 'cli/version.json';
+        
+        let remoteVersionData = null;
+        let cliUpdateAvailable = false;
+        
+        try {
+            const fileUrl = `https://${bucket}.s3.amazonaws.com/${versionMetadataKey}`;
+            const remoteVersionContent = await new Promise((resolve, reject) => {
+                https.get(fileUrl, (res) => {
+                    if (res.statusCode === 404) {
+                        reject(new Error('Version metadata not found on remote server'));
+                        return;
+                    }
+                    let data = '';
+                    res.on('data', (chunk) => data += chunk);
+                    res.on('end', () => resolve(data));
+                }).on('error', reject);
+            });
+            
+            remoteVersionData = JSON.parse(remoteVersionContent);
+            const remoteVersion = remoteVersionData.version;
+            
+            // Compare versions using semantic versioning
+            if (compareVersions(currentVersion, remoteVersion) < 0) {
+                cliUpdateAvailable = true;
+                console.log(`New CLI version available: ${remoteVersion}`);
+                console.log('Downloading and installing CLI update...');
+                
+                // Download and install the new binary
+                await downloadAndInstallCli();
+                
+                console.green(`Successfully updated OpenKBS CLI to version ${remoteVersion}!`);
+            } else {
+                console.green('OpenKBS CLI is already up to date.');
+            }
+        } catch (error) {
+            console.red('Error fetching CLI version metadata:', error.message);
+        }
+        
+        // Also update knowledge base silently if it exists
+        await updateKnowledgeAction(true);
+        
+        if (cliUpdateAvailable) {
+            console.log('Please restart your terminal or run `source ~/.bashrc` to use the updated CLI version.');
+        }
+        
+    } catch (error) {
+        console.red('Error updating CLI:', error.message);
+    }
+}
+
+function compareVersions(version1, version2) {
+    const parts1 = version1.split('.').map(Number);
+    const parts2 = version2.split('.').map(Number);
+    
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const part1 = parts1[i] || 0;
+        const part2 = parts2[i] || 0;
+        
+        if (part1 > part2) return 1;
+        if (part1 < part2) return -1;
+    }
+    
+    return 0;
+}
+
+async function downloadAndInstallCli() {
+    const platform = os.platform();
+    const arch = os.arch();
+    let url = '';
+    
+    if (platform === 'linux' && arch === 'x64') {
+        url = 'https://downloads.openkbs.com/cli/linux/openkbs';
+    } else if (platform === 'darwin' && arch === 'arm64') {
+        url = 'https://downloads.openkbs.com/cli/macos/openkbs';
+    } else if (platform === 'darwin' && arch === 'x64') {
+        url = 'https://downloads.openkbs.com/cli/macos/openkbs-x64';
+    } else if (platform === 'win32' && arch === 'x64') {
+        url = 'https://downloads.openkbs.com/cli/windows/openkbs.exe';
+    } else if (platform === 'win32' && arch === 'arm64') {
+        url = 'https://downloads.openkbs.com/cli/windows/openkbs-arm64.exe';
+    } else if (platform === 'linux' && arch === 'arm64') {
+        url = 'https://downloads.openkbs.com/cli/linux/openkbs-arm64';
+    } else {
+        throw new Error(`Unsupported platform: ${platform} ${arch}`);
+    }
+    
+    const tempPath = path.join(os.tmpdir(), 'openkbs-update');
+    
+    return new Promise((resolve, reject) => {
+        const file = fs.createWriteStream(tempPath);
+        
+        https.get(url, (response) => {
+            if (response.statusCode !== 200) {
+                reject(new Error(`Failed to download binary: HTTP ${response.statusCode}`));
+                return;
+            }
+            
+            response.pipe(file);
+            
+            file.on('finish', () => {
+                file.close(async () => {
+                    try {
+                        // Make executable
+                        if (platform !== 'win32') {
+                            fs.chmodSync(tempPath, '755');
+                        }
+                        
+                        // Find the current binary location
+                        const currentBinaryPath = process.argv[0] === 'node' ? process.argv[1] : process.argv[0];
+                        let targetPath;
+                        
+                        // If we're running through npm, find the global bin path
+                        if (currentBinaryPath.includes('node_modules')) {
+                            targetPath = currentBinaryPath;
+                        } else {
+                            // Try to find in common global locations
+                            const globalPaths = [
+                                '/usr/local/bin/openkbs',
+                                path.join(os.homedir(), '.npm-global', 'bin', 'openkbs'),
+                                path.join(os.homedir(), '.yarn', 'bin', 'openkbs')
+                            ];
+                            
+                            targetPath = globalPaths.find(p => fs.existsSync(p)) || currentBinaryPath;
+                        }
+                        
+                        // Replace the binary
+                        fs.copyFileSync(tempPath, targetPath);
+                        
+                        // Clean up temp file
+                        fs.unlinkSync(tempPath);
+                        
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            });
+        }).on('error', (err) => {
+            fs.unlink(tempPath, () => {});
+            reject(err);
+        });
+    });
 }
 
 async function downloadKnowledgeFromS3(targetDir) {
@@ -717,5 +881,6 @@ module.exports = {
     installFrontendPackageAction,
     modifyAction,
     downloadModifyAction,
-    updateKnowledgeAction
+    updateKnowledgeAction,
+    updateCliAction
 };

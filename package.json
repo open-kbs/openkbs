@@ -5,11 +5,12 @@
   "main": "src/index.js",
   "scripts": {
     "build": "pkg .",
-    "deploy": "npm run build && npm run deploy:linux && npm run deploy:macos && npm run deploy:win && npm run deploy:templates",
+    "deploy": "npm run build && npm run deploy:linux && npm run deploy:macos && npm run deploy:win && npm run deploy:templates && npm run deploy:version",
     "deploy:linux": "aws s3 cp build/openkbs-linux-x64 s3://openkbs-downloads/cli/linux/openkbs && aws s3 cp build/openkbs-linux-arm64 s3://openkbs-downloads/cli/linux/openkbs-arm64",
     "deploy:macos": "aws s3 cp build/openkbs-macos-arm64 s3://openkbs-downloads/cli/macos/openkbs && aws s3 cp build/openkbs-macos-x64 s3://openkbs-downloads/cli/macos/openkbs-x64",
     "deploy:win": "aws s3 cp build/openkbs-win-x64.exe s3://openkbs-downloads/cli/windows/openkbs.exe && aws s3 cp build/openkbs-win-arm64.exe s3://openkbs-downloads/cli/windows/openkbs-arm64.exe",
     "deploy:templates": "node scripts/deploy-templates.js",
+    "deploy:version": "node scripts/update-version.js && aws s3 cp version.json s3://openkbs-downloads/cli/version.json",
     "postinstall": "node src/install.js",
     "postupdate": "node src/install.js"
   },
