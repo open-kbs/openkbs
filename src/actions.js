@@ -651,12 +651,19 @@ async function updateCliAction() {
             if (compareVersions(currentVersion, remoteVersion) < 0) {
                 cliUpdateAvailable = true;
                 console.log(`New CLI version available: ${remoteVersion}`);
-                console.log('Downloading and installing CLI update...');
+                console.log('Updating automatically...');
                 
-                // Download and install the new binary
-                await downloadAndInstallCli();
+                // Spawn npm update as detached child process
+                const { spawn } = require('child_process');
+                const updateProcess = spawn('npm', ['update', '-g', 'openkbs'], {
+                    detached: true,
+                    stdio: 'inherit'
+                });
                 
-                console.green(`Successfully updated OpenKBS CLI to version ${remoteVersion}!`);
+                updateProcess.unref(); // Allow parent to exit
+                
+                console.green(`Update started! OpenKBS CLI will be updated to version ${remoteVersion}.`);
+                console.log('The update will complete in the background.');
             } else {
                 console.green('OpenKBS CLI is already up to date.');
             }
@@ -666,10 +673,6 @@ async function updateCliAction() {
         
         // Also update knowledge base silently if it exists
         await updateKnowledgeAction(true);
-        
-        if (cliUpdateAvailable) {
-            console.log('Please restart your terminal or run `source ~/.bashrc` to use the updated CLI version.');
-        }
         
     } catch (error) {
         console.red('Error updating CLI:', error.message);
@@ -691,84 +694,6 @@ function compareVersions(version1, version2) {
     return 0;
 }
 
-async function downloadAndInstallCli() {
-    const platform = os.platform();
-    const arch = os.arch();
-    let url = '';
-    
-    if (platform === 'linux' && arch === 'x64') {
-        url = 'https://downloads.openkbs.com/cli/linux/openkbs';
-    } else if (platform === 'darwin' && arch === 'arm64') {
-        url = 'https://downloads.openkbs.com/cli/macos/openkbs';
-    } else if (platform === 'darwin' && arch === 'x64') {
-        url = 'https://downloads.openkbs.com/cli/macos/openkbs-x64';
-    } else if (platform === 'win32' && arch === 'x64') {
-        url = 'https://downloads.openkbs.com/cli/windows/openkbs.exe';
-    } else if (platform === 'win32' && arch === 'arm64') {
-        url = 'https://downloads.openkbs.com/cli/windows/openkbs-arm64.exe';
-    } else if (platform === 'linux' && arch === 'arm64') {
-        url = 'https://downloads.openkbs.com/cli/linux/openkbs-arm64';
-    } else {
-        throw new Error(`Unsupported platform: ${platform} ${arch}`);
-    }
-    
-    const tempPath = path.join(os.tmpdir(), 'openkbs-update');
-    
-    return new Promise((resolve, reject) => {
-        const file = fs.createWriteStream(tempPath);
-        
-        https.get(url, (response) => {
-            if (response.statusCode !== 200) {
-                reject(new Error(`Failed to download binary: HTTP ${response.statusCode}`));
-                return;
-            }
-            
-            response.pipe(file);
-            
-            file.on('finish', () => {
-                file.close(async () => {
-                    try {
-                        // Make executable
-                        if (platform !== 'win32') {
-                            fs.chmodSync(tempPath, '755');
-                        }
-                        
-                        // Find the current binary location
-                        const currentBinaryPath = process.argv[0] === 'node' ? process.argv[1] : process.argv[0];
-                        let targetPath;
-                        
-                        // If we're running through npm, find the global bin path
-                        if (currentBinaryPath.includes('node_modules')) {
-                            targetPath = currentBinaryPath;
-                        } else {
-                            // Try to find in common global locations
-                            const globalPaths = [
-                                '/usr/local/bin/openkbs',
-                                path.join(os.homedir(), '.npm-global', 'bin', 'openkbs'),
-                                path.join(os.homedir(), '.yarn', 'bin', 'openkbs')
-                            ];
-                            
-                            targetPath = globalPaths.find(p => fs.existsSync(p)) || currentBinaryPath;
-                        }
-                        
-                        // Replace the binary
-                        fs.copyFileSync(tempPath, targetPath);
-                        
-                        // Clean up temp file
-                        fs.unlinkSync(tempPath);
-                        
-                        resolve();
-                    } catch (error) {
-                        reject(error);
-                    }
-                });
-            });
-        }).on('error', (err) => {
-            fs.unlink(tempPath, () => {});
-            reject(err);
-        });
-    });
-}
 
 async function downloadKnowledgeFromS3(targetDir) {
     const https = require('https');
