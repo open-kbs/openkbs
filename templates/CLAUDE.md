@@ -5,7 +5,7 @@
 
 **FIRST**: Update the knowledge base:
 ```bash
-openkbs update knowledge
+openkbs update
 ```
 
 **SECOND**: Read every file in the examples folder using the Read tool:
