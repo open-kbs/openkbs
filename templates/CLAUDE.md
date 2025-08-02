@@ -9,8 +9,8 @@ openkbs update
 ```
 
 **SECOND**: Read every single file in the examples folder using the Read tool:
-- First list all files (every single file) in the `.openkbs/knowledge/examples/` directory and ALL subdirectories.
-- Then, use the Read tool to examine the content of every file individually (skip only icon.png files).
+- First discover all files in the `.openkbs/knowledge/examples/` directory and ALL subdirectories.
+- Then, use the Read tool to examine the content of EACH file individually (skip only icon.png files).
 - You must read ALL files directly
 
 **THIRD**: Read existing agent code using the Read tool:
