@@ -51,8 +51,8 @@ The OpenKBS backend framework is for developing AI agents with custom tools, usi
 It integrates with openkbs chat service via `onRequest` and `onResponse` handlers for custom actions and service integration.
 
 #### Backend Handlers
-The OpenKBS framework's core uses `onRequest` and `onResponse` handlers as middleware for message tool call parsing and execution.
-All these event handlers are executed on-demand (upon API request) by the OpenKBS cloud platform, where user production agents are deployed.
+The OpenKBS framework's core uses `onRequest` and `onResponse` handlers as middleware for message tool call parsing and execution. 
+These handlers run in the cloud environment, which means they cannot connect to localhost services without a public IP.
 - **`onResponse` Handler:** Activated after the LLM generates a message, enabling command extraction, and action execution.
 - **`onRequest` Handler:** Triggered on user message to allow the user to execute action
 
@@ -67,11 +67,25 @@ All these event handlers are executed on-demand (upon API request) by the OpenKB
 
 Similarly, we need to create onRequest.json for onRequest.js as each handler have separate Node.js build with separate dependencies
 
-#### Managing Secrets
-To securely manage sensitive information like API keys or database passwords within your backend event handlers (onRequest, onResponse, etc.), use the {{secrets.your_secret_name}} syntax.
+#### Managing Secrets for Backend Handlers
+Secrets securely store credentials that allow Backend Handlers to access external services like databases, APIs, etc.
+Use {{secrets.SECRET_NAME}} syntax to reference them in the backend code securely.
+
+**Workflow**:
+1. Write code using {{secrets.SECRET_NAME}} placeholders
+2. Deploy agent with `openkbs push` (generates kbId in settings.json)
+3. Prompt developer to define secrets: `Please set your credentials at: https://[kbId].apps.openkbs.com/?add_secrets=SECRET_NAME1,SECRET_NAME2`
+
+**Example**: For MySQL connection requiring {{secrets.DB_HOST}}, {{secrets.DB_USER}}, {{secrets.DB_PASS}}:
+`Please define your database credentials: https://[kbId].apps.openkbs.com/?add_secrets=DB_HOST,DB_USER,DB_PASS`
+
+**Important**
+Secrets syntax above is only applicable for all src/Events/* files, and NOT for User-Run Scripts
 
 #### User-Run Scripts
-**User-run scripts** are located in `./scripts/` folder and communicate with cloud agents via API calls.
+User-run scripts are located in the `./scripts/` folder and communicate with cloud agents via API calls. 
+They execute locally, receiving the final result of the agent's flow as an API response. 
+This setup allows seamless interaction with local services, such as a MySQL database, directly on the user's machine.
 
 **Key Components:**
 - `scripts/run_job.js` - Main job runner for calling the cloud agent
@@ -103,7 +117,7 @@ To create related agents that work alongside the main agent:
 
 1. **Create in related-agents/ folder**: `cd related-agents && openkbs create agent-name`
 2. **Each related agent gets**: Own `app/settings.json`, `src/` folder, and `.openkbs/secrets.json`
-3. **Script usage**: Related agents use same `OpenKBSAgentClient` - it automatically finds their settings and secrets
+3. **Script usage**: Related agents use their own `agent_client.js` located in their subdirectory, ensuring they access their own settings and secrets file.
 4. **Multi-agent workflows**: Scripts can orchestrate multiple agents by creating separate client instances
 
 Related agents are independent but can share the base agent's script utilities.
