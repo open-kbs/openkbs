@@ -8,9 +8,7 @@
   "license": "MIT",
   "scripts": {
     "postinstall": "npm install openkbs-ui@0",
-    "start": "node index.js",
-    "chat": "cd node_modules/openkbs-chat && npm start",
-    "code": "KB_DIR=$(pwd) && cd node_modules/openkbs-code && KB_DIR=$KB_DIR npm start"
+    "start": "node index.js"
   },
   "dependencies": {
     "@emotion/react": "^11.10.6",
