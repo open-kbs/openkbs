@@ -2,5 +2,5 @@
   "chatVendor": "anthropic",
   "kbDescription": "An autonomous AI powerhouse for content generation",
   "kbTitle": "Copywriter",
-  "model": "claude-3-5-haiku-20241022"
+  "model": "claude-sonnet-4-20250514"
 }

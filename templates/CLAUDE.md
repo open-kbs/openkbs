@@ -127,17 +127,22 @@ Related agents are independent but can share the base agent's script utilities.
 ## Agent Workflow Patterns
 
 ### Pattern 1: Result-Based Integration (Cloud → Local)
-**Architecture**: Cloud agent performs autonomous research/processing → Returns structured data → Local script handles infrastructure operations
+**Architecture**: User-run script calls cloud agent → Agent performs autonomous research/processing → Returns structured data → Script handles local infrastructure operations
 
 **Use Cases**:
-- Local database operations (no need to store credentials in OpenKBS cloud)
+- Local system operations (no need to store credentials in OpenKBS cloud)
 - On-premises system integration
-- Sensitive data that must remain local
 - Post-processing workflows requiring local resources
+- Database-driven queries where script fetches context first
 
 **Technical Flow**:
 ```
-Cloud Agent → Process & Return JSON → User Script → Local Infrastructure
+User Script → Cloud Agent → Process & Return JSON → Local Infrastructure
+```
+
+**Variation - Database-Driven Query**:
+```
+User Script → Query Local/On-premises DB → Compose Agent Request → Cloud Agent → Process → Store Result in Local DB
 ```
 
 ### Pattern 2: Tool-Based Integration (Cloud ↔ External Services)
