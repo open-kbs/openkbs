@@ -101,7 +101,7 @@ To handle secrets in user-defined scripts, define them in a `.env` file and load
 
 #### NPM Dependencies for User-Run Scripts
 Add needed NPM dependencies to `package.json`
-Use `npm i` to install
+Run `npm install` before executing scripts.
 
 ### Frontend Overview
 The OpenKBS frontend framework, built with React and MUI, offers a flexible platform for custom chat interfaces. Developers can customize chat appearance and behavior via the `contentRender` module.
