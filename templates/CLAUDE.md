@@ -51,7 +51,7 @@ The OpenKBS backend framework is for developing AI agents with custom tools, usi
 It integrates with openkbs chat service via `onRequest` and `onResponse` handlers for custom actions and service integration.
 
 #### Backend Handlers
-The OpenKBS framework's core uses `onRequest` and `onResponse` handlers as middleware for message tool call parsing and execution. 
+The OpenKBS framework's core uses `onRequest` and `onResponse` handlers as middleware for message tool call parsing and execution.
 These handlers run in the cloud environment, which means they cannot connect to localhost services without a public IP.
 - **`onResponse` Handler:** Activated after the LLM generates a message, enabling command extraction, and action execution.
 - **`onRequest` Handler:** Triggered on user message to allow the user to execute action
@@ -83,8 +83,8 @@ Use {{secrets.SECRET_NAME}} syntax to reference them in the backend code securel
 Secrets syntax above is only applicable for all src/Events/* files, and NOT for User-Run Scripts
 
 #### User-Run Scripts
-User-run scripts are located in the `./scripts/` folder and communicate with cloud agents via API calls. 
-They execute locally, receiving the final result of the agent's flow as an API response. 
+User-run scripts are located in the `./scripts/` folder and communicate with cloud agents via API calls.
+They execute locally, receiving the final result of the agent's flow as an API response.
 This setup allows seamless interaction with local services, such as a MySQL database, directly on the user's machine.
 To handle secrets in user-defined scripts, define them in a `.env` file and load them using the `dotenv` package.
 
@@ -123,3 +123,53 @@ To create related agents that work alongside the main agent:
 4. **Multi-agent workflows**: Scripts can orchestrate multiple agents by creating separate client instances
 
 Related agents are independent but can share the base agent's script utilities.
+
+## Agent Workflow Patterns
+
+### Pattern 1: Result-Based Integration (Cloud → Local)
+**Architecture**: Cloud agent performs autonomous research/processing → Returns structured data → Local script handles infrastructure operations
+
+**Use Cases**:
+- Local database operations (no need to store credentials in OpenKBS cloud)
+- On-premises system integration
+- Sensitive data that must remain local
+- Post-processing workflows requiring local resources
+
+**Technical Flow**:
+```
+Cloud Agent → Process & Return JSON → User Script → Local Infrastructure
+```
+
+### Pattern 2: Tool-Based Integration (Cloud ↔ External Services)
+**Architecture**: Cloud agent directly interacts with external services via tool calls during autonomous execution
+
+**Use Cases**:
+- Multi-step research requiring intermediate queries
+- Dynamic workflows based on external data
+- Real-time validation against external sources
+- Iterative processes with decision branching
+
+**Technical Flow**:
+```
+Cloud Agent → Tool Call → External Service → Response → Agent Decision → Next Action
+```
+
+**Requirements**:
+- Services must be internet-accessible
+- Credentials stored in OpenKBS secrets ({{secrets.KEY}})
+- Defined in Backend event handlers (onResponse.js/onRequest.js)
+
+### Architectural Principles
+
+1. **Separation of Concerns**: Use Pattern 1 when you want to separate cloud processing from local infrastructure operations
+
+2. **Autonomous Workflows**: Use Pattern 2 when the agent needs to make decisions based on external data during execution
+
+3. **Hybrid Approach**: Combine patterns - use Pattern 2 for research/validation, Pattern 1 for final local storage
+
+4. **Security Consideration**: Pattern 1 keeps all credentials local; Pattern 2 requires cloud-stored secrets
+
+### Implementation Guidelines
+- Choose pattern based on WHERE the service lives (local vs public)
+- Consider WHEN the agent needs the data (during execution vs final result)
+- Avoid redundant operations across patterns
