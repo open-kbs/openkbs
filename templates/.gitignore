@@ -1,7 +1,8 @@
 node_modules
 src/Events/dist
 src/Frontend/dist
-
+.env
+**/.env
 # IntelliJ project files
 *.iml
 *.iws

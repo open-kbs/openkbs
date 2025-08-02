@@ -86,6 +86,7 @@ Secrets syntax above is only applicable for all src/Events/* files, and NOT for 
 User-run scripts are located in the `./scripts/` folder and communicate with cloud agents via API calls. 
 They execute locally, receiving the final result of the agent's flow as an API response. 
 This setup allows seamless interaction with local services, such as a MySQL database, directly on the user's machine.
+To handle secrets in user-defined scripts, define them in a `.env` file and load them using the `dotenv` package.
 
 **Key Components:**
 - `scripts/run_job.js` - Main job runner for calling the cloud agent
@@ -99,7 +100,8 @@ This setup allows seamless interaction with local services, such as a MySQL data
 - **Multi-agent support**: Each agent (base or related) finds its own settings and secrets in its directory structure
 
 #### NPM Dependencies for User-Run Scripts
-Add needed NPM dependencies to `package.json`.
+Add needed NPM dependencies to `package.json`
+Use `npm i` to install
 
 ### Frontend Overview
 The OpenKBS frontend framework, built with React and MUI, offers a flexible platform for custom chat interfaces. Developers can customize chat appearance and behavior via the `contentRender` module.
