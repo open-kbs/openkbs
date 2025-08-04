@@ -50,18 +50,18 @@ OpenKBS agents have **two execution environments**:
 The OpenKBS backend framework is for developing AI agents with custom tools, using Node.js.
 It integrates with openkbs chat service via `onRequest` and `onResponse` handlers for custom actions and service integration.
 
-#### Backend Handlers
+#### Backend Handlers (Cloud Environment)
 The OpenKBS framework's core uses `onRequest` and `onResponse` handlers as middleware for message tool call parsing and execution.
-These handlers run in the cloud environment, which means they cannot connect to localhost services without a public IP.
+These handlers run in the cloud environment.
 - **`onResponse` Handler:** Activated after the LLM generates a message, enabling command extraction, and action execution.
 - **`onRequest` Handler:** Triggered on user message to allow the user to execute action
 
-#### NPM Dependencies for onRequest.js or onResponse.js Backend Handlers
+#### NPM Dependencies for onRequest.js or onResponse.js Backend Handlers (Cloud → Public resources)
 1. If a file imports an NPM dependency and is then imported by onRequest.js or onResponse.js, this dependency must be defined in the handler's corresponding json file
    Example: If actions.js imports mysql2 and onResponse.js imports actions.js, then mysql2 must be in onResponse.json:
    {
    "dependencies": {
-   "mysql2": "^3.14.2"
+   "mysql2": "latest"
    }
    }
 
@@ -82,7 +82,7 @@ Use {{secrets.SECRET_NAME}} syntax to reference them in the backend code securel
 **Important**
 Secrets syntax above is only applicable for all src/Events/* files, and NOT for User-Run Scripts
 
-#### User-Run Scripts
+#### User-Run Scripts (Local Environment)
 User-run scripts are located in the `./scripts/` folder and communicate with cloud agents via API calls.
 They execute locally, receiving the final result of the agent's flow as an API response.
 This setup allows seamless interaction with local services, such as a MySQL database, directly on the user's machine.
@@ -99,8 +99,17 @@ To handle secrets in user-defined scripts, define them in a `.env` file and load
 - **Usage**: `const client = new OpenKBSAgentClient(); await client.runJob(message);`
 - **Multi-agent support**: Each agent (base or related) finds its own settings and secrets in its directory structure
 
-#### NPM Dependencies for User-Run Scripts
+#### NPM Dependencies for User-Run Scripts (Local → Public + Private resources)
 Add needed NPM dependencies to `package.json`
+Example: Script connecting to local MySQL:
+```json
+{
+  "dependencies": {
+    "mysql2": "latest",
+    "dotenv": "latest"
+  }
+}
+```
 Run `npm install` before executing scripts.
 
 ### Frontend Overview
@@ -125,11 +134,25 @@ To create related agents that work alongside the main agent:
 
 Related agents are independent but can share the base agent's script utilities.
 
-## OpenKBS Multi-Agent Architecture: The Complete Framework
+## OpenKBS Agent Architecture: From Single Agent to Complex Orchestration
 
 ### Core Architecture Philosophy
 
-OpenKBS enables sophisticated multi-agent systems through a **dual-environment architecture** that seamlessly combines **cloud-based autonomous agents** with **local orchestration scripts**, creating a powerful framework for complex AI workflows.
+OpenKBS enables everything from simple single-agent automation to sophisticated multi-agent systems through a **dual-environment architecture** that seamlessly combines **cloud-based autonomous agents** with **local orchestration scripts**.
+
+### Understanding Where Code Runs
+
+**The fundamental principle**: Cloud agents operate in cloud infrastructure, local scripts run on your machine. This separation enables powerful patterns:
+
+**Cloud agents (in the cloud)** can access:
+- Cloud databases (AWS RDS, Google Cloud SQL, Azure Database)
+- Public APIs and web services
+- Any service with a public IP or hostname
+
+**Local scripts (on your machine)** can access:
+- Local resources (localhost, 127.0.0.1, local files)
+- Cloud agents via API calls
+- Both local and cloud infrastructure
 
 ### The Two-Environment System
 
@@ -143,7 +166,7 @@ OpenKBS enables sophisticated multi-agent systems through a **dual-environment a
 - Secure credential management via {{secrets.KEY}} system
 - Sequential tool call execution based on intermediate results
 - Complex data extraction and structured JSON responses
-- Access to cloud databases, public APIs, web services with proper credentials (NO local services)
+- Access to cloud databases, public APIs, web services with proper credentials
 
 **Agent Execution Flow**:
 ```
@@ -171,13 +194,16 @@ User Message → Agent Processes → Tool Call 1 → Analyze Result → Decision
 - **Local scripts** = Infrastructure control and orchestration
 - Scripts call agents via API, agents return JSON, scripts handle the rest
 
-### Multi-Agent Orchestration Patterns
+### Orchestration Patterns
 
-1. **Hierarchical**: Script → Discovery Agent → N Results → Spawn N Detail Agents → Aggregate
-2. **Pipeline**: Script → Agent A → Agent B (uses A's output) → Agent C → Final Result
-3. **Event-Driven**: Database Change → Script Detects → Triggers Appropriate Agents
-4. **Parallel**: Script → [Agent A, Agent B, Agent C] simultaneously → Combine Results
-5. **Database Context**: Script reads MySQL → Composes query → Agent processes → Returns JSON → Script stores in MySQL
+Whether using a single agent or multiple agents, common patterns include:
+
+1. **Single Agent**: Script → Agent → Process Result → Store/Act
+2. **Hierarchical**: Script → Discovery Agent → N Results → Spawn N Detail Agents → Aggregate
+3. **Pipeline**: Script → Agent A → Agent B (uses A's output) → Agent C → Final Result
+4. **Event-Driven**: Database Change → Script Detects → Triggers Appropriate Agent(s)
+5. **Parallel**: Script → [Agent A, Agent B, Agent C] simultaneously → Combine Results
+6. **Database Integration**: Script reads local DB → Sends data to Agent → Agent processes → Returns JSON → Script stores in local DB
 
 
 ### Understanding the Architecture
