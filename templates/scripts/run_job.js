@@ -4,7 +4,9 @@ const OpenKBSAgentClient = require('./utils/agent_client');
 
 async function main() {
     const client = new OpenKBSAgentClient();
-    
+
+    if (process.argv[2] === 'init') return await client.init();
+
     const message = `Today's Date: ${new Date().toLocaleDateString()}
 
 PROCESS_PRODUCT:

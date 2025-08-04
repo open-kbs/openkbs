@@ -53,6 +53,10 @@ class OpenKBSAgentClient {
         return this.apiKey;
     }
 
+    async init() {
+        return await this.promptForApiKey();
+    }
+
     async promptForApiKey() {
         return new Promise((resolve) => {
             const rl = readline.createInterface({
