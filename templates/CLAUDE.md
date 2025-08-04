@@ -143,14 +143,14 @@ OpenKBS enables sophisticated multi-agent systems through a **dual-environment a
 - Secure credential management via {{secrets.KEY}} system
 - Sequential tool call execution based on intermediate results
 - Complex data extraction and structured JSON responses
-- Access to databases, APIs, web services with proper credentials
+- Access to cloud databases, public APIs, web services with proper credentials (NO local services)
 
 **Agent Execution Flow**:
 ```
 User Message → Agent Processes → Tool Call 1 → Analyze Result → Decision → Tool Call 2 → ... → Final JSON Response
 ```
 
-**Key Insight**: Cloud agents are NOT limited to public data. They can securely connect to private APIs, cloud databases, and protected services using the secrets system.
+**Key Insight**: Cloud agents can securely connect to APIs, and any service that have public IPs/URLs
 
 #### 2. Local Environment (Orchestration & Local Services)
 **Location**: `./scripts/` - Execute locally with `node`  
