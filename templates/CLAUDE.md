@@ -104,10 +104,10 @@ Add needed NPM dependencies to `package.json`
 Example: Script connecting to local MySQL:
 ```json
 {
-  "dependencies": {
-    "mysql2": "latest",
-    "dotenv": "latest"
-  }
+   "dependencies": {
+      "mysql2": "latest",
+      "dotenv": "latest"
+   }
 }
 ```
 Run `npm install` before executing scripts.
@@ -153,6 +153,13 @@ OpenKBS enables everything from simple single-agent automation to sophisticated 
 - Local resources (localhost, 127.0.0.1, local files)
 - Cloud agents via API calls
 - Both local and cloud infrastructure
+
+### Advanced Pattern: Tool Composition (When Needed)
+
+Since cloud agent tools are code, you can create composite tools when facing repetitive multi-step operations. 
+This is useful when an agent would otherwise need many interaction cycles for a single logical operation.
+
+**Use sparingly**: Only create composite tools when they significantly reduce agent interactions or when domain logic requires atomic operations.
 
 ### The Two-Environment System
 
