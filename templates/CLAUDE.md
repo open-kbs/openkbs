@@ -24,6 +24,17 @@ openkbs update
 - Study the complete working examples to understand OpenKBS patterns
 - Never guess framework methods, settings or variables — always reference the examples.
 
+## FIRST DECISION: Execution Context Analysis
+
+**BEFORE writing ANY code, you MUST answer these questions IN ORDER:**
+
+1. **Where will this code execute?** (Cloud or Local)
+2. **What resources does it need to access?** (List each: databases, APIs, files, etc.)
+3. **Where does each resource exist?** (Public internet, local network, specific machine)
+4. **Can the execution environment reach each resource?** (Network path exists?)
+
+**Only after answering ALL four questions can you proceed to implementation.**
+
 ## Development Guidelines
 - To add npm dependency to backend handlers, add it to onRequest.json and onResponse.json
 - In src/Events and src/Frontend always use Imports (not Require)
@@ -33,18 +44,31 @@ openkbs update
 - If developing new agent, generate it's own ./scripts/run_job.js
 - Before using third-party services in onRequest and onResponse handlers, ask the user for permission
 
-## Architecture Overview
-OpenKBS agents have **two execution environments**:
+## Architecture Overview: Execution Environments Define Everything
 
-### 1. Cloud Environment (`./src/`)
-- **Event handlers** (`onRequest.js`, `onResponse.js`) run on OpenKBS cloud platform
-- **Purpose**: Process user messages, execute AI actions, return responses
-- **Deployment**: Code is deployed via `openkbs push`
+OpenKBS provides **three distinct execution environments**, each with different capabilities and constraints:
 
-### 2. Local Environment (`./scripts/`)
-- **User-run scripts** execute locally on user's machine
-- **Purpose**: Call cloud agents via API, orchestrate multi-agent workflows, integrate with external systems
-- **Execution**: Run directly with `node scripts/script-name.js`
+### Execution Environment Reality Check
+
+**Cloud Environment (`./src/Events/`):**
+- Runs in AWS Lambda (stateless, ephemeral)
+- No localhost, no local filesystem, no persistent state
+- Can ONLY reach internet-accessible resources
+- Each execution is isolated and temporary
+
+**Browser Environment (`./src/Frontend/`):**
+- Runs in user's browser when visiting https://[kbId].apps.openkbs.com
+- React-based UI customization
+- Subject to browser security constraints
+
+**Local Environment (`./scripts/`) - Optional but Powerful:**
+- Runs on YOUR machine with YOUR network context
+- Can access YOUR localhost, files, and local services
+- Enables advanced patterns: multi-agent orchestration, local resource integration
+- Not required for simple agents, but unlocks complex workflows
+
+### The Fundamental Rule
+**Before writing ANY code, ask: Where does this run and what can it reach?**
 
 ### Backend
 The OpenKBS backend framework is for developing AI agents with custom tools, using Node.js.
@@ -69,7 +93,8 @@ Similarly, we need to create onRequest.json for onRequest.js as each handler hav
 
 #### Managing Secrets for Backend Handlers
 Secrets securely store credentials that allow Backend Handlers to access external services like databases, APIs, etc.
-Use {{secrets.SECRET_NAME}} syntax to reference them in the backend code securely.
+Example:
+`const key = "{{secrets.KEY}}"`
 
 **Workflow**:
 1. Write code using {{secrets.SECRET_NAME}} placeholders
@@ -144,24 +169,26 @@ OpenKBS enables everything from simple single-agent automation to sophisticated 
 
 **The fundamental principle**: Cloud agents operate in cloud infrastructure, local scripts run on your machine. This separation enables powerful patterns:
 
-**Cloud agents (in the cloud)** can access:
-- Cloud databases (AWS RDS, Google Cloud SQL, Azure Database)
-- Public APIs and web services
-- Any service with a public IP or hostname
+**Cloud agents (serverless functions)** can access:
+- Internet-reachable services only
+- Public APIs and databases
+- Any service with a public endpoint
 
 **Local scripts (on your machine)** can access:
 - Local resources (localhost, 127.0.0.1, local files)
 - Cloud agents via API calls
-- Both local and cloud infrastructure
+- Both local and internet resources
+
+**Architecture emerges from execution context**: When resources exist only locally, the architecture naturally becomes: Local Script → Cloud Agent (processing) → JSON → Local Script → Local Resource
 
 ### Advanced Pattern: Tool Composition (When Needed)
 
-Since cloud agent tools are code, you can create composite tools when facing repetitive multi-step operations. 
+Since cloud agent tools are code, you can create composite tools when facing repetitive multi-step operations.
 This is useful when an agent would otherwise need many interaction cycles for a single logical operation.
 
 **Use sparingly**: Only create composite tools when they significantly reduce agent interactions or when domain logic requires atomic operations.
 
-### The Two-Environment System
+### The Powerful Two-Environment System
 
 #### 1. Cloud Environment (Autonomous Agent Execution)
 **Location**: `./src/Events/` - Deployed via `openkbs push`  
