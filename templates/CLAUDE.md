@@ -177,6 +177,7 @@ User Message → Agent Processes → Tool Call 1 → Analyze Result → Decision
 2. **Pipeline**: Script → Agent A → Agent B (uses A's output) → Agent C → Final Result
 3. **Event-Driven**: Database Change → Script Detects → Triggers Appropriate Agents
 4. **Parallel**: Script → [Agent A, Agent B, Agent C] simultaneously → Combine Results
+5. **Database Context**: Script reads MySQL → Composes query → Agent processes → Returns JSON → Script stores in MySQL
 
 
 ### Understanding the Architecture
