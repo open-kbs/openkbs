@@ -111,8 +111,9 @@ The `contentRender.js` file is central to frontend customization, exporting key 
 - **`onRenderChatMessage(params)`:** function called every time a chat message is rendered.
 
 #### OpenKBS commands
-`openkbs push` - after completing changes to your agent, use this command to deploy it to the OpenKBS cloud.
 `openkbs create my-agent` - creates a directory structure for a new agent
+`openkbs push` - after completing changes to your agent, use this command to deploy it to the OpenKBS cloud.
+`node scripts/run_job.js init` - execute right after `openkbs push` to configure the API Key before running the job for the specific agent.
 
 ### Creating Related Agents
 To create related agents that work alongside the main agent:
