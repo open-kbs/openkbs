@@ -54,7 +54,7 @@ class OpenKBSAgentClient {
     }
 
     async init() {
-        return await this.promptForApiKey();
+        await this.getApiKey();
     }
 
     async promptForApiKey() {
