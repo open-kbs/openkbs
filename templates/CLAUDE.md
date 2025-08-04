@@ -168,11 +168,8 @@ Cloud Agent → Tool Call → External Service → Response → Agent Decision �
 ### Architectural Principles
 
 1. **Separation of Concerns**: Use Pattern 1 when you want to separate cloud processing from local infrastructure operations
-
 2. **Autonomous Workflows**: Use Pattern 2 when the agent needs to make decisions based on external data during execution
-
 3. **Hybrid Approach**: Combine patterns - use Pattern 2 for research/validation, Pattern 1 for final local storage
-
 4. **Security Consideration**: Pattern 1 keeps all credentials local; Pattern 2 requires cloud-stored secrets
 
 ### Implementation Guidelines
