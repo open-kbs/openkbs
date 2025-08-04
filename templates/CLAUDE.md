@@ -129,8 +129,7 @@ Related agents are independent but can share the base agent's script utilities.
 
 ### Core Architecture Philosophy
 
-OpenKBS enables sophisticated multi-agent systems through a **dual-environment architecture** that seamlessly combines **cloud-based autonomous agents** 
-with **local orchestration scripts**, creating a powerful framework for complex AI workflows.
+OpenKBS enables sophisticated multi-agent systems through a **dual-environment architecture** that seamlessly combines **cloud-based autonomous agents** with **local orchestration scripts**, creating a powerful framework for complex AI workflows.
 
 ### The Two-Environment System
 
@@ -151,10 +150,10 @@ with **local orchestration scripts**, creating a powerful framework for complex 
 User Message → Agent Processes → Tool Call 1 → Analyze Result → Decision → Tool Call 2 → ... → Final JSON Response
 ```
 
-**Key Insight**: Cloud agents securely connect to APIs, databases servers, and any internet services (with public IP) using the secrets system.
+**Key Insight**: Cloud agents are NOT limited to public data. They can securely connect to private APIs, cloud databases, and protected services using the secrets system.
 
-#### 2. Local/onPremises Environment (Orchestration & Local Services)
-**Location**: `./scripts/` - Execute locally (onPremises) with `node`  
+#### 2. Local Environment (Orchestration & Local Services)
+**Location**: `./scripts/` - Execute locally with `node`  
 **Purpose**: Agent orchestration and local infrastructure integration
 
 **Capabilities**:
@@ -167,97 +166,18 @@ User Message → Agent Processes → Tool Call 1 → Analyze Result → Decision
 
 ### Why This Architecture Matters
 
-#### The Power of Separation
-1. **Cloud Agents Focus on Intelligence**: Agents handle complex reasoning, research, and decision-making
-2. **Local Scripts Handle Infrastructure**: Scripts manage databases, files, and orchestration
-3. **Best of Both Worlds**: Cloud scalability + local control
-
-#### Key Architectural Insight
-The real power comes from understanding WHEN to use each environment:
-- **Cloud**: When you need autonomous intelligence and internet access
-- **Local**: When you need direct infrastructure control or complex orchestration
+#### Key Architectural Insights
+- **Cloud agents** = Autonomous intelligence with internet access
+- **Local scripts** = Infrastructure control and orchestration
+- Scripts call agents via API, agents return JSON, scripts handle the rest
 
 ### Multi-Agent Orchestration Patterns
 
-#### Pattern 1: Hierarchical Discovery & Processing
-```
-Local Script → Brand Discovery Agent → Returns 3 Brands → Local Script Stores in DB → 
-→ Spawns 3 Product Agents (parallel) → Each Returns 5 Products → Local Script Stores All
-```
-**Real Example**: Category research that scales dynamically based on discoveries
+1. **Hierarchical**: Script → Discovery Agent → N Results → Spawn N Detail Agents → Aggregate
+2. **Pipeline**: Script → Agent A → Agent B (uses A's output) → Agent C → Final Result
+3. **Event-Driven**: Database Change → Script Detects → Triggers Appropriate Agents
+4. **Parallel**: Script → [Agent A, Agent B, Agent C] simultaneously → Combine Results
 
-#### Pattern 2: Pipeline Processing with Enrichment
-```
-Local Script → Data Extraction Agent → Raw Data → 
-→ Analysis Agent (with context) → Insights → 
-→ Report Generation Agent → Final Report → Local Storage
-```
-**Real Example**: Multi-stage document processing with progressive enhancement
-
-#### Pattern 3: Event-Driven Agent Swarms
-```
-Database Event → Trigger Script → Spawns N Agents Based on Event Type → 
-→ Agents Process in Parallel → Results Aggregated → Database Updated → Next Event
-```
-**Real Example**: Real-time monitoring systems with intelligent response
-
-#### Pattern 4: Feedback Loop Systems
-```
-Local Monitoring → Detect Anomaly → Research Agent → Findings → 
-→ Decision Agent → Action Plan → Execution Agent → Update Local System → Loop
-```
-**Real Example**: Self-improving systems with continuous learning
-
-### Advanced Implementation Techniques
-
-#### Dynamic Agent Spawning
-```javascript
-// Orchestrator dynamically creates agent instances based on discovered data
-const categories = await discoveryAgent.runJob('Find all product categories');
-const agentPool = categories.map(cat => ({
-    agent: new OpenKBSAgentClient(), // Each gets its own instance
-    category: cat
-}));
-
-// Process all categories in parallel with controlled concurrency
-const results = await Promise.all(
-    agentPool.map(({agent, category}) => 
-        agent.runJob(`Research top products in ${category}`)
-    )
-);
-```
-
-#### State Machine Orchestration
-```javascript
-// Complex workflows with state management
-class WorkflowOrchestrator {
-    async processOrder(orderId) {
-        let state = 'INIT';
-        const context = { orderId, results: {} };
-        
-        while (state !== 'COMPLETE') {
-            switch(state) {
-                case 'INIT':
-                    context.results.validation = await validationAgent.runJob(`Validate order ${orderId}`);
-                    state = context.results.validation.valid ? 'ENRICH' : 'FAILED';
-                    break;
-                case 'ENRICH':
-                    context.results.enrichment = await enrichmentAgent.runJob(`Enrich order data`, context);
-                    state = 'PROCESS';
-                    break;
-                case 'PROCESS':
-                    const promises = context.results.enrichment.items.map(item =>
-                        processingAgent.runJob(`Process item ${item.id}`)
-                    );
-                    context.results.processed = await Promise.all(promises);
-                    state = 'COMPLETE';
-                    break;
-            }
-        }
-        return context;
-    }
-}
-```
 
 ### Understanding the Architecture
 
@@ -277,27 +197,6 @@ class WorkflowOrchestrator {
 - Orchestrate multiple agent calls
 - Process and route results between agents
 
-### Real-World Architecture Examples
-
-#### Example 1: E-commerce Intelligence System
-```
-1. Local script monitors database for new product categories
-2. Discovery agent researches market trends for each category
-3. Local script spawns competitor analysis agents (parallel)
-4. Each agent accesses private APIs (using cloud secrets) for pricing data
-5. Local script aggregates results and updates local PostgreSQL
-6. Notification agent sends summary to stakeholders
-```
-
-#### Example 2: Document Processing Pipeline
-```
-1. Local script watches folder for new documents
-2. OCR agent (cloud) extracts text from images
-3. Classification agent determines document type
-4. Multiple specialized agents process based on type (parallel)
-5. Validation agent cross-references with external APIs
-6. Local script stores processed data in MongoDB
-```
 
 ### Security & Best Practices
 
@@ -313,13 +212,9 @@ class WorkflowOrchestrator {
 - Implement proper error handling and logging
 - Use database transactions for consistency
 
-### The Power of OpenKBS
+### Summary
 
-This architecture enables:
-1. **Unlimited Scalability**: Spawn thousands of agents dynamically
-2. **Complex Intelligence**: Agents make decisions autonomously
-3. **Infrastructure Freedom**: Integrate with any local or cloud service
-4. **Rapid Development**: Reusable agents and orchestration patterns
-5. **Cost Efficiency**: Pay only for agent execution time
-
-The key insight: **You're not just calling APIs, you're orchestrating intelligent agents that can think, decide, and act autonomously while you maintain complete control over your infrastructure.**
+OpenKBS enables building sophisticated AI systems where:
+- Cloud agents provide autonomous intelligence
+- Local scripts orchestrate workflows and handle infrastructure
+- You maintain full control while agents think and act independently
