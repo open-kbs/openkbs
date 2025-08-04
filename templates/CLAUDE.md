@@ -146,6 +146,11 @@ User Script → Cloud Agent → Process & Return JSON → Local Infrastructure
 User Script → Query Local/On-premises DB → Compose Agent Request → Cloud Agent → Process → Store Result in Local DB
 ```
 
+**Variation - Hierarchical Multi-Agent Tree Processing**:
+```
+Input "domain" → Root Discovery Agent → Store N Categories → N Branch Agents (parallel) → Tree Structure Population
+```
+
 ### Pattern 2: Tool-Based Integration (Cloud ↔ External Services)
 **Architecture**: Cloud agent directly interacts with external services via tool calls during autonomous execution
 
