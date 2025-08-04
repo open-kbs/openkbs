@@ -1,5 +1,8 @@
 # Claude Code Instructions
 
+# SETUP AUTOMATION STRATEGY
+**CRITICAL**: When you encounter complex multi-step setup processes for multi-agent systems, ALWAYS suggest creating `npm run setup` script instead of expecting users to run many manual commands.
+
 # MANDATORY FIRST STEPS
 **CRITICAL**: Before taking ANY action, implementing ANY feature, planing the implementation or answering ANY question about this project, you must perform the following steps:
 
@@ -43,6 +46,7 @@ openkbs update
 - Add and use npm dependencies only if necessary, some of those shown in the examples are purely demonstrative
 - If developing new agent, generate it's own ./scripts/run_job.js
 - Before using third-party services in onRequest and onResponse handlers, ask the user for permission
+- When creating multi-agent systems with complex setup steps, consider creating an `npm run setup`
 
 ## Architecture Overview: Execution Environments Define Everything
 
