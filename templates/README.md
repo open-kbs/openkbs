@@ -6,7 +6,7 @@
       <img src="app/icon.png" alt="App Icon" style="width: 100px; margin-right: 10px;">
     </td>
     <td>
-      <strong>{{{openkbs.kbDescription}}}</strong>
+      <strong>{{{openkbsAppName}}}</strong>
     </td>
   </tr>
 </table>
