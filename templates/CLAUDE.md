@@ -1,8 +1,5 @@
 # Claude Code Instructions
 
-# SETUP AUTOMATION STRATEGY
-**CRITICAL**: When you encounter complex multi-step setup processes for multi-agent systems, ALWAYS suggest creating `npm run setup` script instead of expecting users to run many manual commands.
-
 # MANDATORY FIRST STEPS
 **CRITICAL**: Before taking ANY action, implementing ANY feature, planing the implementation or answering ANY question about this project, you must perform the following steps:
 
