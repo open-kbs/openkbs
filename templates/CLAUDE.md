@@ -43,7 +43,6 @@ openkbs update
 - Add and use npm dependencies only if necessary, some of those shown in the examples are purely demonstrative
 - If developing new agent, generate it's own ./scripts/run_job.js
 - Before using third-party services in onRequest and onResponse handlers, ask the user for permission
-- When creating multi-agent systems with complex setup steps, consider creating an `npm run setup`
 - provide README.md
 
 ## Architecture Overview: Execution Environments Define Everything
