@@ -53,7 +53,7 @@ OpenKBS provides **three distinct execution environments**, each with different 
 ### Execution Environment Reality Check
 
 **Cloud Environment (`./src/Events/`):**
-- Runs in AWS Lambda (stateless, ephemeral)
+- Runs in serverless compute service for running code (stateless, ephemeral)
 - No localhost, no local filesystem, no persistent state
 - Can ONLY reach internet-accessible resources
 - Each execution is isolated and temporary
