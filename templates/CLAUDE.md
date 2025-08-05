@@ -29,14 +29,14 @@ openkbs update
 
 ## FIRST DECISION: Execution Context Analysis
 
-**🚨BEFORE writing ANY code, STOP AND THINK, you MUST answer these questions IN ORDER:**
+** BEFORE writing ANY code, you MUST answer these questions IN ORDER:**
 
 1. **Where will this code execute?** (Cloud or Local)
 2. **What resources does it need to access?** (List each: databases, APIs, files, etc.)
 3. **Where does each resource exist?** (Public internet, local network, specific machine)
 4. **Can the execution environment reach each resource?** (Network path exists?)
 
-**Only after answering ALL four questions can you proceed to implementation.**
+**You MUST show your reasoning for these 4 questions before any code implementation.**
 
 ## Development Guidelines
 - To add npm dependency to backend handlers, add it to onRequest.json and onResponse.json
@@ -284,9 +284,4 @@ OpenKBS enables building sophisticated AI systems where:
 - Local scripts orchestrate workflows and handle infrastructure
 - You maintain full control while agents think and act independently
 
-## Import/Export Syntax Rules
-| src/Events/* | ES6 import/export
-| src/Frontend/* | ES6 import/export
-| scripts/* | CommonJS
 
-**Violation = Deployment Failure**
