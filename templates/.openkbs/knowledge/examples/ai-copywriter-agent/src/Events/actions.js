@@ -98,11 +98,6 @@ export const getActions = () => [
     [/\/?webpageToText\("(.*)"\)/, async (match) => {
         try {
             let response = await openkbs.webpageToText(match[1]);
-
-            // limit output length
-            if (response?.content?.length > 5000) {
-                response.content = response.content.substring(0, 5000);
-            }
             if(!response?.url) return { data: { error: "Unable to read website" } };
             return { data: response };
         } catch (e) {
@@ -113,12 +108,6 @@ export const getActions = () => [
     [/\/?documentToText\("(.*)"\)/, async (match) => {
         try {
             let response = await openkbs.documentToText(match[1]);
-
-            // limit output length
-            if (response?.text?.length > 5000) {
-                response.text = response.text.substring(0, 5000);
-            }
-
             return { data: response };
         } catch (e) {
             return { error: e.response.data };
