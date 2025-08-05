@@ -29,7 +29,7 @@ openkbs update
 
 ## FIRST DECISION: Execution Context Analysis
 
-**BEFORE writing ANY code, you MUST answer these questions IN ORDER:**
+**🚨BEFORE writing ANY code, STOP AND THINK, you MUST answer these questions IN ORDER:**
 
 1. **Where will this code execute?** (Cloud or Local)
 2. **What resources does it need to access?** (List each: databases, APIs, files, etc.)
@@ -47,7 +47,7 @@ openkbs update
 - If developing new agent, generate it's own ./scripts/run_job.js
 - Before using third-party services in onRequest and onResponse handlers, ask the user for permission
 - When creating multi-agent systems with complex setup steps, consider creating an `npm run setup`
-- Add the documentation to the existing README.md file``
+- provide README.md
 ## Architecture Overview: Execution Environments Define Everything
 
 OpenKBS provides **three distinct execution environments**, each with different capabilities and constraints:
@@ -283,3 +283,10 @@ OpenKBS enables building sophisticated AI systems where:
 - Cloud agents provide autonomous intelligence
 - Local scripts orchestrate workflows and handle infrastructure
 - You maintain full control while agents think and act independently
+
+## Import/Export Syntax Rules
+| src/Events/* | ES6 import/export
+| src/Frontend/* | ES6 import/export
+| scripts/* | CommonJS
+
+**Violation = Deployment Failure**
