@@ -1,7 +1,6 @@
 import {getActions} from './actions.js';
 
 export const backendHandler = async (event) => {
-    const maxSelfInvokeMessagesCount = 60;
     const lastMessage = event.payload.messages[event.payload.messages.length - 1];
     const actions = getActions();
 
@@ -13,22 +12,18 @@ export const backendHandler = async (event) => {
         return acc;
     }, []);
 
-    // For Coding Agents: avoid unnecessary LLM reactions after job is finished
-    const isJobFinished = /"JOB_COMPLETED"|"JOB_FAILED"/.test(lastMessage.content);
-
-    const meta = {
-        _meta_actions:
-            (
-                event?.payload?.messages?.length > maxSelfInvokeMessagesCount ||
-                isJobFinished && lastMessage.role === 'system'
-            )
-                ? []
-                : ["REQUEST_CHAT_MODEL"]
-    }
+    const reachedMessageLimit = event?.payload?.messages?.length > 60;
 
     if (matchingActions.length > 0) {
         try {
             const results = await Promise.all(matchingActions);
+            
+            const isOnlyJobCompletion = results.length === 1 && 
+                (results[0]?.type === 'JOB_COMPLETED' || results[0]?.type === 'JOB_FAILED');
+            
+            const meta = {
+                _meta_actions: (reachedMessageLimit || isOnlyJobCompletion) ? [] : ["REQUEST_CHAT_MODEL"]
+            };
 
             if (results?.[0]?.data?.some?.(o => o?.type === 'image_url')) {
                 return {
@@ -46,7 +41,7 @@ export const backendHandler = async (event) => {
             return {
                 type: 'ERROR',
                 error: error.message,
-                ...meta
+                _meta_actions: reachedMessageLimit ? [] : ["REQUEST_CHAT_MODEL"]
             };
         }
     }
