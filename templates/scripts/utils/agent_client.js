@@ -148,6 +148,23 @@ class OpenKBSAgentClient {
         });
     }
 
+    parseJSONFromText(text) {
+        let braceCount = 0, startIndex = text.indexOf('{');
+        if (startIndex === -1) return null;
+
+        for (let i = startIndex; i < text.length; i++) {
+            if (text[i] === '{') braceCount++;
+            if (text[i] === '}' && --braceCount === 0) {
+                try {
+                    return JSON.parse(text.slice(startIndex, i + 1));
+                } catch {
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
     async pollForMessages(chatId, app) {
         const payload = {
             ...app,
@@ -161,19 +178,36 @@ class OpenKBSAgentClient {
                 this.makeRequest('https://chat.openkbs.com/', payload)
                     .then(jsonString => {
                         const messages = JSON.parse(jsonString)[0].data.messages;
+
                         for (const message of messages) {
                             if (message.role === 'system') {
                                 try {
-                                    const content = JSON.parse(message.content);
-                                    // Check if _meta_actions contains REQUEST_CHAT_MODEL (indicates message to resolve)
-                                    if (content._meta_actions && Array.isArray(content._meta_actions) && content._meta_actions.includes("REQUEST_CHAT_MODEL")) {
-                                        const result = content.data?.find?.(item =>
-                                            item.type === 'JOB_COMPLETED' || item.type === 'JOB_FAILED'
-                                        ) || content;
-                                        clearInterval(interval);
-                                        resolve(result);
-                                        return;
+                                    const contentData = this.parseJSONFromText(message.content);
+                                    const { _meta_actions, _meta_type, _event, data, type } = contentData;
+
+                                    // Skip if execution continues
+                                    if (_meta_actions?.includes?.("REQUEST_CHAT_MODEL")) continue;
+
+                                    // onResponse finished without tool calls - return LLM response
+                                    if (_meta_type === 'EVENT_FINISHED' && type === 'CONTINUE' && _event === 'onResponse') {
+                                        const lastAssistantMessage = messages.slice().reverse().find(msg => msg.role === 'assistant');
+                                        if (lastAssistantMessage) {
+                                            clearInterval(interval);
+                                            resolve(
+                                                this.parseJSONFromText(lastAssistantMessage.content) ||
+                                                { type: 'FREE_TEXT_RESPONSE', content: lastAssistantMessage.content }
+                                            );
+                                            return;
+                                        }
                                     }
+
+                                    const result = data?.find?.(item =>
+                                        item.type === 'JOB_COMPLETED' || item.type === 'JOB_FAILED'
+                                    ) || contentData;
+                                    clearInterval(interval);
+                                    resolve(result);
+                                    return;
+
                                 } catch (e) {
                                     // Continue if message content is not valid JSON
                                 }
