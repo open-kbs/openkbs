@@ -12,7 +12,7 @@ class OpenKBSAgentClient {
 
     findSettings() {
         let currentDir = __dirname;
-        
+
         while (currentDir !== path.parse(currentDir).root) {
             const settingsPath = path.join(currentDir, 'app', 'settings.json');
             if (fs.existsSync(settingsPath)) {
@@ -20,13 +20,13 @@ class OpenKBSAgentClient {
             }
             currentDir = path.dirname(currentDir);
         }
-        
+
         throw new Error('Could not find app/settings.json in parent directories');
     }
 
     findSecretsPath() {
         let currentDir = __dirname;
-        
+
         while (currentDir !== path.parse(currentDir).root) {
             const settingsPath = path.join(currentDir, 'app', 'settings.json');
             if (fs.existsSync(settingsPath)) {
@@ -35,19 +35,19 @@ class OpenKBSAgentClient {
             }
             currentDir = path.dirname(currentDir);
         }
-        
+
         throw new Error('Could not find agent directory with app/settings.json');
     }
 
     async getApiKey() {
         if (this.apiKey) return this.apiKey;
-        
+
         if (fs.existsSync(this.secretsPath)) {
             const secrets = JSON.parse(fs.readFileSync(this.secretsPath, 'utf8'));
             this.apiKey = secrets.apiKey;
             return this.apiKey;
         }
-        
+
         this.apiKey = await this.promptForApiKey();
         this.saveApiKey(this.apiKey);
         return this.apiKey;
@@ -95,30 +95,30 @@ class OpenKBSAgentClient {
 
     async runJob(message, options = {}) {
         const apiKey = await this.getApiKey();
-        
+
         if (!this.settings.kbId) {
             throw new Error('First use: "openkbs push" to create the agent');
         }
 
         const chatTitle = options.chatTitle || `Task ${new Date().getTime()}`;
         const chatId = await this.startJob(chatTitle, message, { kbId: this.settings.kbId, apiKey });
-        
+
         console.log(`Job ${chatId} created.\nWorking ...`);
-        
+
         if (options.poll !== false) {
             return this.pollForMessages(chatId, { kbId: this.settings.kbId, apiKey });
         }
-        
+
         return chatId;
     }
 
     async startJob(chatTitle, data, app) {
-        const response = await this.makeRequest('https://chat.openkbs.com/', { 
-            ...app, 
-            chatTitle, 
-            message: data 
+        const response = await this.makeRequest('https://chat.openkbs.com/', {
+            ...app,
+            chatTitle,
+            message: data
         });
-        
+
         try {
             return JSON.parse(response)[0].createdChatId;
         } catch (error) {
@@ -133,8 +133,8 @@ class OpenKBSAgentClient {
         return new Promise((resolve, reject) => {
             const { hostname, pathname } = new URL(url);
             const req = https.request({
-                hostname, 
-                path: pathname, 
+                hostname,
+                path: pathname,
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             }, res => {
@@ -149,28 +149,34 @@ class OpenKBSAgentClient {
     }
 
     async pollForMessages(chatId, app) {
-        const payload = { 
-            ...app, 
-            action: 'getChatMessages', 
-            chatId, 
-            decryptContent: true 
+        const payload = {
+            ...app,
+            action: 'getChatMessages',
+            chatId,
+            decryptContent: true
         };
-        
+
         return new Promise((resolve) => {
             const interval = setInterval(() => {
                 this.makeRequest('https://chat.openkbs.com/', payload)
                     .then(jsonString => {
                         const messages = JSON.parse(jsonString)[0].data.messages;
                         for (const message of messages) {
-                            if (message.role === 'system' && 
-                                /{"type"\s*:\s*"(JOB_COMPLETED|JOB_FAILED)".*?}/s.test(message.content)) {
-                                
-                                const result = JSON.parse(message.content)?.data?.find(item => 
-                                    item.type === 'JOB_COMPLETED' || item.type === 'JOB_FAILED'
-                                );
-                                clearInterval(interval);
-                                resolve(result);
-                                return;
+                            if (message.role === 'system') {
+                                try {
+                                    const content = JSON.parse(message.content);
+                                    // Check if _meta_actions contains REQUEST_CHAT_MODEL (indicates message to resolve)
+                                    if (content._meta_actions && Array.isArray(content._meta_actions) && content._meta_actions.includes("REQUEST_CHAT_MODEL")) {
+                                        const result = content.data?.find?.(item =>
+                                            item.type === 'JOB_COMPLETED' || item.type === 'JOB_FAILED'
+                                        ) || content;
+                                        clearInterval(interval);
+                                        resolve(result);
+                                        return;
+                                    }
+                                } catch (e) {
+                                    // Continue if message content is not valid JSON
+                                }
                             }
                         }
                     })
