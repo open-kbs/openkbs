@@ -13,7 +13,7 @@ export const backendHandler = async (event) => {
         return acc;
     }, []);
 
-    // Avoid unnecessary LLM reactions if job is finished
+    // IMPORTANT: Actions returning JOB_COMPLETED or JOB_FAILED stop agent execution and return final result
     const isJobFinished = /"JOB_COMPLETED"|"JOB_FAILED"/.test(lastMessage.content);
 
     const meta = {
