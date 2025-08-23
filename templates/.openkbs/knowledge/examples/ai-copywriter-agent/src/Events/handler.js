@@ -18,6 +18,7 @@ export const backendHandler = async (event) => {
         try {
             const results = await Promise.all(matchingActions);
             
+            // CRITICAL: Actions returning JOB_COMPLETED stop agent execution and return final result
             const isOnlyJobCompletion = results.length === 1 && 
                 (results[0]?.type === 'JOB_COMPLETED' || results[0]?.type === 'JOB_FAILED');
             
