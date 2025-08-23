@@ -2,6 +2,7 @@ const https = require('https');
 const fs = require('fs');
 const readline = require('readline');
 const path = require('path');
+const { URL } = require('url');
 
 class OpenKBSAgentClient {
     constructor() {
@@ -93,129 +94,173 @@ class OpenKBSAgentClient {
         fs.writeFileSync(this.secretsPath, JSON.stringify({ apiKey: key }, null, 2));
     }
 
+    /**
+     * Run a job and get response from the agent
+     *
+     * @returns {Promise<Object>} Response structure from API:
+     * {
+     *   data: { // The actual agent response (always wrapped in 'data')
+     *     // Either TEXT response:
+     *     type: 'TEXT',
+     *     content: 'The assistant's text response...'
+     *
+     *     // Or Structured Data response:
+     *     type: 'CUSTOM_TYPE',  // e.g., 'SOME_REPORT', 'DOCUMENT_SAVED', 'JOB_COMPLETED'
+     *     data: { ... },        // Tool-specific data
+     *     _meta_type: 'EVENT_FINISHED',
+     *     _event: 'onResponse'
+     *   },
+     *   chatId: 'xxx-xxx',  // Chat session ID
+     *   msgId: 'msg_xxx'    // Unique message ID
+     * }
+     *
+     * To access the actual result: response.data
+     * To check result type: response.data.type
+     */
     async runJob(message, options = {}) {
         const apiKey = await this.getApiKey();
+        if (!this.settings.kbId) throw new Error('First use: "openkbs push" to create the agent');
 
-        if (!this.settings.kbId) {
-            throw new Error('First use: "openkbs push" to create the agent');
-        }
-
-        const chatTitle = options.chatTitle || `Task ${new Date().getTime()}`;
-        const chatId = await this.startJob(chatTitle, message, { kbId: this.settings.kbId, apiKey });
-
-        console.log(`Job ${chatId} created.\nWorking ...`);
-
-        if (options.poll !== false) {
-            return this.pollForMessages(chatId, { kbId: this.settings.kbId, apiKey });
-        }
-
-        return chatId;
-    }
-
-    async startJob(chatTitle, data, app) {
-        const response = await this.makeRequest('https://chat.openkbs.com/', {
-            ...app,
-            chatTitle,
-            message: data
+        const payload = { message };
+        Object.keys(options).forEach(key => {
+            if (key === 'historyLimit') {
+                payload[key] = Math.min(Math.max(1, options[key]), 100);
+            } else if (options[key] !== undefined) {
+                payload[key] = options[key];
+            }
         });
 
-        try {
-            return JSON.parse(response)[0].createdChatId;
-        } catch (error) {
-            if (fs.existsSync(this.secretsPath)) {
-                fs.unlinkSync(this.secretsPath);
-            }
-            throw new Error('Authentication failed.');
-        }
+        const response = await this.request(
+            `https://${this.settings.kbId}.apps.openkbs.com/api`,
+            payload,
+            { Authorization: `Bearer ${apiKey}` }
+        );
+
+        if (response.chatId) this.lastChatId = response.chatId;
+        return response;
     }
 
-    makeRequest(url, payload) {
+    async continueChat(message, chatId = null, options = {}) {
+        const targetChatId = chatId || this.lastChatId;
+        if (!targetChatId) throw new Error('No chatId provided and no previous chat to continue');
+
+        return this.runJob(message, {
+            ...options,
+            chatId: targetChatId,
+            includeHistory: options.includeHistory !== false
+        });
+    }
+
+    async uploadFile(filePath, options = {}) {
+        const apiKey = await this.getApiKey();
+        if (!fs.existsSync(filePath)) throw new Error(`File not found: ${filePath}`);
+
+        const fileContent = fs.readFileSync(filePath);
+        const ext = path.extname(filePath);
+        const fileName = options.fileName || `file-${Date.now()}-${Math.random().toString(36).substring(7)}${ext}`;
+        const fileType = options.fileType || this.getMimeType(filePath);
+
+        const presignedResponse = await this.request('https://kb.openkbs.com/', {
+            apiKey,
+            kbId: this.settings.kbId,
+            namespace: 'files',
+            presignedOperation: 'putObject',
+            action: 'createPresignedURL',
+            fileName,
+            fileType
+        }, { Origin: `https://${this.settings.kbId}.apps.openkbs.com` });
+
+        const presignedUrl = presignedResponse.presignedUrl || presignedResponse;
+
+        await this.requestRaw(presignedUrl, fileContent, {
+            'Content-Type': fileType,
+            'Content-Length': fileContent.length
+        }, 'PUT');
+
+        return {
+            fileName,
+            uploaded: true,
+            url: `https://file.openkbs.com/files/${this.settings.kbId}/${fileName}`
+        };
+    }
+
+    getMimeType(filePath) {
+        const ext = path.extname(filePath).toLowerCase();
+        const mimeTypes = {
+            '.pdf': 'application/pdf',
+            '.txt': 'text/plain',
+            '.json': 'application/json',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.doc': 'application/msword',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            '.xls': 'application/vnd.ms-excel',
+            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            '.csv': 'text/csv',
+            '.html': 'text/html',
+            '.xml': 'application/xml',
+            '.zip': 'application/zip'
+        };
+        return mimeTypes[ext] || 'application/octet-stream';
+    }
+
+    // Unified HTTP request helper
+    async request(url, payload, headers = {}, method = 'POST') {
         return new Promise((resolve, reject) => {
-            const { hostname, pathname } = new URL(url);
+            const { hostname, pathname, search } = new URL(url);
             const req = https.request({
                 hostname,
-                path: pathname,
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                path: pathname + (search || ''),
+                method,
+                headers: { 'Content-Type': 'application/json', ...headers }
             }, res => {
                 let data = '';
                 res.on('data', chunk => data += chunk);
-                res.on('end', () => resolve(data));
+                res.on('end', () => {
+                    try {
+                        const result = JSON.parse(data);
+                        if (res.statusCode === 401) {
+                            if (fs.existsSync(this.secretsPath)) fs.unlinkSync(this.secretsPath);
+                            reject(new Error('Authentication failed. Please run "node scripts/run_job.js init" to reconfigure.'));
+                        } else if (res.statusCode !== 200) {
+                            reject(new Error(`Request failed with status ${res.statusCode}: ${data}`));
+                        } else {
+                            resolve(result);
+                        }
+                    } catch (error) {
+                        reject(new Error(`Failed to parse response: ${error.message}`));
+                    }
+                });
             }).on('error', reject);
 
-            req.write(JSON.stringify(payload));
+            req.write(typeof payload === 'string' ? payload : JSON.stringify(payload));
             req.end();
         });
     }
 
-    parseJSONFromText(text) {
-        let braceCount = 0, startIndex = text.indexOf('{');
-        if (startIndex === -1) return null;
-
-        for (let i = startIndex; i < text.length; i++) {
-            if (text[i] === '{') braceCount++;
-            if (text[i] === '}' && --braceCount === 0) {
-                try {
-                    return JSON.parse(text.slice(startIndex, i + 1));
-                } catch {
-                    return null;
+    // Raw request for binary data
+    async requestRaw(url, data, headers = {}, method = 'PUT') {
+        return new Promise((resolve, reject) => {
+            const { hostname, pathname, search } = new URL(url);
+            const req = https.request({
+                hostname,
+                path: pathname + (search || ''),
+                method,
+                headers
+            }, res => {
+                if (res.statusCode === 200 || res.statusCode === 204) {
+                    resolve();
+                } else {
+                    let responseData = '';
+                    res.on('data', chunk => responseData += chunk);
+                    res.on('end', () => reject(new Error(`Request failed with status ${res.statusCode}: ${responseData}`)));
                 }
-            }
-        }
-        return null;
-    }
+            }).on('error', reject);
 
-    async pollForMessages(chatId, app) {
-        const payload = {
-            ...app,
-            action: 'getChatMessages',
-            chatId,
-            decryptContent: true
-        };
-
-        return new Promise((resolve) => {
-            const interval = setInterval(() => {
-                this.makeRequest('https://chat.openkbs.com/', payload)
-                    .then(jsonString => {
-                        const messages = JSON.parse(jsonString)[0].data.messages;
-
-                        for (const message of messages) {
-                            if (message.role === 'system') {
-                                try {
-                                    const contentData = this.parseJSONFromText(message.content);
-                                    const { _meta_actions, _meta_type, _event, data, type } = contentData;
-
-                                    // Skip if execution continues
-                                    if (_meta_actions?.includes?.("REQUEST_CHAT_MODEL")) continue;
-
-                                    // onResponse finished without tool calls - return LLM response
-                                    if (_meta_type === 'EVENT_FINISHED' && type === 'CONTINUE' && _event === 'onResponse') {
-                                        const lastAssistantMessage = messages.slice().reverse().find(msg => msg.role === 'assistant');
-                                        if (lastAssistantMessage) {
-                                            clearInterval(interval);
-                                            resolve(
-                                                this.parseJSONFromText(lastAssistantMessage.content) ||
-                                                { type: 'FREE_TEXT_RESPONSE', content: lastAssistantMessage.content }
-                                            );
-                                            return;
-                                        }
-                                    }
-
-                                    const result = data?.find?.(item =>
-                                        item.type === 'JOB_COMPLETED' || item.type === 'JOB_FAILED'
-                                    ) || contentData;
-                                    clearInterval(interval);
-                                    resolve(result);
-                                    return;
-
-                                } catch (e) {
-                                    // Continue if message content is not valid JSON
-                                }
-                            }
-                        }
-                    })
-                    .catch(console.error);
-            }, 1000);
+            req.write(data);
+            req.end();
         });
     }
 }
