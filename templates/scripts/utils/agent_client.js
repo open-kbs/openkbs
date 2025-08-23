@@ -97,25 +97,22 @@ class OpenKBSAgentClient {
     /**
      * Run a job and get response from the agent
      *
-     * @returns {Promise<Object>} Response structure from API:
-     * {
-     *   data: { // The actual agent response (always wrapped in 'data')
-     *     // Either TEXT response:
-     *     type: 'TEXT',
-     *     content: 'The assistant's text response...'
+     * @param {string|Array} message - Either:
+     *   - String: "Do something ..."
+     *   - Array: [
+     *       {type:"text", text:"Process this invoice"},
+     *       {type:"image_url", image_url:{url:"https://files.openkbs.com/invoice.png"}}
+     *     ]
      *
-     *     // Or Structured Data response:
-     *     type: 'CUSTOM_TYPE',  // e.g., 'SOME_REPORT', 'DOCUMENT_SAVED', 'JOB_COMPLETED'
-     *     data: { ... },        // Tool-specific data
-     *     _meta_type: 'EVENT_FINISHED',
-     *     _event: 'onResponse'
-     *   },
-     *   chatId: 'xxx-xxx',  // Chat session ID
-     *   msgId: 'msg_xxx'    // Unique message ID
-     * }
-     *
-     * To access the actual result: response.data
-     * To check result type: response.data.type
+     * @returns {Promise<Object>} Response structure:
+     *   {
+     *     data: {
+     *       type: 'TEXT' | 'CUSTOM_TYPE',
+     *       content: '...' | data: {...}
+     *     },
+     *     chatId: 'xxx-xxx',
+     *     msgId: 'msg_xxx'
+     *   }
      */
     async runJob(message, options = {}) {
         const apiKey = await this.getApiKey();
