@@ -16,6 +16,7 @@ const extractJSONFromText = (text) => {
 }
 
 export const getActions = () => [
+    // IMPORTANT: Actions returning JOB_COMPLETED or JOB_FAILED stop agent execution and return final result
     [/[\s\S]*"type"\s*:\s*"JOB_COMPLETED"[\s\S]*/, async (match, event) => {
         const parsedData = extractJSONFromText(match[0]);
         if (parsedData && parsedData.type === "JOB_COMPLETED") {
