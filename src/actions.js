@@ -138,10 +138,10 @@ function isModulePresent(moduleName) {
 }
 
 async function deployAction(moduleName) {
-    const validModules = ['contentRender', 'onRequest', 'onResponse', 'onAddMessages', 'onPublicAPIRequest'];
+    const validModules = ['contentRender', 'onRequest', 'onResponse', 'onAddMessages', 'onPublicAPIRequest', 'onCronjob'];
 
     if (moduleName && !validModules.includes(moduleName)) {
-        return console.error(`Invalid module name ${moduleName} (valid options: 'contentRender', 'onRequest', 'onResponse', 'onAddMessages', 'onPublicAPIRequest')`);
+        return console.error(`Invalid module name ${moduleName} (valid options: 'contentRender', 'onRequest', 'onResponse', 'onAddMessages', 'onPublicAPIRequest', 'onCronjob')`);
     }
 
     const modulesToDeploy = moduleName ? [moduleName] : validModules.filter(isModulePresent);
@@ -217,7 +217,7 @@ async function pushAction(location = 'origin', targetFile, options) {
                 await deployAction();
                 console.green(`KB update complete: All changes have been successfully uploaded to https://${kbId}.apps.openkbs.com`);
             } else if (location === 'localstack') {
-                const modulesToDeploy = ['onRequest', 'onResponse', 'onAddMessages', 'onPublicAPIRequest'].filter(isModulePresent);
+                const modulesToDeploy = ['onRequest', 'onResponse', 'onAddMessages', 'onPublicAPIRequest', 'onCronjob'].filter(isModulePresent);
 
                 const originalDir = process.cwd();
                 for (const module of modulesToDeploy) {
