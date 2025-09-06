@@ -374,6 +374,18 @@ export const getActions = (meta) => [
         });
         return { data: response, ...meta };
     }],
+
+    // example: checkVAT("BG123456789")
+    [/\/?checkVAT\("(.*)"\)/, async (match) => {
+        let response = await openkbs.checkVAT(match[1]);
+        return { data: response, ...meta };
+    }],
+
+    // example: getExchangeRates("USD", "EUR,GBP")
+    [/\/?getExchangeRates\("(.*)"\s*,\s*"(.*)"\)/, async (match) => {
+        let response = await openkbs.getExchangeRates(match[1], match[2]);
+        return { data: response, ...meta };
+    }],
 ];
 ```
 
@@ -599,6 +611,10 @@ The `openkbs` object provides a set of utility functions and services to interac
 * **`openkbs.googleSearch(q, params)`:** Performs a Google search using the provided query and parameters.
 
 * **`openkbs.sendMail(email, subject, content)`:** Sends an email to the specified recipient
+
+* **`openkbs.checkVAT(vatNumber)`:** Validates a VAT number against official databases
+
+* **`openkbs.getExchangeRates(base, symbols)`:** Retrieves current exchange rates
 
 * **`openkbs.documentToText(documentURL, params)`:** Extracts text from various document formats.
 
