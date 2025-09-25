@@ -13,7 +13,7 @@ const {
     deleteFileAction,
     describeAction, deployAction, createByTemplateAction, initByTemplateAction,
     logoutAction, installFrontendPackageAction, modifyAction, downloadModifyAction,
-    updateKnowledgeAction, updateCliAction
+    updateKnowledgeAction, updateCliAction, publishAction, unpublishAction
 } = require('./actions');
 
 
@@ -171,10 +171,30 @@ program
 Examples:
   $ openkbs update
   This will check for CLI updates and install them if available.
-  
+
   $ openkbs update knowledge
   This will check if your local .openkbs/knowledge directory is up to date with the remote repository
   and update it if necessary.
+`);
+
+program
+    .command('publish <domain>')
+    .description('Publish KB to a custom domain')
+    .action(publishAction)
+    .addHelpText('after', `
+Examples:
+  $ openkbs publish example.com
+  This will publish your KB to the domain example.com
+`);
+
+program
+    .command('unpublish <domain>')
+    .description('Unpublish KB from a custom domain')
+    .action(unpublishAction)
+    .addHelpText('after', `
+Examples:
+  $ openkbs unpublish example.com
+  This will unpublish your KB from the domain example.com
 `);
 
 program.parse(process.argv);

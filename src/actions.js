@@ -10,7 +10,7 @@ const {
     fetchAndSaveSettings, downloadFiles, downloadIcon, updateKB, uploadFiles, generateKey, generateMnemonic,
     reset, bold, red, yellow, green, createKB, saveLocalKBData, listKBs, deleteKBFile,
     deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB,
-    listKBsSharedWithMe, downloadTemplates
+    listKBsSharedWithMe, downloadTemplates, KB_API_URL, makePostRequest
 } = require("./utils");
 
 const TEMPLATE_DIR = path.join(os.homedir(), '.openkbs', 'templates');
@@ -618,18 +618,18 @@ async function updateCliAction() {
     try {
         const packageJson = require('../package.json');
         const currentVersion = packageJson.version;
-        
+
         console.log(`Current OpenKBS CLI version: ${currentVersion}`);
         console.log('Checking for updates...');
-        
+
         // Check remote version from S3
         const https = require('https');
         const bucket = 'openkbs-downloads';
         const versionMetadataKey = 'cli/version.json';
-        
+
         let remoteVersionData = null;
         let cliUpdateAvailable = false;
-        
+
         try {
             const fileUrl = `https://${bucket}.s3.amazonaws.com/${versionMetadataKey}`;
             const remoteVersionContent = await new Promise((resolve, reject) => {
@@ -643,25 +643,25 @@ async function updateCliAction() {
                     res.on('end', () => resolve(data));
                 }).on('error', reject);
             });
-            
+
             remoteVersionData = JSON.parse(remoteVersionContent);
             const remoteVersion = remoteVersionData.version;
-            
+
             // Compare versions using semantic versioning
             if (compareVersions(currentVersion, remoteVersion) < 0) {
                 cliUpdateAvailable = true;
                 console.log(`New CLI version available: ${remoteVersion}`);
                 console.log('Updating automatically...');
-                
+
                 // Spawn npm update as detached child process
                 const { spawn } = require('child_process');
                 const updateProcess = spawn('npm', ['update', '-g', 'openkbs'], {
                     detached: true,
                     stdio: 'inherit'
                 });
-                
+
                 updateProcess.unref(); // Allow parent to exit
-                
+
                 console.green(`Update started! OpenKBS CLI will be updated to version ${remoteVersion}.`);
                 console.log('The update will complete in the background.');
             } else {
@@ -670,12 +670,60 @@ async function updateCliAction() {
         } catch (error) {
             console.red('Error fetching CLI version metadata:', error.message);
         }
-        
+
         // Also update knowledge base silently if it exists
         await updateKnowledgeAction(true);
-        
+
     } catch (error) {
         console.red('Error updating CLI:', error.message);
+    }
+}
+
+async function publishAction(domain) {
+    try {
+        const localKBData = await fetchLocalKBData();
+        const { kbId } = localKBData;
+        if (!kbId) return console.red('No KB found. Please push the KB first using the command "openkbs push".');
+
+        console.log(`Publishing KB ${kbId} to domain ${domain}...`);
+        const res = await fetchKBJWT(kbId);
+
+        if (!res?.kbToken) return console.red(`KB ${kbId} does not exist on the remote service`);
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: res.kbToken,
+            action: 'publish',
+            domain: domain
+        });
+
+        console.green(`KB ${kbId} successfully published to ${domain}`);
+        return response;
+    } catch (error) {
+        console.red('Error during publish operation:', error.message);
+    }
+}
+
+async function unpublishAction(domain) {
+    try {
+        const localKBData = await fetchLocalKBData();
+        const { kbId } = localKBData;
+        if (!kbId) return console.red('No KB found. Please push the KB first using the command "openkbs push".');
+
+        console.log(`Unpublishing KB ${kbId} from domain ${domain}...`);
+        const res = await fetchKBJWT(kbId);
+
+        if (!res?.kbToken) return console.red(`KB ${kbId} does not exist on the remote service`);
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: res.kbToken,
+            action: 'unpublish',
+            domain: domain
+        });
+
+        console.green(`KB ${kbId} successfully unpublished from ${domain}`);
+        return response;
+    } catch (error) {
+        console.red('Error during unpublish operation:', error.message);
     }
 }
 
@@ -807,5 +855,7 @@ module.exports = {
     modifyAction,
     downloadModifyAction,
     updateKnowledgeAction,
-    updateCliAction
+    updateCliAction,
+    publishAction,
+    unpublishAction
 };

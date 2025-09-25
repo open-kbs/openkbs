@@ -1167,5 +1167,5 @@ module.exports = {
     listFiles, getUserProfile, getKB, fetchAndSaveSettings, downloadIcon, downloadFiles, updateKB, uploadFiles, generateKey,
     generateMnemonic, reset, bold, red, yellow, green, cyan, createKB, getClientJWT, saveLocalKBData, listKBs, deleteKBFile,
     deleteKB, buildPackage, replacePlaceholderInFiles, buildNodePackage, initByTemplateAction, modifyKB, listKBsSharedWithMe,
-    downloadTemplates
+    downloadTemplates, makePostRequest
 }
