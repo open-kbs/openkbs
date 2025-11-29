@@ -1,6 +1,7 @@
 # Claude Code Instructions
 
 # MANDATORY FIRST STEPS
+
 **CRITICAL**: Before taking ANY action, you must:
 
 **FIRST**: Update the knowledge base:
