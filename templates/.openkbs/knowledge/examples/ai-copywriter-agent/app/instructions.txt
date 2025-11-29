@@ -38,24 +38,59 @@ Description: """
 Output this JSON format if you can't extract the required data
 """
 
-List of API commands you can use to accomplish the Task:
+LIST OF AVAILABLE COMMANDS:
+To execute a command, output it as text and wait for system response.
 
-/googleSearch("query")
+<googleSearch>
+{
+  "query": "search query"
+}
+</googleSearch>
 Description: """
 Get results from Google Search API.
 """
 
-/youtubeSearch("query")
+<youtubeSearch>
+{
+  "query": "search query"
+}
+</youtubeSearch>
 Description: """
-Get results from youtube Search API.
+Get results from YouTube Search API.
 """
 
-/googleImageSearch("query")
+<googleImageSearch>
+{
+  "query": "search query"
+}
+</googleImageSearch>
 Description: """
-Get results from google Image Search
+Get results from Google Image Search.
 """
 
-/webpageToText("URL")
+<webpageToText>
+{
+  "url": "https://example.com/page"
+}
+</webpageToText>
 Description: """
-Use this API to open/read a web pages like product pages.
+Use this API to open/read web pages like product pages.
+"""
+
+<documentToText>
+{
+  "url": "https://example.com/document.pdf"
+}
+</documentToText>
+Description: """
+Extract text from documents (PDF, DOC, etc.).
+"""
+
+<imageToText>
+{
+  "url": "https://example.com/image.png"
+}
+</imageToText>
+Description: """
+OCR - Extract text from images.
 """

@@ -15,7 +15,7 @@ const extractJSONFromText = (text) => {
     return null;
 }
 
-export const getActions = () => [
+export const getActions = (meta) => [
     // IMPORTANT: Actions returning JOB_COMPLETED or JOB_FAILED stop agent execution and return final result
     [/[\s\S]*"type"\s*:\s*"JOB_COMPLETED"[\s\S]*/, async (match, event) => {
         const parsedData = extractJSONFromText(match[0]);
@@ -31,7 +31,6 @@ export const getActions = () => [
         }
     }],
 
-
     [/[\s\S]*"type"\s*:\s*"JOB_FAILED"[\s\S]*/, async (match, event) => {
         const parsedData = extractJSONFromText(match[0]);
         if (parsedData && parsedData.type === "JOB_FAILED") {
@@ -45,24 +44,26 @@ export const getActions = () => [
         }
     }],
 
-    [/\/?googleSearch\("(.*?)"\)/, async (match) => {
-        const q = match[1];
+    // Google Search with XML+JSON format
+    [/<googleSearch>([\s\S]*?)<\/googleSearch>/s, async (match) => {
         try {
-            const response = await openkbs.googleSearch(q, {});
-            const data = response?.map(({ title, link, snippet, pagemap }) => ({
+            const data = JSON.parse(match[1].trim());
+            const response = await openkbs.googleSearch(data.query);
+            const results = response?.map(({ title, link, snippet, pagemap }) => ({
                 title, link, snippet, image: pagemap?.metatags?.[0]?.["og:image"]
             }));
-            return { data };
+            return { data: results, ...meta };
         } catch (e) {
-            return { error: e.message };
+            return { error: e.message, ...meta };
         }
     }],
 
-    [/\/?youtubeSearch\("(.*?)"\)/, async (match) => {
-        const q = match[1];
+    // YouTube Search with XML+JSON format
+    [/<youtubeSearch>([\s\S]*?)<\/youtubeSearch>/s, async (match) => {
         try {
-            const response = await openkbs.googleSearch(q + ' site:youtube.com', { videoOnly: true });
-            const data = response?.map(({ title, link, snippet, pagemap }) => ({
+            const data = JSON.parse(match[1].trim());
+            const response = await openkbs.googleSearch(data.query + ' site:youtube.com', { videoOnly: true });
+            const results = response?.map(({ title, link, snippet, pagemap }) => ({
                 title,
                 link: link.replace('www.youtube.com/watch?v=', 'youtu.be/'),
                 snippet,
@@ -70,62 +71,62 @@ export const getActions = () => [
                 duration: pagemap?.videoobject?.[0]?.duration,
                 channel: pagemap?.metatags?.[0]?.["og:site_name"],
             })).filter(item => item.link.includes('youtu'));
-            return { data };
+            return { data: results, ...meta };
         } catch (e) {
-            return { error: e.message };
+            return { error: e.message, ...meta };
         }
     }],
 
-    [/\/?googleImageSearch\("(.*?)"\)/, async (match) => {
-        const q = match[1];
+    // Google Image Search with XML+JSON format
+    [/<googleImageSearch>([\s\S]*?)<\/googleImageSearch>/s, async (match) => {
         try {
-            const response = await openkbs.googleSearch(q, { searchType: 'image' });
-            const data = response?.map(({ title, link, snippet, pagemap }) => {
+            const data = JSON.parse(match[1].trim());
+            const response = await openkbs.googleSearch(data.query, { searchType: 'image' });
+            const results = response?.map(({ title, link, snippet, pagemap }) => {
                 const imageObj = pagemap?.cse_image?.[0];
                 const thumbnail = imageObj?.src || pagemap?.metatags?.[0]?.["og:image"] || link;
-                return {
-                    title,
-                    link: link,
-                    snippet,
-                    image: thumbnail
-                };
+                return { title, link, snippet, image: thumbnail };
             });
-            return { data };
+            return { data: results, ...meta };
         } catch (e) {
-            return { error: e.message };
+            return { error: e.message, ...meta };
         }
     }],
 
-    [/\/?webpageToText\("(.*)"\)/, async (match) => {
+    // Webpage to Text with XML+JSON format
+    [/<webpageToText>([\s\S]*?)<\/webpageToText>/s, async (match) => {
         try {
-            let response = await openkbs.webpageToText(match[1]);
-            if(!response?.url) return { data: { error: "Unable to read website" } };
-            return { data: response };
+            const data = JSON.parse(match[1].trim());
+            let response = await openkbs.webpageToText(data.url);
+            if (!response?.url) return { data: { error: "Unable to read website" }, ...meta };
+            return { data: response, ...meta };
         } catch (e) {
-            return { error: e.response?.data || e };
+            return { error: e.response?.data || e.message, ...meta };
         }
     }],
 
-    [/\/?documentToText\("(.*)"\)/, async (match) => {
+    // Document to Text with XML+JSON format
+    [/<documentToText>([\s\S]*?)<\/documentToText>/s, async (match) => {
         try {
-            let response = await openkbs.documentToText(match[1]);
-            return { data: response };
+            const data = JSON.parse(match[1].trim());
+            let response = await openkbs.documentToText(data.url);
+            return { data: response, ...meta };
         } catch (e) {
-            return { error: e.response.data };
+            return { error: e.response?.data || e.message, ...meta };
         }
     }],
 
-    [/\/?imageToText\("(.*)"\)/, async (match) => {
+    // Image to Text (OCR) with XML+JSON format
+    [/<imageToText>([\s\S]*?)<\/imageToText>/s, async (match) => {
         try {
-            let response = await openkbs.imageToText(match[1]);
-
+            const data = JSON.parse(match[1].trim());
+            let response = await openkbs.imageToText(data.url);
             if (response?.detections?.[0]?.txt) {
                 response = { detections: response?.detections?.[0]?.txt };
             }
-
-            return { data: response };
+            return { data: response, ...meta };
         } catch (e) {
-            return { error: e.response.data };
+            return { error: e.response?.data || e.message, ...meta };
         }
     }],
 ];

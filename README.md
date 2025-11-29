@@ -231,11 +231,13 @@ src/
 │   ├── onRequest.js            // Handles incoming user messages
 │   ├── onResponse.js           // Handles outgoing LLM messages
 │   ├── onPublicAPIRequest.js   // Handles public API requests
-│   ├── onAddMessages.js         // Handles messages added to the chat (NEW)
+│   ├── onAddMessages.js        // Handles messages added to the chat
+│   ├── onCronjob.js            // Scheduled task handler (runs on cron schedule)
 │   ├── onRequest.json          // Dependencies for onRequest handler
-│   ├── onResponse.json          // Dependencies for onResponse handler
+│   ├── onResponse.json         // Dependencies for onResponse handler
 │   ├── onPublicAPIRequest.json // Dependencies for onPublicAPIRequest handler
-│   └── onAddMessages.json       // Dependencies for onAddMessages handler (NEW)
+│   ├── onAddMessages.json      // Dependencies for onAddMessages handler
+│   └── onCronjob.json          // Dependencies for onCronjob handler
 │── Frontend/
 │   ├── contentRender.js        // Custom rendering logic for chat messages
 │   └── contentRender.json      // Dependencies for the contentRender module
@@ -313,78 +315,218 @@ export const handler = async (event) => {
 
 The `onRequest` and `onResponse` handlers are the core of customizing your OpenKBS agent's behavior. They act as middleware, intercepting messages before they reach the LLM (`onRequest`) and after the LLM generates a response (`onResponse`). This enables you to implement custom logic, interact with external APIs, and control the flow of the conversation.
 
+#### Command Format
+
+Commands use XML tags with JSON content inside. This format is cleaner and more flexible than regex-based parsing:
+
+```xml
+<commandName>
+{
+  "param1": "value1",
+  "param2": "value2"
+}
+</commandName>
+```
+
+For commands without parameters, use self-closing tags:
+```xml
+<commandName/>
+```
+
 **Example:**
 
 ```javascript
 // src/Events/actions.js
+
+// Helper function for uploading generated images
+const uploadGeneratedImage = async (base64Data, meta) => {
+    const fileName = `image-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+    const uploadResult = await openkbs.uploadImage(base64Data, fileName, 'image/png');
+    return {
+        type: 'CHAT_IMAGE',
+        data: { imageUrl: uploadResult.url },
+        ...meta
+    };
+};
+
 export const getActions = (meta) => [
-    
-    [/\/?textToImage\("(.*)"\)/, async (match) => {
-        const response = await openkbs.textToImage(match[1], { serviceId: 'stability.sd3Medium' });
-        const imageSrc = `data:${response.ContentType};base64,${response.base64Data}`;
-        return { type: 'SAVED_CHAT_IMAGE', imageSrc, ...meta };
-    }],
 
-    [/\/?googleSearch\("(.*)"\)/, async (match) => {
-        const q = match[1];
-        const searchParams = match[2] && JSON.parse(match[2]) || {};
-        const params = {
-            q,
-            ...searchParams,
-            key: '{{secrets.googlesearch_api_key}}',
-            cx: '{{secrets.googlesearch_engine_id}}'
-        };
-        const response = (await axios.get('https://www.googleapis.com/customsearch/v1', { params }))?.data?.items;
-        const data = response?.map(({ title, link, snippet, pagemap }) => ({
-            title,
-            link,
-            snippet,
-            image: pagemap?.metatags?.[0]?.["og:image"]
-        }));
-        return { data, ...meta };
-    }],
+    // AI Image Generation (supports multiple models)
+    [/<createAIImage>([\s\S]*?)<\/createAIImage>/s, async (match) => {
+        try {
+            const data = JSON.parse(match[1].trim());
+            const model = data.model || "gemini-2.5-flash-image";
+            const params = { model, n: 1 };
 
-    [/\/?webpageToText\("(.*)"\)/, async (match) => {
-        let response = await openkbs.webpageToText(match[1]);
-        if (response?.content?.length > 5000) {
-            response.content = response.content.substring(0, 5000);
+            if (data.imageUrls?.length > 0) {
+                params.imageUrls = data.imageUrls;
+            }
+
+            if (model === 'gpt-image-1') {
+                const validSizes = ["1024x1024", "1536x1024", "1024x1536", "auto"];
+                params.size = validSizes.includes(data.size) ? data.size : "1024x1024";
+                params.quality = "high";
+            } else if (model === 'gemini-2.5-flash-image') {
+                const validAspectRatios = ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"];
+                params.aspect_ratio = validAspectRatios.includes(data.aspect_ratio) ? data.aspect_ratio : "1:1";
+            }
+
+            const image = await openkbs.generateImage(data.prompt, params);
+            return await uploadGeneratedImage(image[0].b64_json, meta);
+        } catch (error) {
+            return { error: error.message || 'Image creation failed', ...meta };
         }
-        return { data: response, ...meta };
     }],
 
-    [/\/?documentToText\("(.*)"\)/, async (match) => {
-        let response = await openkbs.documentToText(match[1]);
-        if (response?.text?.length > 5000) {
-            response.text = response.text.substring(0, 5000);
+    // AI Video Generation (Sora 2)
+    [/<createAIVideo>([\s\S]*?)<\/createAIVideo>/s, async (match) => {
+        try {
+            const data = JSON.parse(match[1].trim());
+            const params = {
+                video_model: data.model || "sora-2",
+                seconds: [4, 8, 12].includes(data.seconds) ? data.seconds : 8
+            };
+
+            if (data.input_reference_url) {
+                params.input_reference_url = data.input_reference_url;
+            } else {
+                const validSizes = ['720x1280', '1280x720'];
+                params.size = validSizes.includes(data.size) ? data.size : '1280x720';
+            }
+
+            const videoData = await openkbs.generateVideo(data.prompt, params);
+
+            if (videoData?.[0]?.status === 'pending') {
+                return {
+                    type: 'VIDEO_PENDING',
+                    data: { videoId: videoData[0].video_id, message: 'Video generation in progress...' },
+                    ...meta
+                };
+            }
+
+            if (videoData?.[0]?.video_url) {
+                return { type: 'CHAT_VIDEO', data: { videoUrl: videoData[0].video_url }, ...meta };
+            }
+            return { error: 'Video generation failed', ...meta };
+        } catch (error) {
+            return { error: error.message || 'Video creation failed', ...meta };
         }
-        return { data: response, ...meta };
     }],
 
-    [/\/?imageToText\("(.*)"\)/, async (match) => {
-        let response = await openkbs.imageToText(match[1]);
-        if (response?.detections?.[0]?.txt) {
-          response = { detections: response?.detections?.[0]?.txt };
+    // Continue video polling
+    [/<continueVideoPolling>([\s\S]*?)<\/continueVideoPolling>/s, async (match) => {
+        try {
+            const data = JSON.parse(match[1].trim());
+            const videoData = await openkbs.checkVideoStatus(data.videoId);
+
+            if (videoData?.[0]?.status === 'completed' && videoData[0].video_url) {
+                return { type: 'CHAT_VIDEO', data: { videoUrl: videoData[0].video_url }, ...meta };
+            } else if (videoData?.[0]?.status === 'pending') {
+                return { type: 'VIDEO_PENDING', data: { videoId: data.videoId, message: 'Still generating...' }, ...meta };
+            }
+            return { error: 'Video generation failed', ...meta };
+        } catch (error) {
+            return { error: error.message, ...meta };
         }
-        return { data: response, ...meta };
     }],
 
-    [/\/?textToSpeech\("(.*)"\s*,\s*"(.*)"\)/, async (match) => {
-        const response = await openkbs.textToSpeech(match[2], {
-          languageCode: match[1]
-        });
-        return { data: response, ...meta };
+    // Google Search
+    [/<googleSearch>([\s\S]*?)<\/googleSearch>/s, async (match) => {
+        try {
+            const data = JSON.parse(match[1].trim());
+            const response = await openkbs.googleSearch(data.query);
+            const results = response?.map(({ title, link, snippet, pagemap }) => ({
+                title, link, snippet,
+                image: pagemap?.metatags?.[0]?.["og:image"]
+            }));
+            return { data: results, ...meta };
+        } catch (e) {
+            return { error: e.message, ...meta };
+        }
     }],
 
-    // example: checkVAT("BG123456789")
-    [/\/?checkVAT\("(.*)"\)/, async (match) => {
-        let response = await openkbs.checkVAT(match[1]);
-        return { data: response, ...meta };
+    // Web scraping
+    [/<webpageToText>([\s\S]*?)<\/webpageToText>/s, async (match) => {
+        try {
+            const data = JSON.parse(match[1].trim());
+            let response = await openkbs.webpageToText(data.url);
+            if (response?.content?.length > 5000) {
+                response.content = response.content.substring(0, 5000);
+            }
+            return { data: response, ...meta };
+        } catch (e) {
+            return { error: e.message, ...meta };
+        }
     }],
 
-    // example: getExchangeRates("USD", "EUR,GBP")
-    [/\/?getExchangeRates\("(.*)"\s*,\s*"(.*)"\)/, async (match) => {
-        let response = await openkbs.getExchangeRates(match[1], match[2]);
-        return { data: response, ...meta };
+    // Exchange rates with period support
+    [/<getExchangeRates>([\s\S]*?)<\/getExchangeRates>/s, async (match) => {
+        try {
+            const data = JSON.parse(match[1].trim());
+            // period can be: 'latest', 'YYYY-MM-DD' (historical), or 'YYYY-MM-DD..YYYY-MM-DD' (time series)
+            let response = await openkbs.getExchangeRates({
+                base: data.base,
+                symbols: data.symbols,
+                period: data.period || 'latest'
+            });
+            return { data: response, ...meta };
+        } catch (e) {
+            return { error: e.message, ...meta };
+        }
+    }],
+
+    // Send email
+    [/<sendMail>([\s\S]*?)<\/sendMail>/s, async (match) => {
+        try {
+            const data = JSON.parse(match[1].trim());
+            const response = await openkbs.sendMail(data.to, data.subject, data.body);
+            return { type: 'EMAIL_SENT', data: { email: data.to, subject: data.subject, response }, ...meta };
+        } catch (e) {
+            return { error: e.message, ...meta };
+        }
+    }],
+
+    // Schedule task
+    [/<scheduleTask>([\s\S]*?)<\/scheduleTask>/s, async (match) => {
+        try {
+            const data = JSON.parse(match[1].trim());
+            let scheduledTime;
+
+            if (data.time) {
+                let isoTimeStr = data.time.replace(' ', 'T');
+                if (!isoTimeStr.includes('Z') && !isoTimeStr.includes('+')) isoTimeStr += 'Z';
+                scheduledTime = new Date(isoTimeStr).getTime();
+            } else if (data.delay) {
+                let delayMs = 0;
+                if (data.delay.endsWith('h')) delayMs = parseFloat(data.delay) * 3600000;
+                else if (data.delay.endsWith('d')) delayMs = parseFloat(data.delay) * 86400000;
+                else delayMs = parseFloat(data.delay) * 60000;
+                scheduledTime = Date.now() + delayMs;
+            } else {
+                scheduledTime = Date.now() + 3600000;
+            }
+
+            const response = await openkbs.kb({
+                action: 'createScheduledTask',
+                scheduledTime: Math.floor(scheduledTime / 60000) * 60000,
+                taskPayload: { message: `[SCHEDULED_TASK] ${data.message}`, createdAt: Date.now() },
+                description: data.message.substring(0, 50)
+            });
+
+            return { type: 'TASK_SCHEDULED', data: { scheduledTime: new Date(scheduledTime).toISOString(), taskId: response.taskId }, ...meta };
+        } catch (e) {
+            return { error: e.message, ...meta };
+        }
+    }],
+
+    // Get scheduled tasks
+    [/<getScheduledTasks\s*\/>/s, async () => {
+        try {
+            const response = await openkbs.kb({ action: 'getScheduledTasks' });
+            return { type: 'SCHEDULED_TASKS_LIST', data: response, ...meta };
+        } catch (e) {
+            return { error: e.message, ...meta };
+        }
     }],
 ];
 ```
@@ -394,15 +536,13 @@ export const getActions = (meta) => [
 // src/Events/onRequest.js
 import {getActions} from './actions.js';
 
-
 export const handler = async (event) => {
-    const actions = getActions({});
+    const actions = getActions({ _meta_actions: [] });
     for (let [regex, action] of actions) {
         const lastMessage = event.payload.messages[event.payload.messages.length - 1].content;
         const match = lastMessage?.match(regex);
         if (match) return await action(match);
     }
-    
     return { type: 'CONTINUE' }
 };
 ```
@@ -412,14 +552,12 @@ export const handler = async (event) => {
 import {getActions} from './actions.js';
 
 export const handler = async (event) => {
-    const actions = getActions({_meta_actions: ["REQUEST_CHAT_MODEL"]});
-    
+    const actions = getActions({ _meta_actions: ["REQUEST_CHAT_MODEL"] });
     for (let [regex, action] of actions) {
         const lastMessage = event.payload.messages[event.payload.messages.length - 1].content;
         const match = lastMessage?.match(regex);
         if (match) return await action(match);
     }
-    
     return { type: 'CONTINUE' }
 };
 ```
@@ -563,7 +701,81 @@ export const handler = async (event) => {
 
 ```
 
-**Dependencies (onRequest.json, onResponse.json, etc.):**
+#### onCronjob Handler
+
+The `onCronjob` handler enables scheduled task execution for your agent. It runs automatically based on a cron schedule you define, without requiring user interaction.
+
+**How it works:**
+1. Create `src/Events/onCronjob.js` with your handler logic
+2. Define the schedule using `handler.CRON_SCHEDULE` at the end of the file
+3. Deploy with `openkbs push` - the cronjob is automatically registered
+
+**Cron Schedule Format:**
+Standard cron syntax: `minute hour day month weekday`
+
+| Pattern | Description |
+|---------|-------------|
+| `* * * * *` | Every minute |
+| `*/5 * * * *` | Every 5 minutes |
+| `0 * * * *` | Every hour |
+| `0 0 * * *` | Daily at midnight |
+| `0 9 * * 1-5` | Weekdays at 9 AM |
+
+**Example `onCronjob.js`:**
+
+```javascript
+// src/Events/onCronjob.js
+
+export const handler = async (event) => {
+    try {
+        // Fetch external data
+        const response = await fetch('https://api.example.com/status');
+        const data = await response.json();
+
+        // Process and store results
+        await openkbs.createItem({
+            itemType: 'status_check',
+            itemId: `status_${Date.now()}`,
+            body: { timestamp: new Date().toISOString(), ...data }
+        });
+
+        // Optionally trigger a chat for notifications
+        if (data.alertLevel > 5) {
+            await openkbs.chats({
+                chatTitle: `Alert: ${data.message}`,
+                message: JSON.stringify([
+                    { type: "text", text: `ALERT: ${data.message}\nLevel: ${data.alertLevel}` }
+                ])
+            });
+        }
+
+        return {
+            success: true,
+            processed: data,
+            timestamp: new Date().toISOString()
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        };
+    }
+};
+
+// IMPORTANT: Define the cron schedule at the end of the file
+handler.CRON_SCHEDULE = "*/5 * * * *"; // Runs every 5 minutes
+```
+
+**Key Points:**
+- The `CRON_SCHEDULE` must be defined as `handler.CRON_SCHEDULE = "pattern"` at the end of the file
+- The handler receives an empty `event` object (no user payload)
+- Use `openkbs.chats()` to create new chat sessions for notifications
+- All SDK methods (`openkbs.*`) are available
+- Return an object with results for logging purposes
+- To disable the cronjob, simply remove or rename the `onCronjob.js` file and redeploy
+
+**Dependencies (onRequest.json, onResponse.json, onCronjob.json, etc.):**
 
 These files specify the NPM package dependencies required for the respective event handlers. They follow the standard `package.json` format.
 
@@ -598,33 +810,69 @@ if (actionMatch) {
 ```
 
 
-#### SDK
+#### SDK (Backend `openkbs` object)
 
-The `openkbs` object provides a set of utility functions and services to interact with the OpenKBS platform and external APIs. It's available within the event handlers.  Here are some commonly used functions:
+The `openkbs` object is a global object available in all backend event handlers (`onRequest`, `onResponse`, `onAddMessages`, `onPublicAPIRequest`, `onCronjob`). It provides access to OpenKBS services, external APIs, and data storage.
 
-* **`openkbs.textToImage(prompt, params)`:** Generates an image from a text prompt using a specified or default image generation service. Returns an object containing the image content type and base64 encoded data.
+**Properties:**
+```javascript
+openkbs.kbId              // Current Knowledge Base ID
+openkbs.clientHeaders     // Client headers (e.g., openkbs.clientHeaders['x-forwarded-for'] for IP)
+openkbs.AESKey            // Encryption key for this KB
+openkbs.chatJWT           // JWT token for current chat session
+```
+
+##### Image & Video Generation
+
+* **`openkbs.generateImage(prompt, params)`:** Generates images using AI models. Returns array with `b64_json` data.
+  - `params.model`: `"gemini-2.5-flash-image"` (default, supports image editing) or `"gpt-image-1"` (better for text in images)
+  - `params.imageUrls`: Array of reference image URLs (gemini only)
+  - `params.aspect_ratio`: For gemini: `"1:1"`, `"16:9"`, `"9:16"`, `"3:2"`, `"2:3"`, `"4:3"`, `"3:4"`, `"4:5"`, `"5:4"`, `"21:9"`
+  - `params.size`: For gpt-image-1: `"1024x1024"`, `"1536x1024"`, `"1024x1536"`, `"auto"`
+  - `params.n`: Number of images (default: 1)
+
+* **`openkbs.generateVideo(prompt, params)`:** Generates videos using Sora 2. Returns array with `video_url` or `status: 'pending'`.
+  - `params.video_model`: `"sora-2"` (default, fast) or `"sora-2-pro"` (higher quality)
+  - `params.seconds`: `4`, `8` (default), or `12`
+  - `params.size`: `"1280x720"` (landscape) or `"720x1280"` (portrait)
+  - `params.input_reference_url`: Optional reference image URL
+
+* **`openkbs.checkVideoStatus(videoId)`:** Check status of pending video generation.
+
+* **`openkbs.uploadImage(base64Data, fileName, mimeType)`:** Upload image to storage. Returns `{ url }`.
+
+##### Search & Content Extraction
+
+* **`openkbs.googleSearch(query, params)`:** Performs Google search. Optional `params.searchType: 'image'` for image search.
+
+* **`openkbs.webpageToText(pageURL, params)`:** Extracts text content from a webpage.
+
+* **`openkbs.documentToText(documentURL, params)`:** Extracts text from documents (PDF, DOC, etc.).
+
+* **`openkbs.imageToText(imageUrl, params)`:** OCR - extracts text from images.
+
+##### Communication
+
+* **`openkbs.sendMail(email, subject, content)`:** Sends an email to the specified recipient.
+
+* **`openkbs.textToSpeech(text, params)`:** Converts text to speech. Returns `response.audioContent`.
 
 * **`openkbs.speechToText(audioURL, params)`:** Transcribes audio from a URL to text.
 
-* **`openkbs.webpageToText(pageURL, params)`:** Extracts text content from a given webpage URL.
+##### Data & Utilities
 
-* **`openkbs.googleSearch(q, params)`:** Performs a Google search using the provided query and parameters.
+* **`openkbs.getExchangeRates({ base, symbols, period })`:** Retrieves exchange rates.
+  - `base`: Base currency (e.g., `"EUR"`)
+  - `symbols`: Target currencies (e.g., `"USD,GBP"`)
+  - `period`: `"latest"` (default), `"YYYY-MM-DD"` (historical), or `"YYYY-MM-DD..YYYY-MM-DD"` (time series)
 
-* **`openkbs.sendMail(email, subject, content)`:** Sends an email to the specified recipient
-
-* **`openkbs.checkVAT(vatNumber)`:** Validates a VAT number against official databases
-
-* **`openkbs.getExchangeRates(base, symbols)`:** Retrieves current exchange rates
-
-* **`openkbs.documentToText(documentURL, params)`:** Extracts text from various document formats.
-
-* **`openkbs.imageToText(imageUrl, params)`:** Extracts text from an image.
+* **`openkbs.checkVAT(vatNumber)`:** Validates a VAT number against official databases.
 
 * **`openkbs.translate(text, to)`:** Translates text to the specified target language.
 
 * **`openkbs.detectLanguage(text, params)`:** Detects the language of the provided text.
 
-* **`openkbs.textToSpeech(text, params)`:** Converts text to speech. Returns `response.audioContent` which automatically plays in the chat interface.
+##### Encryption & Storage
 
 * **`openkbs.encrypt(plaintext)`:** Encrypts data using the provided AES key.
 
@@ -632,25 +880,123 @@ The `openkbs` object provides a set of utility functions and services to interac
 
 * **`openkbs.items(data)`:** Interacts with the Items API for creating, updating, and deleting items.
 
+* **`openkbs.createItem({ itemType, itemId, body })`:** Create a new item.
+
+* **`openkbs.updateItem({ itemType, itemId, body })`:** Update an existing item.
+
+* **`openkbs.deleteItem(itemId)`:** Delete an item by ID.
+
+* **`openkbs.getItem(itemId)`:** Get a single item by ID. Returns item with auto-decrypted body.
+
+* **`openkbs.fetchItems({ limit, itemType, beginsWith, from, to, field })`:** Fetch multiple items with filters.
+  - `limit`: Max items to return (default: 1000)
+  - `itemType`: Filter by item type
+  - `beginsWith`: Filter by itemId prefix
+  - `from`, `to`: Date range filters
+  - `field`: Field name for range query
+
 * **`openkbs.chats(data)`:** Interacts with the Chats API.
 
-* **`openkbs.kb(data)`:** Interacts with the Knowledge Base API.
+* **`openkbs.kb(data)`:** Interacts with the Knowledge Base API. Actions include:
+  - `createScheduledTask`: Schedule a future task
+  - `getScheduledTasks`: List all scheduled tasks
+  - `deleteScheduledTask`: Delete a scheduled task
+  - `createPresignedURL`: Get URL for file upload
 
-* **`openkbs.clientHeaders`:** Exposes client headers for accessing information like IP address, location, etc. (e.g., `openkbs.clientHeaders['x-forwarded-for']`).
+* **`openkbs.createEmbeddings(input, model)`:** Create embeddings from input text.
+  - `model`: `"text-embedding-3-large"` (default) or other OpenAI embedding models
+  - Returns: `{ embeddings, totalTokens, dimension }`
 
-* **`openkbs.createEmbeddings(input, model)`:** Create embeddings from input text
+* **`openkbs.parseJSONFromText(text)`:** Utility to extract JSON object from text. Returns parsed object or null.
+
+* **`openkbs.textToImage(prompt, params)`:** (Legacy) Generates image using Stability AI. Use `generateImage` for newer models.
+  - `params.serviceId`: `"stability.sd35Large"` (default) or `"stability.sd3Medium"`
+  - Returns: `{ ContentType, base64Data }`
 
 **Example SDK Usage:**
 
 ```javascript
-// ... inside an action ...
-const image = await openkbs.textToImage('a cat sitting on a mat');
-// ... use image.base64Data and image.ContentType ...
+// Generate an image with Gemini
+const images = await openkbs.generateImage('a sunset over mountains', {
+    model: 'gemini-2.5-flash-image',
+    aspect_ratio: '16:9'
+});
+const base64 = images[0].b64_json;
 
+// Upload the generated image
+const result = await openkbs.uploadImage(base64, 'sunset.png', 'image/png');
+console.log(result.url);
 
-//Encrypt submitted user data
-const encryptedValue = await openkbs.encrypt(userData);
+// Generate a video with Sora 2
+const video = await openkbs.generateVideo('a cat playing with yarn', {
+    video_model: 'sora-2',
+    seconds: 8,
+    size: '1280x720'
+});
 
+// Check video status if pending
+if (video[0]?.status === 'pending') {
+    const status = await openkbs.checkVideoStatus(video[0].video_id);
+    if (status[0]?.video_url) {
+        console.log('Video ready:', status[0].video_url);
+    }
+}
+
+// Get exchange rates for a date range
+const rates = await openkbs.getExchangeRates({
+    base: 'EUR',
+    symbols: 'USD,GBP,JPY',
+    period: '2024-01-01..2024-01-31'
+});
+
+// Item CRUD operations
+await openkbs.createItem({
+    itemType: 'memory',
+    itemId: 'memory_user_settings',
+    body: { theme: 'dark', notifications: true }
+});
+
+const item = await openkbs.getItem('memory_user_settings');
+console.log(item.item.body); // { theme: 'dark', notifications: true }
+
+await openkbs.updateItem({
+    itemType: 'memory',
+    itemId: 'memory_user_settings',
+    body: { theme: 'light', notifications: false }
+});
+
+// Fetch multiple items
+const items = await openkbs.fetchItems({
+    itemType: 'memory',
+    beginsWith: 'memory_',
+    limit: 100
+});
+
+// Schedule a task
+await openkbs.kb({
+    action: 'createScheduledTask',
+    scheduledTime: Date.now() + 3600000, // 1 hour from now
+    taskPayload: { message: 'Reminder to check analytics' },
+    description: 'Analytics reminder'
+});
+
+// Create embeddings
+const { embeddings, totalTokens } = await openkbs.createEmbeddings(
+    'Text to embed',
+    'text-embedding-3-large'
+);
+
+// Access client info
+const clientIP = openkbs.clientHeaders['x-forwarded-for'];
+const userAgent = openkbs.clientHeaders['user-agent'];
+
+// Encrypt/decrypt data
+const encryptedValue = await openkbs.encrypt(JSON.stringify(userData));
+const decryptedValue = JSON.parse(await openkbs.decrypt(encryptedValue));
+
+// Parse JSON from LLM response
+const jsonData = openkbs.parseJSONFromText('Some text {"key": "value"} more text');
+// Returns: { key: "value" }
 ```
 
 #### Managing Secrets
@@ -691,31 +1037,84 @@ This file contains essential configuration settings for the AI agent.
 This file contains the instructions for the LLM, guiding its behavior and interaction with custom functionalities.
 Clear and specific instructions ensure the LLM effectively utilizes provided actions and commands.
 
+**Command Format:**
+Commands use XML tags with JSON content. The LLM outputs these as regular text, and the backend parses and executes them.
+
 **Example Instructions:**
 
 ```
 You are an AI assistant.
 
-You can execute the following commands:
+LIST OF AVAILABLE COMMANDS:
+To execute a command, output it as text and wait for system response.
 
-/googleSearch("query")
+<googleSearch>
+{
+  "query": "search query"
+}
+</googleSearch>
 Description: """
-Get results from Google Search API.
+Get results from the Google Search API.
 """
 $InputLabel = """Let me Search in Google!"""
-$InputValue = """Search in google for the latest news"""
+$InputValue = """Search for latest news"""
 
-/someCommand("param")
+<createAIImage>
+{
+  "model": "gemini-2.5-flash-image",
+  "aspect_ratio": "16:9",
+  "prompt": "image description"
+}
+</createAIImage>
+Description: """
+Generate AI images. Models: gemini-2.5-flash-image (supports image editing, aspect ratios), gpt-image-1 (better for text).
+"""
+
+<createAIVideo>
+{
+  "model": "sora-2",
+  "size": "1280x720",
+  "seconds": 8,
+  "prompt": "video description"
+}
+</createAIVideo>
+Description: """
+Generate AI videos with Sora 2. Duration: 4, 8, or 12 seconds.
+"""
+
+<getExchangeRates>
+{
+  "base": "EUR",
+  "symbols": "USD,GBP",
+  "period": "latest"
+}
+</getExchangeRates>
+Description: """
+Get exchange rates. Period: 'latest', 'YYYY-MM-DD' (historical), or 'YYYY-MM-DD..YYYY-MM-DD' (time series).
+"""
+
+<scheduleTask>
+{
+  "delay": "2h",
+  "message": "Task description"
+}
+</scheduleTask>
+Description: """
+Schedule a future task. Use delay (minutes, "2h", "1d") or specific time (UTC).
+"""
+
+<getScheduledTasks/>
+Description: """
+List all scheduled tasks.
+"""
 
 $Comment = """
 Any instructions or comments placed here will be removed before sending to the LLM.
 These can span multiple lines and contain any characters, code, or formatting.
 """
-...
-
 ```
 
-Command definitions may include \$InputLabel and \$InputValue which are invisiable to the LLM:
+Command definitions may include \$InputLabel and \$InputValue which are invisible to the LLM:
 
 `$InputLabel` - Text displayed as a selectable option in the chat interface.
 
@@ -723,7 +1122,7 @@ Command definitions may include \$InputLabel and \$InputValue which are invisiab
 
 These features provide quick command access and pre-populate inputs, enhancing user interaction.
 
-`zipMessages` and  `unzipMessages` command instructions allow the LLM to manage the chat size by summarizing or restoring portions of the conversation, optimizing context retention and token usage.
+`zipMessages` and `unzipMessages` command instructions allow the LLM to manage the chat size by summarizing or restoring portions of the conversation, optimizing context retention and token usage.
 
 Instructions:
 ```
@@ -738,7 +1137,7 @@ Include message IDs with optional summaries to maintain context while using fewe
 ```
 /unzipMessages([{ "MSG_ID" : 1234567890123 }])
 Description: """
-Uncompresses the message associated with the provided `MSG_ID`, restoring its original content to the chat. 
+Uncompresses the message associated with the provided `MSG_ID`, restoring its original content to the chat.
 """
 ```
 
@@ -811,40 +1210,149 @@ The `contentRender.js` file is the heart of frontend customization. It can expor
 
 - **`onDeleteChatMessage(params)`:** This async function is triggered when a chat message is deleted. This function receives a `params` object similar to the `onRenderChatMessage` function but also includes `chatId`, `message` (the message being deleted), and can be used to perform cleanup actions related to custom rendered content. If not defined, a default delete message function is executed.
 
-**Example `contentRender.js`:**
+**Example `contentRender.js` with Command Rendering:**
 
 ```javascript
 import React from 'react';
+import { Box, Tooltip, Typography, Zoom } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import ImageIcon from '@mui/icons-material/Image';
+import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
+
+// Define command patterns to detect
+const COMMAND_PATTERNS = [
+    /<createAIImage>[\s\S]*?<\/createAIImage>/,
+    /<createAIVideo>[\s\S]*?<\/createAIVideo>/,
+    /<googleSearch>[\s\S]*?<\/googleSearch>/
+];
+
+// Icon mapping for commands
+const commandIcons = {
+    createAIImage: ImageIcon,
+    createAIVideo: VideoLibraryIcon,
+    googleSearch: SearchIcon
+};
+
+// Parse commands from content
+const parseCommands = (content) => {
+    const commands = [];
+    const regex = /<(\w+)>([\s\S]*?)<\/\1>/g;
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+        try {
+            commands.push({
+                name: match[1],
+                data: JSON.parse(match[2].trim())
+            });
+        } catch (e) {}
+    }
+    return commands;
+};
+
+// Render command as icon with tooltip
+const CommandIcon = ({ command }) => {
+    const Icon = commandIcons[command.name] || SearchIcon;
+    return (
+        <Tooltip title={<pre>{JSON.stringify(command.data, null, 2)}</pre>} arrow>
+            <Box sx={{
+                display: 'inline-flex',
+                width: 32, height: 32,
+                borderRadius: '50%',
+                backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                border: '2px solid rgba(76, 175, 80, 0.3)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 0.5
+            }}>
+                <Icon sx={{ fontSize: 16, color: '#4CAF50' }} />
+            </Box>
+        </Tooltip>
+    );
+};
 
 const onRenderChatMessage = async (params) => {
-  const { content, role } = params.messages[params.msgIndex];
-  if (role === 'assistant' && content.startsWith('```json')) {
-    try {
-      const jsonData = JSON.parse(content.replace('```json', '').replace('```', ''));
-      return <pre>{JSON.stringify(jsonData, null, 2)}</pre>;
-    } catch (e) {
-      console.error('Error parsing JSON:', e);
-      return null;
+    const { content, role } = params.messages[params.msgIndex];
+
+    // Check for commands in content
+    const hasCommand = COMMAND_PATTERNS.some(p => p.test(content));
+    if (hasCommand) {
+        const commands = parseCommands(content);
+        return (
+            <Box>
+                {commands.map((cmd, i) => <CommandIcon key={i} command={cmd} />)}
+            </Box>
+        );
     }
-  }
+
+    return null; // Use default rendering
 };
 
-const Header = ({ setRenderSettings }) => {
-  // Custom header content
-  return (
-          <div>
-            <h1>Custom Chat Header</h1>
-          </div>
-  );
+const Header = ({ setRenderSettings, openkbs, setSystemAlert }) => {
+    const [panelOpen, setPanelOpen] = React.useState(false);
+
+    React.useEffect(() => {
+        setRenderSettings({
+            disableBalanceView: false,
+            disableEmojiButton: true,
+            backgroundOpacity: 0.02
+        });
+    }, [setRenderSettings]);
+
+    return (
+        <>
+            {/* Settings button */}
+            <Box
+                onClick={() => setPanelOpen(true)}
+                sx={{
+                    position: 'absolute',
+                    top: 90, left: 340,
+                    width: 40, height: 40,
+                    borderRadius: '50%',
+                    backgroundColor: 'white',
+                    border: '1px solid #e0e0e0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 1200
+                }}
+            >
+                ⚙️
+            </Box>
+
+            {/* Simple settings panel */}
+            {panelOpen && (
+                <Box
+                    onClick={() => setPanelOpen(false)}
+                    sx={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        zIndex: 1300,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                >
+                    <Box
+                        onClick={e => e.stopPropagation()}
+                        sx={{
+                            width: 400,
+                            backgroundColor: 'white',
+                            borderRadius: 2,
+                            p: 3
+                        }}
+                    >
+                        <Typography variant="h6">Settings</Typography>
+                        <Typography>Your custom admin panel here</Typography>
+                    </Box>
+                </Box>
+            )}
+        </>
+    );
 };
 
-const onDeleteChatMessage = async (params) => {
-  // Perform cleanup or other actions on chat message delete
-  const { chatId, message, itemsAPI, KB, setBlockingLoading } = params;
-  // Perform action before the message is deleted
-};
-
-const exports = { onRenderChatMessage, Header, onDeleteChatMessage };
+const exports = { onRenderChatMessage, Header };
 window.contentRender = exports;
 export default exports;
 ```
@@ -1041,6 +1549,257 @@ const onRenderChatMessage = async (params) => {
     const userData = kbUserData();
     console.log(`User data: ${JSON.stringify(userData)}`);
 };
+```
+
+#### Frontend SDK (`openkbs` object)
+
+The `openkbs` object is passed to `Header` and `onRenderChatMessage` functions, providing access to item storage, file management, and KB sharing APIs.
+
+**Properties:**
+```javascript
+const Header = ({ openkbs }) => {
+    console.log(openkbs.kbId);      // Current KB ID
+    console.log(openkbs.KBData);    // Full KB configuration
+    console.log(openkbs.Files);     // Files API module
+    console.log(openkbs.itemsAPI);  // Items API module (low-level)
+    console.log(openkbs.KBAPI);     // KB API module
+};
+```
+
+##### Item CRUD Operations
+
+```javascript
+// Create an item
+await openkbs.createItem({
+    itemType: 'memory',
+    itemId: 'memory_user_preferences',
+    body: { theme: 'dark', language: 'en' }  // Auto-encrypted
+});
+
+// Update an item
+await openkbs.updateItem({
+    itemType: 'memory',
+    itemId: 'memory_user_preferences',
+    body: { theme: 'light', language: 'bg' }
+});
+
+// Get a single item (auto-decrypted)
+const result = await openkbs.getItem('memory_user_preferences');
+console.log(result.item.body);  // { theme: 'light', language: 'bg' }
+
+// Delete an item
+await openkbs.deleteItem('memory_user_preferences');
+
+// Fetch multiple items with filters
+const items = await openkbs.fetchItems({
+    itemType: 'memory',           // Filter by item type
+    limit: 100,                   // Max items to return
+    beginsWith: 'memory_',        // Filter by ID prefix
+    from: '2024-01-01',           // Range start (for date fields)
+    to: '2024-12-31',             // Range end
+    field: 'createdAt',           // Field for range query
+    sortBy: 'createdAt',          // Sort field
+    sortOrder: 'desc'             // 'asc' or 'desc'
+});
+
+// Items are returned with decrypted bodies
+items.items.forEach(({ item, meta }) => {
+    console.log(meta.itemId, item.body);
+});
+```
+
+##### Encryption Utilities
+
+```javascript
+// Encrypt sensitive data
+const encrypted = await openkbs.encrypt('sensitive data');
+
+// Decrypt data
+const decrypted = await openkbs.decrypt(encrypted);
+```
+
+##### Files API (`openkbs.Files`)
+
+```javascript
+// List files in a namespace
+const files = await openkbs.Files.listFiles('files');
+
+// Upload a file
+const file = new File(['content'], 'example.txt', { type: 'text/plain' });
+await openkbs.Files.uploadFileAPI(file, 'files', (progress) => {
+    console.log(`Upload progress: ${progress}%`);
+});
+
+// Create presigned URL for upload/download
+const url = await openkbs.Files.createPresignedURL(
+    'files',           // namespace
+    'putObject',       // 'putObject' or 'getObject'
+    'myfile.pdf',      // filename
+    'application/pdf'  // content type
+);
+
+// Delete a file
+await openkbs.Files.deleteRawKBFile('filename.txt', 'files');
+
+// Rename a file
+await openkbs.Files.renameFile(
+    'files/kbId/old-name.txt',  // old path
+    'new-name.txt',              // new name
+    'files'                      // namespace
+);
+
+// Secrets management
+const secrets = await openkbs.Files.listSecrets();
+await openkbs.Files.createSecretWithKBToken('API_KEY', 'secret-value');
+await openkbs.Files.deleteSecret('API_KEY');
+
+// File versions
+const versions = await openkbs.Files.listVersions('myfile.js', 'functions');
+await openkbs.Files.restoreVersion('version-id', 'myfile.js', 'functions');
+```
+
+##### KB API (`openkbs.KBAPI`)
+
+```javascript
+// Get KB configuration
+const kb = await openkbs.KBAPI.getKB();
+
+// Share KB with another user (by email)
+await openkbs.KBAPI.shareKBWith('user@example.com');
+
+// Get list of users KB is shared with
+const shares = await openkbs.KBAPI.getKBShares();
+// Returns: { sharedWith: ['user1@example.com', 'user2@example.com'] }
+
+// Remove share
+await openkbs.KBAPI.unshareKBWith('user@example.com');
+
+// API Keys management
+const keys = await openkbs.KBAPI.getAPIKeys();
+const newKey = await openkbs.KBAPI.createAPIKey('My API Key', { resources: '*' });
+await openkbs.KBAPI.deleteAPIKey('api-key-id');
+
+// Update KB variable
+await openkbs.KBAPI.updateVariable('customSetting', 'value');
+
+// Search items (semantic search if embeddings enabled)
+const results = await openkbs.KBAPI.searchItems('search query', openkbs.kbId, 100);
+```
+
+##### Complete Header Example with Admin Panel
+
+```javascript
+import React, { useState, useEffect } from 'react';
+import { Box, IconButton, Dialog, Tabs, Tab, List, ListItem,
+         ListItemText, TextField, Button, Typography } from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings';
+
+const Header = ({ openkbs, setRenderSettings, setSystemAlert, setBlockingLoading }) => {
+    const [open, setOpen] = useState(false);
+    const [tab, setTab] = useState(0);
+    const [files, setFiles] = useState([]);
+    const [shares, setShares] = useState([]);
+    const [email, setEmail] = useState('');
+
+    useEffect(() => {
+        setRenderSettings({
+            disableEmojiButton: true,
+            backgroundOpacity: 0.02
+        });
+    }, []);
+
+    // Load files
+    const loadFiles = async () => {
+        setBlockingLoading(true);
+        try {
+            const result = await openkbs.Files.listFiles('files');
+            setFiles(result || []);
+        } finally {
+            setBlockingLoading(false);
+        }
+    };
+
+    // Load shares
+    const loadShares = async () => {
+        const result = await openkbs.KBAPI.getKBShares();
+        setShares(result?.sharedWith || []);
+    };
+
+    // Share with user
+    const shareWith = async () => {
+        try {
+            await openkbs.KBAPI.shareKBWith(email);
+            setSystemAlert({ msg: `Shared with ${email}`, type: 'success', duration: 3000 });
+            setEmail('');
+            loadShares();
+        } catch (e) {
+            setSystemAlert({ msg: e.message, type: 'error', duration: 5000 });
+        }
+    };
+
+    useEffect(() => {
+        if (open && tab === 0) loadFiles();
+        if (open && tab === 1) loadShares();
+    }, [open, tab]);
+
+    return (
+        <>
+            <IconButton
+                onClick={() => setOpen(true)}
+                sx={{ position: 'absolute', top: 80, right: 20, zIndex: 1200 }}
+            >
+                <SettingsIcon />
+            </IconButton>
+
+            <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
+                <Box sx={{ p: 2 }}>
+                    <Typography variant="h6">Settings</Typography>
+                    <Tabs value={tab} onChange={(e, v) => setTab(v)}>
+                        <Tab label="Files" />
+                        <Tab label="Sharing" />
+                    </Tabs>
+
+                    {tab === 0 && (
+                        <List>
+                            {files.map((file, i) => (
+                                <ListItem key={i}>
+                                    <ListItemText primary={file.name} />
+                                </ListItem>
+                            ))}
+                        </List>
+                    )}
+
+                    {tab === 1 && (
+                        <Box>
+                            <Box sx={{ display: 'flex', gap: 1, my: 2 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
+                                <Button variant="contained" onClick={shareWith}>
+                                    Share
+                                </Button>
+                            </Box>
+                            <List>
+                                {shares.map((s, i) => (
+                                    <ListItem key={i}>
+                                        <ListItemText primary={s} />
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </Box>
+                    )}
+                </Box>
+            </Dialog>
+        </>
+    );
+};
+
+const exports = { Header };
+window.contentRender = exports;
+export default exports;
 ```
 
 ## API

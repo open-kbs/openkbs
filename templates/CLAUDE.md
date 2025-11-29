@@ -31,44 +31,118 @@ Runs in serverless compute (stateless, ephemeral). Can only reach internet-acces
 - **`onRequest`**: Triggered on user message, allows pre-processing
 - **`onResponse`**: Activated after LLM response, enables command extraction and action execution
 
-### NPM Dependencies
-Add dependencies to the handler's JSON file:
-```json
-// onResponse.json or onRequest.json
+### Command Format
+Commands use XML tags with JSON content. The LLM outputs these as regular text:
+```xml
+<commandName>
 {
-  "dependencies": {
-    "mysql2": "latest"
-  }
+  "param1": "value1",
+  "param2": "value2"
+}
+</commandName>
+```
+
+Self-closing tags for commands without parameters:
+```xml
+<commandName/>
+```
+
+### Action Pattern
+```javascript
+// src/Events/actions.js
+export const getActions = (meta) => [
+    [/<commandName>([\s\S]*?)<\/commandName>/s, async (match) => {
+        const data = JSON.parse(match[1].trim());
+        // Execute action
+        return { type: 'RESULT', data: result, ...meta };
+    }],
+];
+```
+
+### Key SDK Methods
+**Image Generation:**
+```javascript
+const images = await openkbs.generateImage(prompt, {
+    model: 'gemini-2.5-flash-image', // or 'gpt-image-1'
+    aspect_ratio: '16:9',            // gemini only
+    imageUrls: ['url'],              // gemini only - for editing
+    size: '1024x1024'                // gpt-image-1 only
+});
+const result = await openkbs.uploadImage(images[0].b64_json, 'file.png', 'image/png');
+```
+
+**Video Generation:**
+```javascript
+const video = await openkbs.generateVideo(prompt, {
+    video_model: 'sora-2',           // or 'sora-2-pro'
+    seconds: 8,                      // 4, 8, or 12
+    size: '1280x720',                // or '720x1280'
+    input_reference_url: 'url'       // optional reference image
+});
+const status = await openkbs.checkVideoStatus(videoId);
+```
+
+**Other Methods:**
+- `openkbs.googleSearch(query, { searchType: 'image' })`
+- `openkbs.webpageToText(url)`
+- `openkbs.sendMail(to, subject, body)`
+- `openkbs.getExchangeRates({ base, symbols, period })` - period: 'latest', 'YYYY-MM-DD', 'YYYY-MM-DD..YYYY-MM-DD'
+- `openkbs.createItem/updateItem/deleteItem` - for memory storage
+- `openkbs.kb({ action: 'createScheduledTask', scheduledTime, taskPayload })`
+
+### NPM Dependencies
+Add to handler's JSON file:
+```json
+{
+  "dependencies": { "mysql2": "latest" }
 }
 ```
 
 ### Secrets Management
-Use `{{secrets.KEY}}` placeholders in code:
+Use `{{secrets.KEY}}` placeholders:
 ```javascript
 const key = "{{secrets.KEY}}"
 ```
 
-**Workflow**:
-1. Write code using `{{secrets.SECRET_NAME}}` placeholders
-2. Deploy with `openkbs push`
-3. Direct user to set secrets: `https://[kbId].apps.openkbs.com/?add_secrets=SECRET_NAME1,SECRET_NAME2`
-
 ## Browser Environment (`./src/Frontend/`)
 Runs in user's browser at `https://[kbId].apps.openkbs.com`. React-based UI customization.
 
-### contentRender
-The `contentRender.js` exports functions for interface customization:
-- **`onRenderChatMessage(params)`**: Called when rendering each chat message
+### contentRender.js
+```javascript
+import React from 'react';
+
+// Render commands as icons
+const onRenderChatMessage = async (params) => {
+    const { content } = params.messages[params.msgIndex];
+    // Custom rendering logic
+    return null; // null = use default
+};
+
+// Custom header with settings panel
+const Header = ({ setRenderSettings, openkbs }) => {
+    React.useEffect(() => {
+        setRenderSettings({
+            disableEmojiButton: true,
+            backgroundOpacity: 0.02
+        });
+    }, []);
+    return <div>Custom Header</div>;
+};
+
+const exports = { onRenderChatMessage, Header };
+window.contentRender = exports;
+export default exports;
+```
 
 ### NPM Dependencies
-Add frontend dependencies to `contentRender.json`.
+Add to `contentRender.json`. Built-in (fixed): react, @mui/material, @mui/icons-material, @emotion/react.
 
 # OpenKBS Commands
-- `openkbs create my-agent` - Create new agent directory structure
-- `openkbs push` - Deploy agent to OpenKBS cloud
+- `openkbs create my-agent` - Create new agent
+- `openkbs push` - Deploy to cloud
 - `openkbs update` - Update knowledge base
 
 # Development Guidelines
-- To add backend npm dependency, add to `onRequest.json` or `onResponse.json`
-- To add frontend npm dependency, add to `contentRender.json`
+- Backend deps → `onRequest.json` or `onResponse.json`
+- Frontend deps → `contentRender.json`
 - Provide README.md for the agent
