@@ -1,5 +1,9 @@
 # Claude Code Instructions
 
+> **Full Documentation**: For comprehensive SDK reference, API details, and advanced examples, fetch the official documentation:
+> `https://raw.githubusercontent.com/open-kbs/openkbs/refs/heads/main/README.md`
+> Or visit: https://github.com/open-kbs/openkbs
+
 # MANDATORY FIRST STEPS
 
 **CRITICAL**: Before taking ANY action, you must:
