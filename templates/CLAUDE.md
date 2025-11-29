@@ -21,7 +21,201 @@ openkbs update
 - Add npm dependencies only if necessary
 - Before using third-party services in handlers, ask the user for permission
 
-# Architecture Overview
+---
+
+# OpenKBS Framework Overview
+
+## What is OpenKBS?
+
+OpenKBS is a framework for building **AI agents** - intelligent assistants that can:
+- Converse with users via LLM (Claude, GPT, etc.)
+- Execute commands (generate images, send emails, search web, etc.)
+- Store and retrieve data (memory system)
+- Run scheduled tasks (cronjobs)
+- Provide custom UI (React-based frontend)
+
+## How It Works - The Request/Response Cycle
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           USER SENDS MESSAGE                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  1. onRequest Handler (optional)                                            │
+│     - Pre-process user message                                              │
+│     - Inject context (memory items, user data)                              │
+│     - Validate or transform input                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  2. LLM Processing                                                          │
+│     - System instructions from app/instructions.txt                         │
+│     - Conversation history                                                  │
+│     - LLM generates response (may include <command> tags)                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  3. onResponse Handler                                                      │
+│     - Parse LLM response for commands: <commandName>{...}</commandName>     │
+│     - Execute matching actions from actions.js                              │
+│     - Return result with _meta_actions:                                     │
+│       • [] = stop, show result to user                                      │
+│       • ["REQUEST_CHAT_MODEL"] = send result back to LLM for continuation   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+                    ▼                               ▼
+        ┌───────────────────┐           ┌───────────────────┐
+        │ _meta_actions: [] │           │ REQUEST_CHAT_MODEL│
+        │ Show to user      │           │ Loop back to LLM  │
+        └───────────────────┘           └───────────────────┘
+```
+
+## Project Structure
+
+```
+my-agent/
+├── app/
+│   ├── settings.json        # Agent config (model, title, tools)
+│   ├── instructions.txt     # System prompt for LLM
+│   └── icon.png             # Agent icon
+├── src/
+│   ├── Events/              # Backend handlers (serverless)
+│   │   ├── onRequest.js     # Pre-process user messages
+│   │   ├── onResponse.js    # Execute commands from LLM
+│   │   ├── actions.js       # Command implementations
+│   │   ├── onCronjob.js     # Scheduled tasks
+│   │   └── *.json           # NPM dependencies per handler
+│   └── Frontend/            # Browser-side React code
+│       ├── contentRender.js # Custom UI (Header, message rendering)
+│       └── contentRender.json # Frontend NPM dependencies
+└── README.md
+```
+
+## Two Execution Environments
+
+### 1. Backend (Cloud) - `src/Events/`
+- Runs in **serverless Lambda** (Node.js)
+- Stateless, ephemeral execution
+- Has `openkbs` SDK object with full capabilities
+- Can access external APIs, databases, send emails
+- Triggered by: user messages, LLM responses, cronjobs, API calls
+
+### 2. Frontend (Browser) - `src/Frontend/`
+- Runs in **user's browser** (React)
+- Customizes chat UI (header, message rendering)
+- Has `openkbs` object with item CRUD, Files API, Sharing API
+- Cannot access secrets or server-side resources
+
+## Event Handlers
+
+| Handler | Trigger | Purpose |
+|---------|---------|---------|
+| `onRequest` | User sends message | Pre-process, inject context, validate |
+| `onResponse` | LLM generates response | Parse commands, execute actions |
+| `onCronjob` | Cron schedule | Automated tasks, cleanup, reports |
+| `onAddMessages` | API adds messages | Process external integrations |
+| `onPublicAPIRequest` | Public API call | Webhooks, external triggers |
+
+## The Command Pattern
+
+LLM outputs commands as XML tags. Backend parses and executes them:
+
+```
+User: "Generate an image of a sunset"
+        ↓
+LLM: "I'll create that for you. <createAIImage>{"prompt": "sunset"}</createAIImage>"
+        ↓
+onResponse: Matches pattern, calls openkbs.generateImage()
+        ↓
+Returns: { type: 'CHAT_IMAGE', data: { imageUrl: '...' }, _meta_actions: [] }
+        ↓
+Frontend: Renders image to user
+```
+
+## Memory System
+
+Persistent key-value storage with automatic encryption:
+
+```javascript
+// Backend
+await openkbs.createItem({ itemType: 'memory', itemId: 'memory_user_prefs', body: { theme: 'dark' } });
+const item = await openkbs.getItem('memory_user_prefs');
+
+// Frontend (same API)
+await openkbs.createItem({ itemType: 'memory', itemId: 'memory_key', body: { data: 'value' } });
+```
+
+Items are auto-encrypted and scoped to the KB. Use prefixes for organization:
+- `memory_` - User/agent memory
+- `agent_` - Agent configuration
+- `cache_` - Temporary cached data
+
+## Frontend Framework
+
+The frontend is an **extendable React application** that runs in the user's browser. You customize it through `contentRender.js` which exports specific functions:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         CHAT APPLICATION (React)                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  Header Component (optional)                                         │   │
+│  │  - Custom UI above chat (settings panels, navigation, branding)      │   │
+│  │  - Receives: openkbs, setRenderSettings, setSystemAlert, etc.        │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  Chat Messages Area                                                  │   │
+│  │  ┌─────────────────────────────────────────────────────────────┐    │   │
+│  │  │  Each message passes through onRenderChatMessage()          │    │   │
+│  │  │  - Return React component → custom rendering                │    │   │
+│  │  │  - Return null → default markdown rendering                 │    │   │
+│  │  │  - Return HIDDEN_MESSAGE → hide message completely          │    │   │
+│  │  └─────────────────────────────────────────────────────────────┘    │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  Input Area (built-in, customizable via setRenderSettings)          │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Extension Points:**
+
+| Export | Purpose |
+|--------|---------|
+| `Header` | Custom header component (settings panels, branding, navigation) |
+| `onRenderChatMessage` | Custom message rendering (widgets, images, hidden messages) |
+
+**What You Can Do:**
+
+1. **Custom Command Widgets** - Render `<createAIImage>` as icon instead of raw XML
+2. **Settings Panels** - Add tabbed panels for Memory, Files, Sharing management
+3. **Hide System Messages** - Filter out technical responses from UI
+4. **Custom Interactions** - Buttons that send follow-up messages via `RequestChatAPI`
+5. **Branding** - Custom logos, colors via `setRenderSettings`
+
+**Built-in Libraries** (no need to install):
+- `react` - React 18
+- `@mui/material` - Material UI components
+- `@mui/icons-material` - Material icons
+- `@emotion/react` - CSS-in-JS styling
+
+**Frontend SDK (`openkbs` object):**
+- Item CRUD - same API as backend
+- `openkbs.Files` - Upload, list, delete files
+- `openkbs.KBAPI` - Share KB with users
+- `openkbs.kbId`, `openkbs.isMobile` - Context info
+
+---
+
+# Architecture Details
 
 OpenKBS provides **two execution environments**:
 
