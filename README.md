@@ -528,6 +528,22 @@ export const getActions = (meta) => [
             return { error: e.message, ...meta };
         }
     }],
+
+    // View image - adds image to LLM vision context
+    [/<viewImage>([\s\S]*?)<\/viewImage>/s, async (match) => {
+        try {
+            const data = JSON.parse(match[1].trim());
+            return {
+                data: [
+                    { type: "text", text: `Viewing image: ${data.url}` },
+                    { type: "image_url", image_url: { url: data.url } }
+                ],
+                ...meta
+            };
+        } catch (e) {
+            return { error: e.message, ...meta };
+        }
+    }],
 ];
 ```
 
@@ -903,6 +919,45 @@ openkbs.chatJWT           // JWT token for current chat session
   - `deleteScheduledTask`: Delete a scheduled task
   - `createPresignedURL`: Get URL for file upload
 
+##### Scheduled Tasks API
+
+Scheduled tasks allow your agent to execute actions at specific times in the future. When a scheduled task fires, it creates a new chat session with the task message.
+
+**Create a scheduled task:**
+```javascript
+const response = await openkbs.kb({
+    action: 'createScheduledTask',
+    scheduledTime: Date.now() + 3600000,  // Unix timestamp in ms (1 hour from now)
+    taskPayload: {
+        message: '[SCHEDULED_TASK] Send weekly report',
+        source: 'marketing_agent',
+        customData: { reportType: 'weekly' }
+    },
+    description: 'Weekly report task'  // Short description for listing
+});
+// Returns: { taskId: 'task_123...' }
+```
+
+**List scheduled tasks:**
+```javascript
+const tasks = await openkbs.kb({ action: 'getScheduledTasks' });
+// Returns: { items: [{ timestamp, taskPayload, description, status }] }
+```
+
+**Delete a scheduled task:**
+```javascript
+await openkbs.kb({
+    action: 'deleteScheduledTask',
+    timestamp: 1704067200000  // The scheduledTime of the task to delete
+});
+```
+
+**How it works:**
+1. Task is stored with the specified `scheduledTime`
+2. At the scheduled time, system creates a new chat with `taskPayload.message` as the initial message
+3. Your agent's `onRequest`/`onResponse` handlers process the message normally
+4. Use `[SCHEDULED_TASK]` prefix in message to help your agent identify scheduled tasks
+
 * **`openkbs.createEmbeddings(input, model)`:** Create embeddings from input text.
   - `model`: `"text-embedding-3-large"` (default) or other OpenAI embedding models
   - Returns: `{ embeddings, totalTokens, dimension }`
@@ -1108,6 +1163,16 @@ Description: """
 List all scheduled tasks.
 """
 
+<viewImage>
+{
+  "url": "https://example.com/image.jpg"
+}
+</viewImage>
+Description: """
+Add an image to the vision context. Use when you have an image URL that needs to be analyzed.
+The image will be added to the conversation for visual analysis.
+"""
+
 $Comment = """
 Any instructions or comments placed here will be removed before sending to the LLM.
 These can span multiple lines and contain any characters, code, or formatting.
@@ -1142,6 +1207,37 @@ Uncompresses the message associated with the provided `MSG_ID`, restoring its or
 ```
 
 **Important:** `MSG_ID` value must be a unique identifier present anywhere in the message content. The OpenKBS platform automatically handles the zipping and unzipping of messages based on these commands. No custom implementation is required.
+
+#### Instruction Variables
+
+OpenKBS provides dynamic variables that can be used in `app/instructions.txt` to inject runtime information:
+
+| Variable | Description | Example Output |
+|----------|-------------|----------------|
+| `{{kbId}}` | Current Knowledge Base ID | `abc123xyz` |
+| `{{openkbsDateNow}}` | Current UTC time (ISO format) | `2025-01-15T14:30:00.000Z` |
+| `{{openkbsTimestamp}}` | Current Unix timestamp (ms) | `1736948200000` |
+| `{{openkbsDate:locale:timezone}}` | Formatted date with locale and timezone | `15/01/2025, 16:30:00 Europe/Sofia` |
+| `{{openkbsDateTZ:timezone}}` | Formatted date with timezone (en-GB locale) | `15/01/2025, 16:30:00 Europe/Sofia` |
+
+**Example usage in instructions.txt:**
+
+```
+You are a helpful assistant.
+
+## Current Time Information
+- UTC Time: {{openkbsDateNow}}
+- Local Time (Bulgaria): {{openkbsDate:bg-BG:Europe/Sofia}}
+- US Eastern Time: {{openkbsDate:en-US:America/New_York}}
+- Unix Timestamp: {{openkbsTimestamp}}
+- Agent ID: {{kbId}}
+
+Use the current time to provide time-aware responses.
+```
+
+**Locale examples:** `en-US`, `en-GB`, `bg-BG`, `de-DE`, `fr-FR`, `ja-JP`
+
+**Timezone examples:** `UTC`, `Europe/Sofia`, `America/New_York`, `Asia/Tokyo`, `Europe/London`
 
 #### Execution Environment
 
@@ -1180,31 +1276,97 @@ The frontend framework dynamically loads the `contentRender.js` module. This mod
 
 The `contentRender.js` file is the heart of frontend customization. It can export several key functions:
 
-- **`onRenderChatMessage(params)`:** This function is called every time a chat message is rendered. It receives an object with various parameters, including:
-    - `msgIndex`: The index of the message being rendered.
-    - `messages`: The entire array of chat messages.
-    - `setMessages`: A function to update the `messages` state.
-    - `iframeRef`: A reference to the iframe element.
-    - `KB`: The Knowledge Base object containing application settings.
-    - `chatContainerRef`: A reference to the chat container element.
-    - `RequestChatAPI`: A function to send a message to the chat API.
-    - `setSystemAlert`: A function to display system alerts.
-    - `setBlockingLoading`: A function to display a loading indicator.
-    - `blockingLoading`: A boolean indicating if the loading indicator is active.
-    - `sendButtonRef`: A reference to the send button element.
-    - `sendButtonRippleRef`: A reference to the send button ripple effect.
-    - `setInputValue`: A function to set the value of the input field.
-    - `renderSettings`: An object containing rendering settings.
-    - `axios`: The axios library for making HTTP requests.
-    - `itemsAPI`: Functions for manipulating KB items.
-    - `createEmbeddingItem`: Functions to create embeddings.
-    - `indexedDB`: IndexedDB wrapper to access data.
-    - `chatAPI`: API to access chat data.
-    - `generateMsgId`: Generates a unique message ID.
-    - `kbUserData`: Function to get KB user data.
-    - `executeNodejs`: Execute custom JavaScript code inside a VM.
+- **`onRenderChatMessage(params)`:** This function is called every time a chat message is rendered. It receives an object with various parameters:
 
-  This function should return a React component representing the rendered message. If not defined, the default rendering mechanism is used.
+  **Message Context:**
+  | Parameter | Description |
+  |-----------|-------------|
+  | `msgIndex` | Index of the message being rendered |
+  | `messages` | Entire array of chat messages |
+  | `setMessages` | Function to update the messages state |
+  | `KB` | Knowledge Base object containing application settings |
+  | `kbUserData` | Function returning KB user data (chatUsername, etc.) |
+
+  **UI Controls:**
+  | Parameter | Description |
+  |-----------|-------------|
+  | `setSystemAlert` | Display system alerts: `setSystemAlert({ severity: 'success', message: 'Done!' })` |
+  | `setBlockingLoading` | Show/hide loading indicator: `setBlockingLoading(true)` |
+  | `blockingLoading` | Boolean indicating if loading indicator is active |
+  | `setInputValue` | Set the chat input field value |
+  | `blockAutoscroll` | Control auto-scrolling behavior |
+
+  **API & Communication:**
+  | Parameter | Description |
+  |-----------|-------------|
+  | `RequestChatAPI` | Send message to chat API: `await RequestChatAPI([...messages, newMsg])` |
+  | `axios` | Axios library for HTTP requests |
+  | `chatAPI` | API to access chat data |
+  | `itemsAPI` | Functions for manipulating KB items |
+
+  **DOM References:**
+  | Parameter | Description |
+  |-----------|-------------|
+  | `iframeRef` | Reference to iframe element |
+  | `chatContainerRef` | Reference to chat container element |
+  | `sendButtonRef` | Reference to send button element |
+  | `sendButtonRippleRef` | Reference to send button ripple effect |
+  | `newChatButtonRef` | Reference to new chat button |
+
+  **Utilities & Libraries:**
+  | Parameter | Description |
+  |-----------|-------------|
+  | `generateMsgId` | Generates unique message ID |
+  | `markdownHandler` | Markdown rendering utilities |
+  | `createEmbeddingItem` | Functions to create embeddings |
+  | `executeNodejs` | Execute custom JavaScript code inside a VM |
+  | `initDB` | Initialize IndexedDB |
+  | `indexedDB` | IndexedDB wrapper for local data access |
+  | `Files` | File management utilities (same as `openkbs.Files`) |
+  | `uploadFileAPI` | Upload files to storage |
+
+  **Rendering Libraries (pre-loaded):**
+  | Parameter | Description |
+  |-----------|-------------|
+  | `theme` | MUI theme object |
+  | `ReactPrismjs` | Syntax highlighting component |
+  | `CopyToClipboard` | Clipboard copy component |
+  | `APIResponseComponent` | Standard API response renderer |
+  | `CodeViewer` | Code display component |
+  | `textDetectionsImageFiles` | OCR detection results |
+
+  **Return Value:** Return a React component to render the message, or `null` to use default rendering. Return `JSON.stringify({ type: 'HIDDEN_MESSAGE' })` to hide a message completely.
+
+  **Example Usage:**
+  ```javascript
+  const onRenderChatMessage = async (params) => {
+      const { content, role } = params.messages[params.msgIndex];
+      const { msgIndex, messages, setSystemAlert, RequestChatAPI,
+              kbUserData, generateMsgId, markdownHandler } = params;
+
+      // Hide system messages
+      if (role === 'system') {
+          return JSON.stringify({ type: 'HIDDEN_MESSAGE' });
+      }
+
+      // Custom rendering for specific content
+      if (content.includes('<myCommand>')) {
+          return <MyCustomComponent content={content} />;
+      }
+
+      // Send a follow-up message
+      const sendFollowUp = async () => {
+          await RequestChatAPI([...messages, {
+              role: 'user',
+              content: 'Follow up message',
+              userId: kbUserData().chatUsername,
+              msgId: generateMsgId()
+          }]);
+      };
+
+      return null; // Use default rendering
+  };
+  ```
 
 - **`Header(props)`:** This React component is rendered at the top of the chat interface. It receives the same `params` object as `onRenderChatMessage`. It can be used to add custom UI elements or controls to the chat header. If not defined, the standard OpenKBS chat header is displayed.
 
@@ -1549,6 +1711,252 @@ const onRenderChatMessage = async (params) => {
     const userData = kbUserData();
     console.log(`User data: ${JSON.stringify(userData)}`);
 };
+```
+
+#### Header Component Props
+
+The `Header` component receives all available props from the OpenKBS chat interface. These props enable full control over chat behavior, UI state, and data access.
+
+**All Available Props:**
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `messages` | Array | Current chat messages array |
+| `setMessages` | Function | Update messages array (e.g., add welcome message) |
+| `KB` | Object | Current Knowledge Base data |
+| `openkbs` | Object | OpenKBS SDK object (see Frontend SDK section) |
+| `setRenderSettings` | Function | Configure UI rendering options |
+| `setSystemAlert` | Function | Show alert notifications |
+| `setBlockingLoading` | Function | Show/hide full-screen loading overlay |
+| `RequestChatAPI` | Function | Send messages to chat API |
+| `chatAPI` | Object | Chat API utilities |
+| `itemsAPI` | Object | Items API (low-level) |
+| `Files` | Object | Files API module |
+| `indexedDB` | Object | IndexedDB interface for local storage |
+| `initDB` | Function | Initialize IndexedDB |
+| `kbUserData` | Function | Get current user data |
+| `navigateToChat` | Function | Navigate to different chat |
+| `setIsContextItemsOpen` | Function | Toggle context items panel |
+| `isContextItemsOpen` | Boolean | Context items panel state |
+| `chatContainerRef` | Ref | Reference to chat container element |
+| `renderSettings` | Object | Current render settings |
+| `blockingLoading` | Boolean | Loading state |
+| `blockAutoscroll` | Boolean | Auto-scroll state |
+| `axios` | Object | Axios HTTP client |
+
+**Common Usage Patterns:**
+
+*setRenderSettings* - Configure UI behavior:
+```javascript
+const Header = ({ setRenderSettings }) => {
+    useEffect(() => {
+        setRenderSettings({
+            disableBalanceView: false,
+            disableEmojiButton: true,
+            disableChatModelsSelect: true,
+            disableShareButton: true,
+            disableMultichat: true,
+            disableMobileLeftButton: true,
+            disableTextToSpeechButton: true,
+            disableInitialScroll: true,
+            backgroundOpacity: 0.02,
+            customStreamingLoader: true,
+            inputLabelsQuickSend: true,
+            setMessageWidth: (content) => content.includes('<html') ? '90%' : undefined
+        });
+    }, [setRenderSettings]);
+};
+```
+
+*setSystemAlert* - Show notifications:
+```javascript
+const Header = ({ setSystemAlert }) => {
+    const showSuccess = () => {
+        setSystemAlert({
+            msg: 'Operation completed successfully',
+            type: 'success',  // 'success', 'error', 'warning', 'info'
+            duration: 3000    // milliseconds
+        });
+    };
+
+    const showError = (error) => {
+        setSystemAlert({
+            msg: error.message,
+            type: 'error',
+            duration: 5000
+        });
+    };
+};
+```
+
+*setBlockingLoading* - Full-screen loading overlay:
+```javascript
+const Header = ({ setBlockingLoading, openkbs }) => {
+    const loadData = async () => {
+        setBlockingLoading(true);  // Show loading
+        // Or with custom text:
+        // setBlockingLoading({ text: 'Loading files...' });
+
+        try {
+            const files = await openkbs.Files.listFiles('files');
+            // Process files...
+        } finally {
+            setBlockingLoading(false);  // Hide loading
+        }
+    };
+};
+```
+
+*RequestChatAPI* - Send messages programmatically:
+```javascript
+const Header = ({ RequestChatAPI, messages, kbUserData, navigateToChat }) => {
+    const sendQuickMessage = (prompt) => {
+        navigateToChat(null);  // Start new chat
+        RequestChatAPI([{
+            role: 'user',
+            content: prompt,
+            userId: kbUserData().chatUsername,
+            msgId: `${Date.now()}-${Math.floor(100000 + Math.random() * 900000)}`
+        }]);
+    };
+
+    return (
+        <button onClick={() => sendQuickMessage('Help me create a marketing plan')}>
+            Quick Action
+        </button>
+    );
+};
+```
+
+*setMessages* - Initialize welcome message:
+```javascript
+const Header = ({ messages, setMessages, openkbs }) => {
+    useEffect(() => {
+        const initWelcome = async () => {
+            // Only for new chats
+            if (!messages || messages.length === 0) {
+                const profile = await openkbs.getItem('memory_profile');
+
+                if (!profile?.item) {
+                    setMessages([{
+                        msgId: `${Date.now()}-${Math.floor(100000 + Math.random() * 900000)}`,
+                        role: 'assistant',
+                        content: 'Welcome! Tell me about your business to get started.'
+                    }]);
+                }
+            }
+        };
+
+        initWelcome();
+    }, [messages, setMessages, openkbs]);
+};
+```
+
+*navigateToChat* - Chat navigation:
+```javascript
+const Header = ({ navigateToChat }) => {
+    // Navigate to specific chat
+    const goToChat = (chatId) => navigateToChat(chatId);
+
+    // Start new chat
+    const newChat = () => navigateToChat(null);
+};
+```
+
+**Complete Header Example:**
+
+```javascript
+import React, { useEffect, useState } from 'react';
+import { IconButton, Dialog, Box, Button } from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings';
+
+const Header = ({
+    setRenderSettings,
+    openkbs,
+    setSystemAlert,
+    setBlockingLoading,
+    messages,
+    setMessages,
+    RequestChatAPI,
+    kbUserData,
+    navigateToChat
+}) => {
+    const [panelOpen, setPanelOpen] = useState(false);
+    const [files, setFiles] = useState([]);
+
+    // Configure UI on mount
+    useEffect(() => {
+        setRenderSettings({
+            disableEmojiButton: true,
+            disableChatModelsSelect: true,
+            backgroundOpacity: 0.02
+        });
+    }, [setRenderSettings]);
+
+    // Initialize welcome message for new chats
+    useEffect(() => {
+        if (!messages?.length && openkbs) {
+            setMessages([{
+                msgId: `${Date.now()}-000000`,
+                role: 'assistant',
+                content: 'Welcome! How can I help you today?'
+            }]);
+        }
+    }, [messages, setMessages, openkbs]);
+
+    // Load files when panel opens
+    const loadFiles = async () => {
+        setBlockingLoading(true);
+        try {
+            const result = await openkbs.Files.listFiles('files');
+            setFiles(result || []);
+        } catch (e) {
+            setSystemAlert({ msg: e.message, type: 'error', duration: 5000 });
+        } finally {
+            setBlockingLoading(false);
+        }
+    };
+
+    // Quick action handler
+    const quickAction = (prompt) => {
+        navigateToChat(null);
+        RequestChatAPI([{
+            role: 'user',
+            content: prompt,
+            userId: kbUserData().chatUsername,
+            msgId: `${Date.now()}-${Math.floor(Math.random() * 900000)}`
+        }]);
+    };
+
+    return (
+        <>
+            <IconButton
+                onClick={() => { setPanelOpen(true); loadFiles(); }}
+                sx={{ position: 'absolute', top: 90, left: 340, zIndex: 1200 }}
+            >
+                <SettingsIcon />
+            </IconButton>
+
+            <Button
+                onClick={() => quickAction('Create a marketing plan')}
+                sx={{ position: 'absolute', top: 90, left: 400, zIndex: 1200 }}
+            >
+                Quick Action
+            </Button>
+
+            <Dialog open={panelOpen} onClose={() => setPanelOpen(false)}>
+                <Box sx={{ p: 2 }}>
+                    <h3>Files ({files.length})</h3>
+                    {files.map((f, i) => <div key={i}>{f.name}</div>)}
+                </Box>
+            </Dialog>
+        </>
+    );
+};
+
+const exports = { Header };
+window.contentRender = exports;
+export default exports;
 ```
 
 #### Frontend SDK (`openkbs` object)
