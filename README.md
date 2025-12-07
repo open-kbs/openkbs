@@ -1173,26 +1173,10 @@ OpenKBS provides a unified API for multiple AI providers. Configure your model i
 ```
 
 ##### Model Capabilities
-
-**Anthropic Claude** (Vision ✓, PDF ✓, Video ✗)
-- `claude-sonnet-4-5-20250929` - 200K context, 64K max output
-- `claude-haiku-4-5-20251001` - 200K context, 64K max output
-
-**OpenAI GPT** (Vision ✓, PDF ✓, Video ✗)
-- `gpt-5` - 400K context
-- `gpt-5.1` - 400K context
-- `gpt-5-mini` - 400K context
-- `gpt-4o` - 128K context
-- `o1` - 200K context (reasoning model)
-- `o3-mini` - 200K context (reasoning model)
-
-**Google Gemini** (Vision ✓, PDF ✓, Video ✓)
-- `gemini-2.5-pro` - 200K context, 64K max output
-- `gemini-3-pro` - 900K context
-
-**Other Models** (Text only - no vision/PDF/video)
-- `meta.llama3.1-405b-cerebras` - 120K context (Cerebras)
-- `qwen-max` - 128K context (Alibaba)
+**Anthropic Claude** (Vision, PDF)
+**OpenAI GPT** (Vision, PDF, Video)
+**Google Gemini** (Vision, PDF, Video)
+**Other Models** (Text only)
 
 ##### Usage in Actions
 
