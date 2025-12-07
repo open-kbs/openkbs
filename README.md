@@ -1120,54 +1120,48 @@ For rich content (images, documents, videos), use a JSON array as the content:
 
 ##### Supported Content Types
 
-| Type | Syntax | Description |
-|------|--------|-------------|
-| **text** | `{ "type": "text", "text": "message" }` | Plain text content |
-| **image_url** | `{ "type": "image_url", "image_url": { "url": "https://..." } }` | Image from URL (JPEG, PNG, GIF, WebP, SVG) |
-| **image_url** (PDF) | `{ "type": "image_url", "image_url": { "url": "https://...pdf" } }` | PDF documents (auto-detected by extension) |
-| **file_url** | `{ "type": "file_url", "file_url": { "url": "https://...", "mimeType": "video/mp4" } }` | Video files (Gemini only) |
+**text** - Plain text content
+```javascript
+{ type: "text", text: "Your message here" }
+```
+
+**image_url** - Images (JPEG, PNG, GIF, WebP, SVG) and PDFs
+```javascript
+{ type: "image_url", image_url: { url: "https://example.com/photo.jpg" } }
+{ type: "image_url", image_url: { url: "https://example.com/document.pdf" } }
+```
+
+**file_url** - Video files (Gemini models only)
+```javascript
+{ type: "file_url", file_url: { url: "https://example.com/video.mp4", mimeType: "video/mp4" } }
+{ type: "file_url", file_url: { url: "https://youtube.com/watch?v=VIDEO_ID" } }
+```
 
 ##### Content Type Examples
 
-**Image Analysis:**
-```json
-[
-  { "type": "text", "text": "What's in this image?" },
-  { "type": "image_url", "image_url": { "url": "https://example.com/photo.jpg" } }
-]
+**Analyze an image:**
+```javascript
+content: JSON.stringify([
+  { type: "text", text: "What's in this image?" },
+  { type: "image_url", image_url: { url: "https://example.com/photo.jpg" } }
+])
 ```
 
-**PDF Document:**
-```json
-[
-  { "type": "text", "text": "Summarize this document:" },
-  { "type": "image_url", "image_url": { "url": "https://example.com/report.pdf" } }
-]
+**Compare multiple images:**
+```javascript
+content: JSON.stringify([
+  { type: "text", text: "Compare these:" },
+  { type: "image_url", image_url: { url: "https://example.com/image1.jpg" } },
+  { type: "image_url", image_url: { url: "https://example.com/image2.jpg" } }
+])
 ```
 
-**Video Analysis (Gemini only):**
-```json
-[
-  { "type": "text", "text": "Describe what happens in this video:" },
-  { "type": "file_url", "file_url": { "url": "https://example.com/video.mp4", "mimeType": "video/mp4" } }
-]
-```
-
-**YouTube Video (Gemini only):**
-```json
-[
-  { "type": "text", "text": "Summarize this video:" },
-  { "type": "file_url", "file_url": { "url": "https://www.youtube.com/watch?v=VIDEO_ID" } }
-]
-```
-
-**Multiple Images:**
-```json
-[
-  { "type": "text", "text": "Compare these two images:" },
-  { "type": "image_url", "image_url": { "url": "https://example.com/image1.jpg" } },
-  { "type": "image_url", "image_url": { "url": "https://example.com/image2.jpg" } }
-]
+**Analyze a video (Gemini only):**
+```javascript
+content: JSON.stringify([
+  { type: "text", text: "Describe this video:" },
+  { type: "file_url", file_url: { url: "https://example.com/video.mp4", mimeType: "video/mp4" } }
+])
 ```
 
 #### Supported AI Models
