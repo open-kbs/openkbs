@@ -1347,13 +1347,11 @@ Uncompresses the message associated with the provided `MSG_ID`, restoring its or
 
 OpenKBS provides dynamic variables that can be used in `app/instructions.txt` to inject runtime information:
 
-| Variable | Description | Example Output |
-|----------|-------------|----------------|
-| `{{kbId}}` | Current Knowledge Base ID | `abc123xyz` |
-| `{{openkbsDateNow}}` | Current UTC time (ISO format) | `2025-01-15T14:30:00.000Z` |
-| `{{openkbsTimestamp}}` | Current Unix timestamp (ms) | `1736948200000` |
-| `{{openkbsDate:locale:timezone}}` | Formatted date with locale and timezone | `15/01/2025, 16:30:00 Europe/Sofia` |
-| `{{openkbsDateTZ:timezone}}` | Formatted date with timezone (en-GB locale) | `15/01/2025, 16:30:00 Europe/Sofia` |
+- `{{kbId}}` - Current Knowledge Base ID → `abc123xyz`
+- `{{openkbsDateNow}}` - Current UTC time (ISO format) → `2025-01-15T14:30:00.000Z`
+- `{{openkbsTimestamp}}` - Current Unix timestamp (ms) → `1736948200000`
+- `{{openkbsDate:locale:timezone}}` - Formatted date with locale and timezone → `15/01/2025, 16:30:00`
+- `{{openkbsDateTZ:timezone}}` - Formatted date with timezone (en-GB locale) → `15/01/2025, 16:30:00`
 
 **Example usage in instructions.txt:**
 
@@ -1414,61 +1412,49 @@ The `contentRender.js` file is the heart of frontend customization. It can expor
 - **`onRenderChatMessage(params)`:** This function is called every time a chat message is rendered. It receives an object with various parameters:
 
   **Message Context:**
-  | Parameter | Description |
-  |-----------|-------------|
-  | `msgIndex` | Index of the message being rendered |
-  | `messages` | Entire array of chat messages |
-  | `setMessages` | Function to update the messages state |
-  | `KB` | Knowledge Base object containing application settings |
-  | `kbUserData` | Function returning KB user data (chatUsername, etc.) |
+  - `msgIndex` - Index of the message being rendered
+  - `messages` - Entire array of chat messages
+  - `setMessages` - Function to update the messages state
+  - `KB` - Knowledge Base object containing application settings
+  - `kbUserData` - Function returning KB user data (chatUsername, etc.)
 
   **UI Controls:**
-  | Parameter | Description |
-  |-----------|-------------|
-  | `setSystemAlert` | Display system alerts: `setSystemAlert({ severity: 'success', message: 'Done!' })` |
-  | `setBlockingLoading` | Show/hide loading indicator: `setBlockingLoading(true)` |
-  | `blockingLoading` | Boolean indicating if loading indicator is active |
-  | `setInputValue` | Set the chat input field value |
-  | `blockAutoscroll` | Control auto-scrolling behavior |
+  - `setSystemAlert` - Display system alerts: `setSystemAlert({ severity: 'success', message: 'Done!' })`
+  - `setBlockingLoading` - Show/hide loading indicator: `setBlockingLoading(true)`
+  - `blockingLoading` - Boolean indicating if loading indicator is active
+  - `setInputValue` - Set the chat input field value
+  - `blockAutoscroll` - Control auto-scrolling behavior
 
   **API & Communication:**
-  | Parameter | Description |
-  |-----------|-------------|
-  | `RequestChatAPI` | Send message to chat API: `await RequestChatAPI([...messages, newMsg])` |
-  | `axios` | Axios library for HTTP requests |
-  | `chatAPI` | API to access chat data |
-  | `itemsAPI` | Functions for manipulating KB items |
+  - `RequestChatAPI` - Send message to chat API: `await RequestChatAPI([...messages, newMsg])`
+  - `axios` - Axios library for HTTP requests
+  - `chatAPI` - API to access chat data
+  - `itemsAPI` - Functions for manipulating KB items
 
   **DOM References:**
-  | Parameter | Description |
-  |-----------|-------------|
-  | `iframeRef` | Reference to iframe element |
-  | `chatContainerRef` | Reference to chat container element |
-  | `sendButtonRef` | Reference to send button element |
-  | `sendButtonRippleRef` | Reference to send button ripple effect |
-  | `newChatButtonRef` | Reference to new chat button |
+  - `iframeRef` - Reference to iframe element
+  - `chatContainerRef` - Reference to chat container element
+  - `sendButtonRef` - Reference to send button element
+  - `sendButtonRippleRef` - Reference to send button ripple effect
+  - `newChatButtonRef` - Reference to new chat button
 
   **Utilities & Libraries:**
-  | Parameter | Description |
-  |-----------|-------------|
-  | `generateMsgId` | Generates unique message ID |
-  | `markdownHandler` | Markdown rendering utilities |
-  | `createEmbeddingItem` | Functions to create embeddings |
-  | `executeNodejs` | Execute custom JavaScript code inside a VM |
-  | `initDB` | Initialize IndexedDB |
-  | `indexedDB` | IndexedDB wrapper for local data access |
-  | `Files` | File management utilities (same as `openkbs.Files`) |
-  | `uploadFileAPI` | Upload files to storage |
+  - `generateMsgId` - Generates unique message ID
+  - `markdownHandler` - Markdown rendering utilities
+  - `createEmbeddingItem` - Functions to create embeddings
+  - `executeNodejs` - Execute custom JavaScript code inside a VM
+  - `initDB` - Initialize IndexedDB
+  - `indexedDB` - IndexedDB wrapper for local data access
+  - `Files` - File management utilities (same as `openkbs.Files`)
+  - `uploadFileAPI` - Upload files to storage
 
   **Rendering Libraries (pre-loaded):**
-  | Parameter | Description |
-  |-----------|-------------|
-  | `theme` | MUI theme object |
-  | `ReactPrismjs` | Syntax highlighting component |
-  | `CopyToClipboard` | Clipboard copy component |
-  | `APIResponseComponent` | Standard API response renderer |
-  | `CodeViewer` | Code display component |
-  | `textDetectionsImageFiles` | OCR detection results |
+  - `theme` - MUI theme object
+  - `ReactPrismjs` - Syntax highlighting component
+  - `CopyToClipboard` - Clipboard copy component
+  - `APIResponseComponent` - Standard API response renderer
+  - `CodeViewer` - Code display component
+  - `textDetectionsImageFiles` - OCR detection results
 
   **Return Value:** Return a React component to render the message, or `null` to use default rendering. Return `JSON.stringify({ type: 'HIDDEN_MESSAGE' })` to hide a message completely.
 
@@ -1854,30 +1840,28 @@ The `Header` component receives all available props from the OpenKBS chat interf
 
 **All Available Props:**
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `messages` | Array | Current chat messages array |
-| `setMessages` | Function | Update messages array (e.g., add welcome message) |
-| `KB` | Object | Current Knowledge Base data |
-| `openkbs` | Object | OpenKBS SDK object (see Frontend SDK section) |
-| `setRenderSettings` | Function | Configure UI rendering options |
-| `setSystemAlert` | Function | Show alert notifications |
-| `setBlockingLoading` | Function | Show/hide full-screen loading overlay |
-| `RequestChatAPI` | Function | Send messages to chat API |
-| `chatAPI` | Object | Chat API utilities |
-| `itemsAPI` | Object | Items API (low-level) |
-| `Files` | Object | Files API module |
-| `indexedDB` | Object | IndexedDB interface for local storage |
-| `initDB` | Function | Initialize IndexedDB |
-| `kbUserData` | Function | Get current user data |
-| `navigateToChat` | Function | Navigate to different chat |
-| `setIsContextItemsOpen` | Function | Toggle context items panel |
-| `isContextItemsOpen` | Boolean | Context items panel state |
-| `chatContainerRef` | Ref | Reference to chat container element |
-| `renderSettings` | Object | Current render settings |
-| `blockingLoading` | Boolean | Loading state |
-| `blockAutoscroll` | Boolean | Auto-scroll state |
-| `axios` | Object | Axios HTTP client |
+- `messages` (Array) - Current chat messages array
+- `setMessages` (Function) - Update messages array (e.g., add welcome message)
+- `KB` (Object) - Current Knowledge Base data
+- `openkbs` (Object) - OpenKBS SDK object (see Frontend SDK section)
+- `setRenderSettings` (Function) - Configure UI rendering options
+- `setSystemAlert` (Function) - Show alert notifications
+- `setBlockingLoading` (Function) - Show/hide full-screen loading overlay
+- `RequestChatAPI` (Function) - Send messages to chat API
+- `chatAPI` (Object) - Chat API utilities
+- `itemsAPI` (Object) - Items API (low-level)
+- `Files` (Object) - Files API module
+- `indexedDB` (Object) - IndexedDB interface for local storage
+- `initDB` (Function) - Initialize IndexedDB
+- `kbUserData` (Function) - Get current user data
+- `navigateToChat` (Function) - Navigate to different chat
+- `setIsContextItemsOpen` (Function) - Toggle context items panel
+- `isContextItemsOpen` (Boolean) - Context items panel state
+- `chatContainerRef` (Ref) - Reference to chat container element
+- `renderSettings` (Object) - Current render settings
+- `blockingLoading` (Boolean) - Loading state
+- `blockAutoscroll` (Boolean) - Auto-scroll state
+- `axios` (Object) - Axios HTTP client
 
 **Common Usage Patterns:**
 
