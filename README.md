@@ -26,6 +26,8 @@ deploy and integrate AI agents and applications.
         - [SDK](#sdk)
         - [Managing Secrets](#managing-secrets)
         - [Application Settings](#application-settings)
+        - [Message Types and Content Formats](#message-types-and-content-formats)
+        - [Supported AI Models](#supported-ai-models)
         - [LLM Instructions](#llm-instructions)
         - [Execution Environment](#execution-environment)
     - [Frontend](#frontend)
@@ -1085,6 +1087,145 @@ This file contains essential configuration settings for the AI agent.
   "searchEngine": "your-search-engine",
   "itemTypes": { }
 }
+```
+
+#### Message Types and Content Formats
+
+OpenKBS supports multiple message content types for rich interactions with AI models. Messages can be sent as plain text or as structured content arrays.
+
+##### Plain Text Messages
+
+The simplest format - just a string:
+
+```javascript
+{
+  "role": "user",
+  "content": "Hello, how are you?"
+}
+```
+
+##### Structured Content Arrays
+
+For rich content (images, documents, videos), use a JSON array as the content:
+
+```javascript
+{
+  role: "user",
+  content: JSON.stringify([
+    { type: "text", text: "Analyze this:" },
+    { type: "image_url", image_url: { url: "https://example.com/image.jpg" } }
+  ])
+}
+```
+
+##### Supported Content Types
+
+| Type | Syntax | Description |
+|------|--------|-------------|
+| **text** | `{ "type": "text", "text": "message" }` | Plain text content |
+| **image_url** | `{ "type": "image_url", "image_url": { "url": "https://..." } }` | Image from URL (JPEG, PNG, GIF, WebP, SVG) |
+| **image_url** (PDF) | `{ "type": "image_url", "image_url": { "url": "https://...pdf" } }` | PDF documents (auto-detected by extension) |
+| **file_url** | `{ "type": "file_url", "file_url": { "url": "https://...", "mimeType": "video/mp4" } }` | Video files (Gemini only) |
+
+##### Content Type Examples
+
+**Image Analysis:**
+```json
+[
+  { "type": "text", "text": "What's in this image?" },
+  { "type": "image_url", "image_url": { "url": "https://example.com/photo.jpg" } }
+]
+```
+
+**PDF Document:**
+```json
+[
+  { "type": "text", "text": "Summarize this document:" },
+  { "type": "image_url", "image_url": { "url": "https://example.com/report.pdf" } }
+]
+```
+
+**Video Analysis (Gemini only):**
+```json
+[
+  { "type": "text", "text": "Describe what happens in this video:" },
+  { "type": "file_url", "file_url": { "url": "https://example.com/video.mp4", "mimeType": "video/mp4" } }
+]
+```
+
+**YouTube Video (Gemini only):**
+```json
+[
+  { "type": "text", "text": "Summarize this video:" },
+  { "type": "file_url", "file_url": { "url": "https://www.youtube.com/watch?v=VIDEO_ID" } }
+]
+```
+
+**Multiple Images:**
+```json
+[
+  { "type": "text", "text": "Compare these two images:" },
+  { "type": "image_url", "image_url": { "url": "https://example.com/image1.jpg" } },
+  { "type": "image_url", "image_url": { "url": "https://example.com/image2.jpg" } }
+]
+```
+
+#### Supported AI Models
+
+OpenKBS provides a unified API for multiple AI providers. Configure your model in `app/settings.json`:
+
+```json
+{
+  "model": "claude-sonnet-4-5-20250929"
+}
+```
+
+##### Model Capabilities Matrix
+
+| Model | Vendor | Context | Vision | PDF | Video | Max Output |
+|-------|--------|---------|--------|-----|-------|------------|
+| **claude-sonnet-4-5-20250929** | Anthropic | 200K | ✓ | ✓ | ✗ | 64K |
+| **claude-haiku-4-5-20251001** | Anthropic | 200K | ✓ | ✓ | ✗ | 64K |
+| **gpt-5** | OpenAI | 400K | ✓ | ✓ | ✗ | - |
+| **gpt-5.1** | OpenAI | 400K | ✓ | ✓ | ✗ | - |
+| **gpt-5-mini** | OpenAI | 400K | ✓ | ✓ | ✗ | - |
+| **gpt-4o** | OpenAI | 128K | ✓ | ✓ | ✗ | - |
+| **o1** | OpenAI | 200K | ✓ | ✓ | ✗ | - |
+| **o3-mini** | OpenAI | 200K | ✓ | ✓ | ✗ | - |
+| **gemini-2.5-pro** | Google | 200K | ✓ | ✓ | ✓ | 64K |
+| **gemini-3-pro** | Google | 900K | ✓ | ✓ | ✓ | - |
+| **meta.llama3.1-405b-cerebras** | Cerebras | 120K | ✗ | ✗ | ✗ | - |
+| **qwen-max** | Alibaba | 128K | ✗ | ✗ | ✗ | - |
+
+
+##### Usage in Actions
+
+When building custom actions that return content to the LLM, use the same content type format:
+
+```javascript
+// In actions.js - returning an image for analysis
+[/<viewImage>([\s\S]*?)<\/viewImage>/s, async (match) => {
+    const data = JSON.parse(match[1].trim());
+    return {
+        data: [
+            { type: "text", text: `Viewing image: ${data.url}` },
+            { type: "image_url", image_url: { url: data.url } }
+        ],
+        _meta_actions: ["REQUEST_CHAT_MODEL"]
+    };
+}]
+
+// Returning a video for analysis (Gemini only)
+[/<viewVideo>([\s\S]*?)<\/viewVideo>/s, async (match) => {
+    const data = JSON.parse(match[1].trim());
+    return {
+        data: [
+            { type: "text", text: `Analyzing video: ${data.url}` },
+            { type: "file_url", file_url: { url: data.url, mimeType: "video/mp4" } }
+        ],
+        _meta_actions: ["REQUEST_CHAT_MODEL"]
+    };
+}]
 ```
 
 #### LLM Instructions
