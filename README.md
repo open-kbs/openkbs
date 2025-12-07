@@ -731,13 +731,11 @@ The `onCronjob` handler enables scheduled task execution for your agent. It runs
 **Cron Schedule Format:**
 Standard cron syntax: `minute hour day month weekday`
 
-| Pattern | Description |
-|---------|-------------|
-| `* * * * *` | Every minute |
-| `*/5 * * * *` | Every 5 minutes |
-| `0 * * * *` | Every hour |
-| `0 0 * * *` | Daily at midnight |
-| `0 9 * * 1-5` | Weekdays at 9 AM |
+- `* * * * *` - Every minute
+- `*/5 * * * *` - Every 5 minutes
+- `0 * * * *` - Every hour
+- `0 0 * * *` - Daily at midnight
+- `0 9 * * 1-5` - Weekdays at 9 AM
 
 **Example `onCronjob.js`:**
 
@@ -1174,23 +1172,27 @@ OpenKBS provides a unified API for multiple AI providers. Configure your model i
 }
 ```
 
-##### Model Capabilities Matrix
+##### Model Capabilities
 
-| Model | Vendor | Context | Vision | PDF | Video | Max Output |
-|-------|--------|---------|--------|-----|-------|------------|
-| **claude-sonnet-4-5-20250929** | Anthropic | 200K | ✓ | ✓ | ✗ | 64K |
-| **claude-haiku-4-5-20251001** | Anthropic | 200K | ✓ | ✓ | ✗ | 64K |
-| **gpt-5** | OpenAI | 400K | ✓ | ✓ | ✗ | - |
-| **gpt-5.1** | OpenAI | 400K | ✓ | ✓ | ✗ | - |
-| **gpt-5-mini** | OpenAI | 400K | ✓ | ✓ | ✗ | - |
-| **gpt-4o** | OpenAI | 128K | ✓ | ✓ | ✗ | - |
-| **o1** | OpenAI | 200K | ✓ | ✓ | ✗ | - |
-| **o3-mini** | OpenAI | 200K | ✓ | ✓ | ✗ | - |
-| **gemini-2.5-pro** | Google | 200K | ✓ | ✓ | ✓ | 64K |
-| **gemini-3-pro** | Google | 900K | ✓ | ✓ | ✓ | - |
-| **meta.llama3.1-405b-cerebras** | Cerebras | 120K | ✗ | ✗ | ✗ | - |
-| **qwen-max** | Alibaba | 128K | ✗ | ✗ | ✗ | - |
+**Anthropic Claude** (Vision ✓, PDF ✓, Video ✗)
+- `claude-sonnet-4-5-20250929` - 200K context, 64K max output
+- `claude-haiku-4-5-20251001` - 200K context, 64K max output
 
+**OpenAI GPT** (Vision ✓, PDF ✓, Video ✗)
+- `gpt-5` - 400K context
+- `gpt-5.1` - 400K context
+- `gpt-5-mini` - 400K context
+- `gpt-4o` - 128K context
+- `o1` - 200K context (reasoning model)
+- `o3-mini` - 200K context (reasoning model)
+
+**Google Gemini** (Vision ✓, PDF ✓, Video ✓)
+- `gemini-2.5-pro` - 200K context, 64K max output
+- `gemini-3-pro` - 900K context
+
+**Other Models** (Text only - no vision/PDF/video)
+- `meta.llama3.1-405b-cerebras` - 120K context (Cerebras)
+- `qwen-max` - 128K context (Alibaba)
 
 ##### Usage in Actions
 
