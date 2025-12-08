@@ -22,7 +22,7 @@ module.exports = {
           loader: 'babel-loader',
           options: {
             presets: ['@babel/preset-env', '@babel/preset-react'],
-            cacheDirectory: true, // Enable caching for faster rebuilds
+            cacheDirectory: true,
           },
         },
       },
@@ -42,7 +42,13 @@ module.exports = {
     },
     compress: true,
     port: 38592,
-    hot: true, // Enable Hot Module Replacement
+    hot: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+      'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
+    },
+    allowedHosts: 'all',
   },
   plugins: [
     new webpack.HotModuleReplacementPlugin(), // Enable HMR globally

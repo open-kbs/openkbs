@@ -1,14 +1,14 @@
 {
-  "chatVendor": "anthropic",
+  "chatVendor": "google",
   "kbDescription": "{{{openkbsAppName}}}",
   "kbTitle": "{{{openkbsAppName}}}",
-  "model": "claude-sonnet-4-20250514",
+  "model": "gemini-3-pro",
   "inputTools": [
     "imageToText",
     "speechToText"
   ],
-  "embeddingModel": "text-embedding-3-small",
-  "embeddingDimension": 1536,
-  "searchEngine": "IndexedDB",
+  "embeddingModel": "text-embedding-3-large",
+  "embeddingDimension": 3072,
+  "searchEngine": "VectorDB",
   "itemTypes": {}
 }
