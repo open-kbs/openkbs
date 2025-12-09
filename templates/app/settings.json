@@ -4,7 +4,6 @@
   "kbTitle": "{{{openkbsAppName}}}",
   "model": "gemini-3-pro",
   "inputTools": [
-    "imageToText",
     "speechToText"
   ],
   "embeddingModel": "text-embedding-3-large",

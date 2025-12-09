@@ -1,15 +1,19 @@
-// This boilerplate code is a starting point for development.
-export const getActions = () => [
-    [/\/?googleSearch\("(.*?)"\)/, async (match) => {
-        const q = match[1];
+export const getActions = (meta, event) => [
+    // Google Search with JSON
+    // Usage: <googleSearch>{"query": "search terms"}</googleSearch>
+    [/<googleSearch>([\s\S]*?)<\/googleSearch>/s, async (match) => {
         try {
-            const response = await openkbs.googleSearch(q, {});
-            const data = response?.map(({ title, link, snippet, pagemap }) => ({
-                title, link, snippet, image: pagemap?.metatags?.[0]?.["og:image"]
+            const data = JSON.parse(match[1].trim());
+            const response = await openkbs.googleSearch(data.query);
+            const results = response?.map(({ title, link, snippet, pagemap }) => ({
+                title,
+                link,
+                snippet,
+                image: pagemap?.metatags?.[0]?.["og:image"]
             }));
-            return { data };
+            return { data: results, ...meta };
         } catch (e) {
-            return { error: e.message };
+            return { error: e.message, ...meta };
         }
     }],
     // add more actions here

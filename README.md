@@ -175,10 +175,8 @@ Enhance your UI with Material-UI components:
 
 ### AI-Powered Frontend Generation
 
-OpenKBS provides simple AI-powered code generation. Use the `openkbs modify` command followed by your requirement:
-
 ```bash
-openkbs modify "Implementing UI to manage renderSettings"
+claude "Implement a settings menu with FileManager and share access functionalities."
 ```
 
 If you need to revert changes:
@@ -188,10 +186,8 @@ git checkout -- .
 
 ## Extend Backend
 
-Extend backend functionality using `openkbs modify` followed by your requirements. Add file paths to scope AI changes to specific files:
-
 ```bash
-openkbs modify "Implement getContent backend tool that returns text or JSON from a given URL" src/Events/actions.js app/instructions.txt
+claude "Implement backend tool to generate images"
 openkbs push
 ```
 

@@ -1,46 +1,45 @@
-import {getActions} from './actions.js';
+import { getActions } from './actions.js';
 
 export const backendHandler = async (event) => {
-    const maxSelfInvokeMessagesCount = 60;
+    const meta = { _meta_actions: ["REQUEST_CHAT_MODEL"] };
     const lastMessage = event.payload.messages[event.payload.messages.length - 1];
-    const actions = getActions();
+    const actions = getActions(meta, event);
 
-    const matchingActions = actions.reduce((acc, [regex, action]) => {
-        const matches = [...lastMessage.content.matchAll(new RegExp(regex, 'g'))];
+    const matchingActions = [];
+    actions.forEach(([regex, action]) => {
+        const matches = [...(lastMessage.content || '').matchAll(new RegExp(regex, 'g'))];
         matches.forEach(match => {
-            acc.push(action(match, event));
+            matchingActions.push(action(match, event));
         });
-        return acc;
-    }, []);
-
-    // IMPORTANT: Actions returning JOB_COMPLETED or JOB_FAILED stop agent execution and return final result
-    const isJobFinished = /"JOB_COMPLETED"|"JOB_FAILED"/.test(lastMessage.content);
-
-    const meta = {
-        _meta_actions:
-            (
-                event?.payload?.messages?.length > maxSelfInvokeMessagesCount ||
-                isJobFinished && lastMessage.role === 'system'
-            )
-                ? []
-                : ["REQUEST_CHAT_MODEL"]
-    }
+    });
 
     if (matchingActions.length > 0) {
         try {
             const results = await Promise.all(matchingActions);
 
-            if (results?.[0]?.data?.some?.(o => o?.type === 'image_url')) {
+            // Check if any result needs LLM callback
+            const needsChatModel = results.some(r =>
+                r?._meta_actions?.includes('REQUEST_CHAT_MODEL')
+            );
+
+            // Handle image data for LLM vision
+            if (results.some(r => r?.data?.some?.(item => item?.type === 'image_url'))) {
                 return {
                     ...results[0],
-                    ...meta
+                    _meta_actions: needsChatModel ? ["REQUEST_CHAT_MODEL"] : []
                 };
             }
 
+            // Single result - return as is
+            if (results.length === 1) {
+                return results[0];
+            }
+
+            // Multiple results
             return {
-                type: 'RESPONSE',
+                type: 'MULTI_RESPONSE',
                 data: results,
-                ...meta
+                _meta_actions: needsChatModel ? ["REQUEST_CHAT_MODEL"] : []
             };
         } catch (error) {
             return {
