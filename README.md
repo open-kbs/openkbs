@@ -171,36 +171,7 @@ Enhance your UI with Material-UI components:
 
    ```bash
    openkbs push 
-   ```
-
-### AI-Powered Frontend Generation
-
-```bash
-claude "Implement a settings menu with FileManager and share access functionalities."
-```
-
-If you need to revert changes:
-```bash
-git checkout -- .
-```
-
-## Extend Backend
-
-```bash
-claude "Implement backend tool to generate images"
-openkbs push
-```
-
-This adds a new backend tool in `actions.js` that:
-- Fetches content from URLs
-- Handles JSON and HTML responses
-- Auto-registers in `instructions.txt` (enabling LLM to understand and use it)
-- Available to users and LLM through chat
-
-Example usage in chat:
-```
-/getContent("https://api.example.com/data")
-```
+   `````
 
 ## Mobile & Desktop App
 
