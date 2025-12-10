@@ -233,53 +233,42 @@ The core of the OpenKBS backend framework revolves around the `onRequest` and `o
 
 ```javascript
 // src/Events/actions.js
-export const getActions = (meta) => {
-    return [
-        // Define your regular expressions and corresponding actions here
-        [/\/?yourCommand\("(.*)"\)/, async (match, event) => {
-            // Access match groups, event payload, and openkbs object
-            // Execute custom logic, API calls, etc.
-            // Return an object with action results and meta information
-            return { result: 'Your command executed', ...meta };
-        }],
-        // ... more actions
-    ];
-};
+export const getActions = (meta) => [
+    // Commands use XML tags with JSON content
+    [/<myCommand>([\s\S]*?)<\/myCommand>/s, async (match) => {
+        const data = JSON.parse(match[1].trim());
+        // Execute custom logic, API calls, etc.
+        return { result: data.param, ...meta };
+    }]
+];
 
 // src/Events/onRequest.js
 import {getActions} from './actions.js';
 export const handler = async (event) => {
-    const actions = getActions({ _meta_actions: [] }); // Initialize meta actions if needed
-    for (let [regex, action] of actions) {
-        const lastMessage = event.payload.messages[event.payload.messages.length - 1].content;
-        const match = lastMessage?.match(regex);
-        if (match) return await action(match, event); // Execute matching action
-    }
-    return { type: 'CONTINUE' }; // Continue to the next handler or LLM
-};
-
-
-// src/Events/onResponse.js
-import {getActions} from './actions.js';
-
-export const handler = async (event) => {
-     // Example of conditional meta actions based on message count:
-    const maxSelfInvokeMessagesCount = 30;
-    const actions = getActions({
-        _meta_actions: event?.payload?.messages?.length > maxSelfInvokeMessagesCount
-            ? ["REQUEST_CHAT_MODEL_EXCEEDED"]
-            : ["REQUEST_CHAT_MODEL"]
-    });
-
-    for (let [regex, action] of actions) {
-        const lastMessage = event.payload.messages[event.payload.messages.length - 1].content;        
+    const actions = getActions({ _meta_actions: [] });
+    const lastMessage = event.payload.messages[event.payload.messages.length - 1].content;
+    for (const [regex, action] of actions) {
         const match = lastMessage?.match(regex);
         if (match) return await action(match, event);
     }
-
-    return { type: 'CONTINUE' }
+    return { type: 'CONTINUE' };
 };
 
+// src/Events/onResponse.js
+import {getActions} from './actions.js';
+export const handler = async (event) => {
+    const maxSelfInvokeMessagesCount = 30;
+    const actions = getActions({
+        _meta_actions: event?.payload?.messages?.length > maxSelfInvokeMessagesCount
+            ? [] : ["REQUEST_CHAT_MODEL"]
+    });
+    const lastMessage = event.payload.messages[event.payload.messages.length - 1].content;
+    for (const [regex, action] of actions) {
+        const match = lastMessage?.match(regex);
+        if (match) return await action(match, event);
+    }
+    return { type: 'CONTINUE' };
+};
 ```
 
 The `onRequest` and `onResponse` handlers are the core of customizing your OpenKBS agent's behavior. They act as middleware, intercepting messages before they reach the LLM (`onRequest`) and after the LLM generates a response (`onResponse`). This enables you to implement custom logic, interact with external APIs, and control the flow of the conversation.
