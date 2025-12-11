@@ -2067,8 +2067,6 @@ const items = await openkbs.fetchItems({
     from: '2024-01-01',           // Range start (for date fields)
     to: '2024-12-31',             // Range end
     field: 'createdAt',           // Field for range query
-    sortBy: 'createdAt',          // Sort field
-    sortOrder: 'desc'             // 'asc' or 'desc'
 });
 
 // Items are returned with decrypted bodies

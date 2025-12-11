@@ -362,9 +362,7 @@ console.log(item.item.body.value);
 const items = await openkbs.fetchItems({
     itemType: 'memory',
     beginsWith: 'memory_',
-    limit: 100,
-    sortBy: 'createdAt',
-    sortOrder: 'desc'
+    limit: 100
 });
 
 // Delete item
@@ -594,9 +592,7 @@ console.log(item.item.body.value);
 const items = await openkbs.fetchItems({
     itemType: 'memory',
     beginsWith: 'memory_',
-    limit: 100,
-    sortBy: 'createdAt',
-    sortOrder: 'desc'
+    limit: 100
 });
 items.items.forEach(({ item, meta }) => {
     console.log(meta.itemId, item.body);

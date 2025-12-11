@@ -53,9 +53,7 @@ const MemoryTab = ({ openkbs, setSystemAlert }) => {
         try {
             const result = await openkbs.fetchItems({
                 beginsWith: 'memory_',
-                limit: 100,
-                sortBy: 'updatedAt',
-                sortOrder: 'desc'
+                limit: 100
             });
             setItems(result?.items || []);
         } catch (e) {
