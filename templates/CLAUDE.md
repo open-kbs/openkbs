@@ -13,8 +13,8 @@
 openkbs update
 ```
 
-**SECOND**: Read all files in `.openkbs/knowledge/examples/` directory and subdirectories using the Read tool (skip icon.png, src/Frontend/Presentational/*, src/Events/Helpers/*).
-
+**SECOND**: Read the https://github.com/open-kbs/tutorials and all files in `.openkbs/knowledge/examples/` directory and subdirectories using the Read tool (skip icon.png, src/Frontend/Presentational/*, src/Events/Helpers/*).
+``
 **THIRD**: Read existing agent code in `./app/` and `./src/` folders.
 
 # Critical Rules
