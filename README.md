@@ -813,6 +813,21 @@ openkbs.chatJWT           // JWT token for current chat session
 
 * **`openkbs.uploadImage(base64Data, fileName, mimeType)`:** Upload image to storage. Returns `{ url }`.
 
+##### Deep Research
+
+* **`openkbs.deepResearch(input, params)`:** Autonomous research agent powered by Google Gemini. Performs multi-step research: plans → searches web → reads sources → iterates → synthesizes report.
+  - `input`: Research query or topic (string)
+  - `params.previous_interaction_id`: Optional - for follow-up questions on completed research
+  - Returns `{ status, interaction_id, output, usage, prepaid_credits }`
+  - Status can be `'completed'`, `'in_progress'`, or `'failed'`
+  - **Important:** Takes 5-20 minutes (up to 60 min for complex topics)
+  - **Pricing:** Requires minimum upfront charge of 50 credits (~€0.50). Additional usage charged on completion.
+
+* **`openkbs.checkDeepResearchStatus(interactionId, prepaidCredits)`:** Check status of pending deep research.
+  - `interactionId`: From previous `deepResearch()` response
+  - `prepaidCredits`: From previous response (for correct billing)
+  - Returns same format as `deepResearch()`
+
 ##### Search & Content Extraction
 
 * **`openkbs.googleSearch(query, params)`:** Performs Google search. Optional `params.searchType: 'image'` for image search.
