@@ -1353,6 +1353,53 @@ Here's a breakdown of the key objects and utilities available within the OpenKBS
 
 * **`JSON5`:**  A more permissive JSON parser that supports comments, trailing commas, single quotes, and other convenient features not found in standard JSON. Useful for parsing configuration files or user input.
 
+#### MCP Integration
+
+Connect your agent to external tools using [Model Context Protocol (MCP)](https://modelcontextprotocol.io/).
+
+**Configure in `app/settings.json`:**
+```json
+{
+  "options": {
+    "mcpServers": {
+      "brave-search": {},
+      "github": {},
+      "slack": {}
+    }
+  }
+}
+```
+
+**Add required secrets** (Settings → Secrets):
+- `brave-search`: `BRAVE_API_KEY`
+- `github`: `GITHUB_PERSONAL_ACCESS_TOKEN`
+- `slack`: `SLACK_BOT_TOKEN`, `SLACK_TEAM_ID`
+
+**How it works:**
+1. Tools auto-discovered and injected into system prompt
+2. LLM outputs: `<mcp_brave-search_brave_web_search>{"query": "..."}</mcp_brave-search_brave_web_search>`
+3. Handler in `actions.js`:
+
+```javascript
+[/<mcp_([a-z0-9-]+)_([a-z0-9_]+)>([\s\S]*?)<\/mcp_\1_\2>/s, async (match) => {
+    const [, server, tool, argsJson] = match;
+    const result = await openkbs.mcp.callTool(server, tool, JSON.parse(argsJson || '{}'));
+    return { data: result?.content || [], _meta_actions: ['REQUEST_CHAT_MODEL'] };
+}]
+```
+
+**Custom MCP Server:**
+```json
+{
+  "options": {
+    "mcpServerUrl": "https://your-mcp-server.com",
+    "mcpServers": { "your-server": {} }
+  }
+}
+```
+
+Full tutorial: [MCP Integration Tutorial](https://openkbs.com/tutorials/mcp-integration/)
+
 ### Frontend
 
 The OpenKBS frontend framework is built using React and provides a flexible and extensible platform for building custom chat interfaces. It allows developers to customize the appearance and behavior of the chat through a `contentRender` module, which can be dynamically loaded and used to extend the core platform.
