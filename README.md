@@ -1,6 +1,5 @@
 # OpenKBS &middot; [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/open-kbs/openkbs-chat/blob/main/LICENSE) [![npm version](https://img.shields.io/badge/npm-v0.0.20-orange.svg)](https://www.npmjs.com/package/openkbs)
 
-
 OpenKBS is an extendable AI service designed to build,
 deploy and integrate AI agents and applications.
 
@@ -30,6 +29,7 @@ deploy and integrate AI agents and applications.
         - [Supported AI Models](#supported-ai-models)
         - [LLM Instructions](#llm-instructions)
         - [Execution Environment](#execution-environment)
+        - [MCP Integration](#mcp-integration)
     - [Frontend](#frontend)
         - [Frontend Module Loading](#frontend-module-loading)
         - [Built-in UI Libraries](#built-in-ui-libraries)
