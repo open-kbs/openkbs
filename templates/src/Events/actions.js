@@ -19,7 +19,7 @@ export const getActions = (meta, event) => [
 
     // MCP (Model Context Protocol) Tool Handler
     // Automatically handles all MCP tool calls: <mcp_{server}_{toolName}>{params}</mcp_{server}_{toolName}>
-    // Configure MCP servers in settings.json: { "options": { "mcpServers": { "github": {}, "memory": {} } } }
+    // Configure MCP servers in settings.json: { "options": { "mcpServers": { "github": {} } } }
     // Add required secrets (e.g., GITHUB_PERSONAL_ACCESS_TOKEN) in KB secrets
     [/<mcp_([a-z0-9-]+)_([a-z0-9_]+)>([\s\S]*?)<\/mcp_\1_\2>/s, async (match) => {
         try {
