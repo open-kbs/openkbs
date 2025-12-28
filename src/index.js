@@ -13,7 +13,8 @@ const {
     deleteFileAction,
     describeAction, deployAction, createByTemplateAction, initByTemplateAction,
     logoutAction, installFrontendPackageAction, modifyAction, downloadModifyAction,
-    updateKnowledgeAction, updateCliAction, publishAction, unpublishAction
+    updateKnowledgeAction, updateCliAction, publishAction, unpublishAction,
+    fnAction
 } = require('./actions');
 
 
@@ -195,6 +196,21 @@ program
 Examples:
   $ openkbs unpublish example.com
   This will unpublish your KB from the domain example.com
+`);
+
+program
+    .command('fn [subCommand] [args...]')
+    .description('Manage Elastic Functions (serverless Lambda functions)')
+    .action((subCommand, args) => fnAction(subCommand, args))
+    .addHelpText('after', `
+Examples:
+  $ openkbs fn list                           List all functions
+  $ openkbs fn deploy hello --region us-east-2  Deploy function from ./functions/hello/
+  $ openkbs fn delete hello                   Delete a function
+  $ openkbs fn logs hello                     View function logs
+  $ openkbs fn env hello                      View environment variables
+  $ openkbs fn env hello API_KEY=secret       Set environment variable
+  $ openkbs fn invoke hello '{"test": true}'  Invoke a function
 `);
 
 program.parse(process.argv);

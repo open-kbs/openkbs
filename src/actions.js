@@ -837,6 +837,349 @@ async function downloadClaudeMdFromS3(claudeMdPath) {
     }
 }
 
+// ===== Elastic Functions Commands =====
+
+async function fnAction(subCommand, args = []) {
+    const localKBData = await fetchLocalKBData();
+    const kbId = localKBData?.kbId;
+
+    if (!kbId) {
+        return console.red('No KB found. Please run this command in a KB project directory.');
+    }
+
+    const { kbToken } = await fetchKBJWT(kbId);
+
+    switch (subCommand) {
+        case 'list':
+            return await fnListAction(kbToken);
+        case 'deploy':
+            return await fnDeployAction(kbToken, args[0], args.slice(1));
+        case 'delete':
+            return await fnDeleteAction(kbToken, args[0]);
+        case 'logs':
+            return await fnLogsAction(kbToken, args[0], args.slice(1));
+        case 'env':
+            return await fnEnvAction(kbToken, args[0], args.slice(1));
+        case 'invoke':
+            return await fnInvokeAction(kbToken, args[0], args.slice(1));
+        default:
+            console.log('Usage: openkbs fn <command> [options]');
+            console.log('');
+            console.log('Commands:');
+            console.log('  list                    List all elastic functions');
+            console.log('  deploy <name>           Deploy a function from ./functions/<name>/');
+            console.log('  delete <name>           Delete a function');
+            console.log('  logs <name>             View function logs');
+            console.log('  env <name> [KEY=value]  View or set environment variables');
+            console.log('  invoke <name> [payload] Invoke a function');
+            console.log('');
+            console.log('Options for deploy:');
+            console.log('  --region <region>       Region (us-east-2, eu-central-1, ap-southeast-1)');
+            console.log('  --memory <mb>           Memory size (128-3008 MB)');
+            console.log('  --timeout <seconds>     Timeout (1-900 seconds)');
+    }
+}
+
+async function fnListAction(kbToken) {
+    try {
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'listElasticFunctions'
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        const functions = response.functions || [];
+
+        if (functions.length === 0) {
+            console.log('No elastic functions found.');
+            console.log('');
+            console.log('Create a function:');
+            console.log('  1. Create directory: mkdir -p functions/hello');
+            console.log('  2. Create handler: echo "export const handler = async (event) => ({ body: \'Hello!\' });" > functions/hello/index.mjs');
+            console.log('  3. Deploy: openkbs fn deploy hello --region us-east-2');
+            return;
+        }
+
+        console.log('Elastic Functions:\n');
+        const maxNameLen = Math.max(...functions.map(f => f.functionName.length), 10);
+
+        functions.forEach(f => {
+            const name = f.functionName.padEnd(maxNameLen);
+            const region = f.region || 'unknown';
+            const url = f.customUrl || f.functionUrl || 'N/A';
+            console.log(`  ${name}  ${region}  ${url}`);
+        });
+    } catch (error) {
+        console.red('Error listing functions:', error.message);
+    }
+}
+
+async function fnDeployAction(kbToken, functionName, args) {
+    if (!functionName) {
+        return console.red('Function name required. Usage: openkbs fn deploy <name>');
+    }
+
+    // Parse arguments
+    let region = 'us-east-2';
+    let memorySize = 256;
+    let timeout = 30;
+
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === '--region' && args[i + 1]) {
+            region = args[++i];
+        } else if (args[i] === '--memory' && args[i + 1]) {
+            memorySize = parseInt(args[++i]);
+        } else if (args[i] === '--timeout' && args[i + 1]) {
+            timeout = parseInt(args[++i]);
+        }
+    }
+
+    const functionDir = path.join(process.cwd(), 'functions', functionName);
+
+    if (!await fs.pathExists(functionDir)) {
+        return console.red(`Function directory not found: ${functionDir}`);
+    }
+
+    console.log(`Deploying function '${functionName}' to ${region}...`);
+
+    try {
+        // Create a zip of the function directory
+        const archiver = require('archiver');
+        const { PassThrough } = require('stream');
+
+        const archive = archiver('zip', { zlib: { level: 9 } });
+        const chunks = [];
+        const passThrough = new PassThrough();
+
+        passThrough.on('data', chunk => chunks.push(chunk));
+
+        await new Promise((resolve, reject) => {
+            passThrough.on('end', resolve);
+            passThrough.on('error', reject);
+            archive.on('error', reject);
+
+            archive.pipe(passThrough);
+            archive.directory(functionDir, false);
+            archive.finalize();
+        });
+
+        const zipBuffer = Buffer.concat(chunks);
+        const code = zipBuffer.toString('base64');
+
+        // Check if function exists
+        const listResponse = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'listElasticFunctions'
+        });
+
+        const existingFunc = listResponse.functions?.find(f => f.functionName === functionName);
+
+        let response;
+        if (existingFunc) {
+            // Update existing function
+            console.log('Updating existing function...');
+            response = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                action: 'updateElasticFunction',
+                functionName,
+                code
+            });
+        } else {
+            // Create new function
+            console.log('Creating new function...');
+            response = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                action: 'createElasticFunction',
+                functionName,
+                code,
+                region,
+                memorySize,
+                timeout
+            });
+        }
+
+        if (response.error) {
+            return console.red('Deploy failed:', response.error);
+        }
+
+        console.green('Deploy successful!');
+        if (response.functionUrl) {
+            console.log(`Lambda URL: ${response.functionUrl}`);
+        }
+        if (response.customUrl) {
+            console.log(`Custom URL: ${response.customUrl}`);
+        }
+    } catch (error) {
+        console.red('Deploy failed:', error.message);
+    }
+}
+
+async function fnDeleteAction(kbToken, functionName) {
+    if (!functionName) {
+        return console.red('Function name required. Usage: openkbs fn delete <name>');
+    }
+
+    try {
+        console.log(`Deleting function '${functionName}'...`);
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'deleteElasticFunction',
+            functionName
+        });
+
+        if (response.error) {
+            return console.red('Delete failed:', response.error);
+        }
+
+        console.green(`Function '${functionName}' deleted successfully.`);
+    } catch (error) {
+        console.red('Delete failed:', error.message);
+    }
+}
+
+async function fnLogsAction(kbToken, functionName, args) {
+    if (!functionName) {
+        return console.red('Function name required. Usage: openkbs fn logs <name>');
+    }
+
+    try {
+        let limit = 50;
+        for (let i = 0; i < args.length; i++) {
+            if (args[i] === '--limit' && args[i + 1]) {
+                limit = parseInt(args[++i]);
+            }
+        }
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'getElasticFunctionLogs',
+            functionName,
+            limit
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        if (!response.events || response.events.length === 0) {
+            console.log('No logs found. Function may not have been invoked yet.');
+            return;
+        }
+
+        console.log(`Logs for '${functionName}':\n`);
+        response.events.forEach(event => {
+            const time = new Date(event.timestamp).toISOString();
+            console.log(`[${time}] ${event.message}`);
+        });
+    } catch (error) {
+        console.red('Error fetching logs:', error.message);
+    }
+}
+
+async function fnEnvAction(kbToken, functionName, args) {
+    if (!functionName) {
+        return console.red('Function name required. Usage: openkbs fn env <name> [KEY=value ...]');
+    }
+
+    try {
+        if (args.length === 0) {
+            // Show current env vars
+            const response = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                action: 'getElasticFunction',
+                functionName
+            });
+
+            if (response.error) {
+                return console.red('Error:', response.error);
+            }
+
+            console.log(`Environment variables for '${functionName}':\n`);
+            const env = response.env || {};
+            if (Object.keys(env).length === 0) {
+                console.log('  (none)');
+            } else {
+                Object.entries(env).forEach(([key, value]) => {
+                    console.log(`  ${key}=${value}`);
+                });
+            }
+        } else {
+            // Set env vars
+            const env = {};
+            args.forEach(arg => {
+                const [key, ...valueParts] = arg.split('=');
+                if (key && valueParts.length > 0) {
+                    env[key] = valueParts.join('=');
+                }
+            });
+
+            if (Object.keys(env).length === 0) {
+                return console.red('Invalid format. Use: openkbs fn env <name> KEY=value');
+            }
+
+            console.log(`Setting environment variables for '${functionName}'...`);
+
+            const response = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                action: 'setElasticFunctionEnv',
+                functionName,
+                env
+            });
+
+            if (response.error) {
+                return console.red('Error:', response.error);
+            }
+
+            console.green('Environment variables updated.');
+        }
+    } catch (error) {
+        console.red('Error:', error.message);
+    }
+}
+
+async function fnInvokeAction(kbToken, functionName, args) {
+    if (!functionName) {
+        return console.red('Function name required. Usage: openkbs fn invoke <name> [payload]');
+    }
+
+    try {
+        let payload = {};
+        if (args.length > 0) {
+            try {
+                payload = JSON.parse(args.join(' '));
+            } catch (e) {
+                return console.red('Invalid JSON payload');
+            }
+        }
+
+        console.log(`Invoking '${functionName}'...`);
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'invokeElasticFunction',
+            functionName,
+            payload
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        console.log('\nResponse:');
+        console.log(JSON.stringify(response.payload, null, 2));
+
+        if (response.functionError) {
+            console.red('\nFunction Error:', response.functionError);
+        }
+    } catch (error) {
+        console.red('Error invoking function:', error.message);
+    }
+}
+
 module.exports = {
     signAction,
     loginAction,
@@ -857,5 +1200,6 @@ module.exports = {
     updateKnowledgeAction,
     updateCliAction,
     publishAction,
-    unpublishAction
+    unpublishAction,
+    fnAction
 };
