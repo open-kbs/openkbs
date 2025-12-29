@@ -233,6 +233,7 @@ Files are uploaded to the whitelabel domain's files bucket.
 program
     .command('storage [subCommand] [args...]')
     .description('Manage Elastic Storage (S3 buckets for persistent file storage)')
+    .allowUnknownOption()
     .action((subCommand, args) => storageAction(subCommand, args))
     .addHelpText('after', `
 Examples:
