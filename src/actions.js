@@ -18,46 +18,43 @@ const jwtPath = path.join(os.homedir(), '.openkbs', 'clientJWT');
 const generateTransactionId = () => `${+new Date()}-${Math.floor(100000 + Math.random() * 900000)}`;
 
 /**
+ * Find settings from settings.json - checks current dir, then functions/ or site/ subdirs
+ * Returns full settings object with kbId, region, etc.
+ */
+function findSettings() {
+    const paths = [
+        path.join(process.cwd(), 'settings.json'),
+        path.join(process.cwd(), 'app', 'settings.json'),
+        path.join(process.cwd(), 'functions', 'settings.json'),
+        path.join(process.cwd(), 'site', 'settings.json')
+    ];
+
+    for (const settingsPath of paths) {
+        if (fs.existsSync(settingsPath)) {
+            try {
+                const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+                if (settings.kbId) return settings;
+            } catch (e) {}
+        }
+    }
+    return null;
+}
+
+/**
  * Find kbId from settings.json - checks current dir, then functions/ or site/ subdirs
  */
 function findKbId() {
-    // Check current directory
-    const settingsPath = path.join(process.cwd(), 'settings.json');
-    if (fs.existsSync(settingsPath)) {
-        try {
-            const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-            if (settings.kbId) return settings.kbId;
-        } catch (e) {}
-    }
+    const settings = findSettings();
+    return settings?.kbId || null;
+}
 
-    // Check app/settings.json (legacy)
-    const appSettingsPath = path.join(process.cwd(), 'app', 'settings.json');
-    if (fs.existsSync(appSettingsPath)) {
-        try {
-            const settings = JSON.parse(fs.readFileSync(appSettingsPath, 'utf8'));
-            if (settings.kbId) return settings.kbId;
-        } catch (e) {}
-    }
-
-    // Check functions/settings.json (for fn commands from root)
-    const fnSettingsPath = path.join(process.cwd(), 'functions', 'settings.json');
-    if (fs.existsSync(fnSettingsPath)) {
-        try {
-            const settings = JSON.parse(fs.readFileSync(fnSettingsPath, 'utf8'));
-            if (settings.kbId) return settings.kbId;
-        } catch (e) {}
-    }
-
-    // Check site/settings.json (for site commands from root)
-    const siteSettingsPath = path.join(process.cwd(), 'site', 'settings.json');
-    if (fs.existsSync(siteSettingsPath)) {
-        try {
-            const settings = JSON.parse(fs.readFileSync(siteSettingsPath, 'utf8'));
-            if (settings.kbId) return settings.kbId;
-        } catch (e) {}
-    }
-
-    return null;
+/**
+ * Find region from settings.json - checks current dir, then functions/ or site/ subdirs
+ * Default: 'us-east-1'
+ */
+function findRegion() {
+    const settings = findSettings();
+    return settings?.region || 'us-east-1';
 }
 
 // MIME types for common file extensions
@@ -1004,8 +1001,8 @@ async function fnDeployAction(kbToken, functionName, args) {
         return console.red('Function name required. Usage: openkbs fn deploy <name>');
     }
 
-    // Parse arguments
-    let region = 'us-east-1';
+    // Parse arguments - region defaults to settings.json or us-east-1
+    let region = findRegion();
     let memorySize = 256;
     let timeout = 30;
 
@@ -1706,11 +1703,13 @@ async function postgresAction(subCommand, args = []) {
 
 async function postgresEnableAction(kbToken) {
     try {
-        console.log('Enabling Elastic Postgres...');
+        const region = findRegion();
+        console.log(`Enabling Elastic Postgres in ${region}...`);
 
         const response = await makePostRequest(KB_API_URL, {
             token: kbToken,
-            action: 'enableElasticPostgres'
+            action: 'enableElasticPostgres',
+            region
         });
 
         if (response.error) {

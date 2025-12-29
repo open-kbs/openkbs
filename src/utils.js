@@ -164,8 +164,11 @@ function makePostRequest(url, data) {
                     resolve(data);
                 } else {
                     try {
-                        if (JSON.parse(body).error) {
-                            console.red(JSON.parse(body).error);
+                        const parsed = JSON.parse(body);
+                        if (parsed.error) {
+                            console.red(parsed.error);
+                        } else if (parsed.message) {
+                            console.red(parsed.message);
                         } else {
                             console.red(`Invalid Request`);
                         }
