@@ -14,7 +14,11 @@ const {
     describeAction, deployAction, createByTemplateAction, initByTemplateAction,
     logoutAction, installFrontendPackageAction, modifyAction, downloadModifyAction,
     updateKnowledgeAction, updateCliAction, publishAction, unpublishAction,
-    fnAction
+    fnAction,
+    siteAction,
+    storageAction,
+    postgresAction,
+    pulseAction
 } = require('./actions');
 
 
@@ -201,16 +205,72 @@ Examples:
 program
     .command('fn [subCommand] [args...]')
     .description('Manage Elastic Functions (serverless Lambda functions)')
+    .allowUnknownOption()
     .action((subCommand, args) => fnAction(subCommand, args))
     .addHelpText('after', `
 Examples:
   $ openkbs fn list                           List all functions
-  $ openkbs fn deploy hello --region us-east-2  Deploy function from ./functions/hello/
+  $ openkbs fn deploy hello --region us-east-1  Deploy function from ./functions/hello/
   $ openkbs fn delete hello                   Delete a function
   $ openkbs fn logs hello                     View function logs
   $ openkbs fn env hello                      View environment variables
   $ openkbs fn env hello API_KEY=secret       Set environment variable
   $ openkbs fn invoke hello '{"test": true}'  Invoke a function
+`);
+
+program
+    .command('site [subCommand] [args...]')
+    .description('Manage static site files for whitelabel domains')
+    .action((subCommand, args) => siteAction(subCommand, args))
+    .addHelpText('after', `
+Examples:
+  $ openkbs site deploy                       Deploy all files to S3
+
+Run from a directory containing settings.json with kbId.
+Files are uploaded to the whitelabel domain's files bucket.
+`);
+
+program
+    .command('storage [subCommand] [args...]')
+    .description('Manage Elastic Storage (S3 buckets for persistent file storage)')
+    .action((subCommand, args) => storageAction(subCommand, args))
+    .addHelpText('after', `
+Examples:
+  $ openkbs storage enable                    Enable storage for current KB
+  $ openkbs storage status                    Show storage status
+  $ openkbs storage ls [prefix]               List objects in bucket
+  $ openkbs storage put <file> <key>          Upload a file
+  $ openkbs storage get <key> <file>          Download a file
+  $ openkbs storage rm <key>                  Delete an object
+  $ openkbs storage disable                   Disable storage (delete bucket)
+  $ openkbs storage cloudfront media          Add storage to CloudFront at /media/*
+  $ openkbs storage cloudfront remove media   Remove storage from CloudFront
+`);
+
+program
+    .command('postgres [subCommand]')
+    .description('Manage Elastic Postgres (Neon PostgreSQL database)')
+    .action((subCommand) => postgresAction(subCommand))
+    .addHelpText('after', `
+Examples:
+  $ openkbs postgres enable                   Enable Postgres for current KB
+  $ openkbs postgres status                   Show Postgres status
+  $ openkbs postgres connection               Show connection string
+  $ openkbs postgres disable                  Disable Postgres (delete database)
+`);
+
+program
+    .command('pulse [subCommand] [args...]')
+    .description('Manage Elastic Pulse (real-time WebSocket pub/sub)')
+    .action((subCommand, args) => pulseAction(subCommand, args))
+    .addHelpText('after', `
+Examples:
+  $ openkbs pulse enable                      Enable Pulse for current KB
+  $ openkbs pulse status                      Show Pulse status and endpoint
+  $ openkbs pulse channels                    List active channels
+  $ openkbs pulse presence chat               Show clients connected to 'chat' channel
+  $ openkbs pulse publish chat "Hello!"       Send message to 'chat' channel
+  $ openkbs pulse disable                     Disable Pulse
 `);
 
 program.parse(process.argv);

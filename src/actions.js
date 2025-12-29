@@ -17,6 +17,82 @@ const TEMPLATE_DIR = path.join(os.homedir(), '.openkbs', 'templates');
 const jwtPath = path.join(os.homedir(), '.openkbs', 'clientJWT');
 const generateTransactionId = () => `${+new Date()}-${Math.floor(100000 + Math.random() * 900000)}`;
 
+/**
+ * Find kbId from settings.json - checks current dir, then functions/ or site/ subdirs
+ */
+function findKbId() {
+    // Check current directory
+    const settingsPath = path.join(process.cwd(), 'settings.json');
+    if (fs.existsSync(settingsPath)) {
+        try {
+            const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+            if (settings.kbId) return settings.kbId;
+        } catch (e) {}
+    }
+
+    // Check app/settings.json (legacy)
+    const appSettingsPath = path.join(process.cwd(), 'app', 'settings.json');
+    if (fs.existsSync(appSettingsPath)) {
+        try {
+            const settings = JSON.parse(fs.readFileSync(appSettingsPath, 'utf8'));
+            if (settings.kbId) return settings.kbId;
+        } catch (e) {}
+    }
+
+    // Check functions/settings.json (for fn commands from root)
+    const fnSettingsPath = path.join(process.cwd(), 'functions', 'settings.json');
+    if (fs.existsSync(fnSettingsPath)) {
+        try {
+            const settings = JSON.parse(fs.readFileSync(fnSettingsPath, 'utf8'));
+            if (settings.kbId) return settings.kbId;
+        } catch (e) {}
+    }
+
+    // Check site/settings.json (for site commands from root)
+    const siteSettingsPath = path.join(process.cwd(), 'site', 'settings.json');
+    if (fs.existsSync(siteSettingsPath)) {
+        try {
+            const settings = JSON.parse(fs.readFileSync(siteSettingsPath, 'utf8'));
+            if (settings.kbId) return settings.kbId;
+        } catch (e) {}
+    }
+
+    return null;
+}
+
+// MIME types for common file extensions
+const MIME_TYPES = {
+    '.html': 'text/html',
+    '.htm': 'text/html',
+    '.css': 'text/css',
+    '.js': 'application/javascript',
+    '.mjs': 'application/javascript',
+    '.json': 'application/json',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+    '.webp': 'image/webp',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+    '.ttf': 'font/ttf',
+    '.eot': 'application/vnd.ms-fontobject',
+    '.pdf': 'application/pdf',
+    '.txt': 'text/plain',
+    '.xml': 'application/xml',
+    '.zip': 'application/zip',
+    '.mp3': 'audio/mpeg',
+    '.mp4': 'video/mp4',
+    '.webm': 'video/webm'
+};
+
+function getMimeType(filePath) {
+    const ext = path.extname(filePath).toLowerCase();
+    return MIME_TYPES[ext] || 'application/octet-stream';
+}
+
 async function signAction(options) {
     try {
         const userProfile = await getUserProfile();
@@ -840,11 +916,17 @@ async function downloadClaudeMdFromS3(claudeMdPath) {
 // ===== Elastic Functions Commands =====
 
 async function fnAction(subCommand, args = []) {
-    const localKBData = await fetchLocalKBData();
-    const kbId = localKBData?.kbId;
+    // Find kbId from settings.json (current dir, app/, functions/, site/)
+    let kbId = findKbId();
 
     if (!kbId) {
-        return console.red('No KB found. Please run this command in a KB project directory.');
+        // Fallback to standard KB lookup
+        const localKBData = await fetchLocalKBData();
+        kbId = localKBData?.kbId;
+    }
+
+    if (!kbId) {
+        return console.red('No KB found. Create settings.json with {"kbId": "..."} or run from a KB project directory.');
     }
 
     const { kbToken } = await fetchKBJWT(kbId);
@@ -874,7 +956,7 @@ async function fnAction(subCommand, args = []) {
             console.log('  invoke <name> [payload] Invoke a function');
             console.log('');
             console.log('Options for deploy:');
-            console.log('  --region <region>       Region (us-east-2, eu-central-1, ap-southeast-1)');
+            console.log('  --region <region>       Region (us-east-1, eu-central-1, ap-southeast-1)');
             console.log('  --memory <mb>           Memory size (128-3008 MB)');
             console.log('  --timeout <seconds>     Timeout (1-900 seconds)');
     }
@@ -899,7 +981,7 @@ async function fnListAction(kbToken) {
             console.log('Create a function:');
             console.log('  1. Create directory: mkdir -p functions/hello');
             console.log('  2. Create handler: echo "export const handler = async (event) => ({ body: \'Hello!\' });" > functions/hello/index.mjs');
-            console.log('  3. Deploy: openkbs fn deploy hello --region us-east-2');
+            console.log('  3. Deploy: openkbs fn deploy hello --region us-east-1');
             return;
         }
 
@@ -923,7 +1005,7 @@ async function fnDeployAction(kbToken, functionName, args) {
     }
 
     // Parse arguments
-    let region = 'us-east-2';
+    let region = 'us-east-1';
     let memorySize = 256;
     let timeout = 30;
 
@@ -937,15 +1019,28 @@ async function fnDeployAction(kbToken, functionName, args) {
         }
     }
 
-    const functionDir = path.join(process.cwd(), 'functions', functionName);
+    // Try to find the function directory in order:
+    // 1. ./functionName (if running from functions/ directory)
+    // 2. ./functions/functionName (if running from project root)
+    let functionDir = path.join(process.cwd(), functionName);
+    if (!await fs.pathExists(functionDir)) {
+        functionDir = path.join(process.cwd(), 'functions', functionName);
+    }
 
     if (!await fs.pathExists(functionDir)) {
-        return console.red(`Function directory not found: ${functionDir}`);
+        return console.red(`Function directory not found. Tried:\n  - ./${functionName}\n  - ./functions/${functionName}`);
     }
 
     console.log(`Deploying function '${functionName}' to ${region}...`);
 
     try {
+        // Check if package.json exists and run npm install
+        const packageJsonPath = path.join(functionDir, 'package.json');
+        if (await fs.pathExists(packageJsonPath)) {
+            console.log('Installing dependencies...');
+            execSync('npm install --production', { cwd: functionDir, stdio: 'inherit' });
+        }
+
         // Create a zip of the function directory
         const archiver = require('archiver');
         const { PassThrough } = require('stream');
@@ -1180,6 +1275,845 @@ async function fnInvokeAction(kbToken, functionName, args) {
     }
 }
 
+// ===== Elastic Storage Commands =====
+
+async function storageAction(subCommand, args = []) {
+    // Find kbId from settings.json (current dir, app/, functions/, site/)
+    let kbId = findKbId();
+
+    if (!kbId) {
+        const localKBData = await fetchLocalKBData();
+        kbId = localKBData?.kbId;
+    }
+
+    if (!kbId) {
+        return console.red('No KB found. Create settings.json with {"kbId": "..."} or run from a KB project directory.');
+    }
+
+    const { kbToken } = await fetchKBJWT(kbId);
+
+    switch (subCommand) {
+        case 'enable':
+            return await storageEnableAction(kbToken);
+        case 'status':
+            return await storageStatusAction(kbToken);
+        case 'ls':
+        case 'list':
+            return await storageListAction(kbToken, args[0]);
+        case 'put':
+        case 'upload':
+            return await storageUploadAction(kbToken, args[0], args[1]);
+        case 'get':
+        case 'download':
+            return await storageDownloadAction(kbToken, args[0], args[1]);
+        case 'rm':
+        case 'delete':
+            return await storageDeleteAction(kbToken, args[0]);
+        case 'disable':
+            return await storageDisableAction(kbToken, args);
+        case 'cloudfront':
+        case 'cf':
+            return await storageCloudFrontAction(kbToken, args[0], args[1]);
+        case 'public':
+            return await storagePublicAction(kbToken, args[0]);
+        default:
+            console.log('Usage: openkbs storage <command> [options]');
+            console.log('');
+            console.log('Commands:');
+            console.log('  enable                  Enable elastic storage for this KB');
+            console.log('  status                  Show storage status and info');
+            console.log('  public <true|false>     Make storage publicly readable');
+            console.log('  ls [prefix]             List objects in storage');
+            console.log('  put <local> <remote>    Upload a file to storage');
+            console.log('  get <remote> <local>    Download a file from storage');
+            console.log('  rm <key>                Delete an object from storage');
+            console.log('  disable [--force]       Disable storage (deletes bucket)');
+            console.log('  cloudfront <path>       Add storage to CloudFront at path (e.g., /media)');
+            console.log('  cloudfront remove <path> Remove storage from CloudFront');
+    }
+}
+
+async function storageEnableAction(kbToken) {
+    try {
+        console.log('Enabling elastic storage...');
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'enableElasticStorage'
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        if (response.alreadyEnabled) {
+            console.yellow('Storage is already enabled.');
+        } else {
+            console.green('Storage enabled successfully!');
+        }
+
+        console.log(`  Bucket: ${response.bucket}`);
+        console.log(`  Region: ${response.region}`);
+
+        if (response.functionsUpdated > 0) {
+            console.log(`  Updated ${response.functionsUpdated} function(s) with STORAGE_BUCKET env var`);
+        }
+    } catch (error) {
+        console.red('Error enabling storage:', error.message);
+    }
+}
+
+async function storageStatusAction(kbToken) {
+    try {
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'getElasticStorage'
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        if (!response.enabled) {
+            console.log('Elastic Storage: disabled');
+            console.log('');
+            console.log('Enable with: openkbs storage enable');
+            return;
+        }
+
+        console.log('Elastic Storage: enabled');
+        console.log(`  Bucket: ${response.bucket}`);
+        console.log(`  Region: ${response.region}`);
+        console.log(`  Public: ${response.public ? 'yes' : 'no'}`);
+        if (response.publicUrl) {
+            console.log(`  Public URL: ${response.publicUrl}`);
+        }
+    } catch (error) {
+        console.red('Error getting storage status:', error.message);
+    }
+}
+
+async function storageListAction(kbToken, prefix = '') {
+    try {
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'listStorageObjects',
+            prefix: prefix || ''
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        const objects = response.objects || [];
+
+        if (objects.length === 0) {
+            console.log('No objects found.');
+            return;
+        }
+
+        console.log(`Objects${prefix ? ` (prefix: ${prefix})` : ''}:\n`);
+
+        objects.forEach(obj => {
+            const size = formatBytes(obj.size);
+            const date = new Date(obj.lastModified).toISOString().split('T')[0];
+            console.log(`  ${date}  ${size.padStart(10)}  ${obj.key}`);
+        });
+
+        if (response.isTruncated) {
+            console.log('\n  (more objects exist, use prefix to filter)');
+        }
+    } catch (error) {
+        console.red('Error listing objects:', error.message);
+    }
+}
+
+async function storageUploadAction(kbToken, localPath, remoteKey) {
+    if (!localPath) {
+        return console.red('Usage: openkbs storage put <local-file> [remote-key]');
+    }
+
+    const fullLocalPath = path.resolve(localPath);
+
+    if (!fs.existsSync(fullLocalPath)) {
+        return console.red(`File not found: ${fullLocalPath}`);
+    }
+
+    // Use filename if remote key not specified
+    if (!remoteKey) {
+        remoteKey = path.basename(localPath);
+    }
+
+    try {
+        console.log(`Uploading ${localPath} to ${remoteKey}...`);
+
+        // Get presigned upload URL
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'getStorageUploadUrl',
+            storageKey: remoteKey
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        // Upload file using presigned URL
+        const fileContent = fs.readFileSync(fullLocalPath);
+        await fetch(response.uploadUrl, {
+            method: 'PUT',
+            body: fileContent
+        });
+
+        console.green(`Uploaded: ${remoteKey}`);
+
+        if (response.publicUrl) {
+            console.log(`Public URL: ${response.publicUrl}`);
+        }
+    } catch (error) {
+        console.red('Upload failed:', error.message);
+    }
+}
+
+async function storageDownloadAction(kbToken, remoteKey, localPath) {
+    if (!remoteKey) {
+        return console.red('Usage: openkbs storage get <remote-key> [local-file]');
+    }
+
+    // Use remote filename if local path not specified
+    if (!localPath) {
+        localPath = path.basename(remoteKey);
+    }
+
+    try {
+        console.log(`Downloading ${remoteKey} to ${localPath}...`);
+
+        // Get presigned download URL
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'getStorageDownloadUrl',
+            storageKey: remoteKey
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        // Download file
+        const fetchResponse = await fetch(response.downloadUrl);
+        if (!fetchResponse.ok) {
+            return console.red(`Download failed: ${fetchResponse.statusText}`);
+        }
+
+        const buffer = await fetchResponse.arrayBuffer();
+        fs.writeFileSync(localPath, Buffer.from(buffer));
+
+        console.green(`Downloaded: ${localPath}`);
+    } catch (error) {
+        console.red('Download failed:', error.message);
+    }
+}
+
+async function storageDeleteAction(kbToken, key) {
+    if (!key) {
+        return console.red('Usage: openkbs storage rm <key>');
+    }
+
+    try {
+        console.log(`Deleting ${key}...`);
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'deleteStorageObject',
+            storageKey: key
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        console.green(`Deleted: ${key}`);
+    } catch (error) {
+        console.red('Delete failed:', error.message);
+    }
+}
+
+async function storageDisableAction(kbToken, args) {
+    const force = args.includes('--force');
+
+    try {
+        console.log('Disabling elastic storage...');
+
+        if (!force) {
+            console.yellow('Warning: This will delete the storage bucket.');
+            console.yellow('Use --force to delete all objects and the bucket.');
+            return;
+        }
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'deleteElasticStorage',
+            force: true
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        console.green('Storage disabled successfully.');
+
+        if (response.functionsUpdated > 0) {
+            console.log(`Removed STORAGE_BUCKET from ${response.functionsUpdated} function(s)`);
+        }
+    } catch (error) {
+        console.red('Error disabling storage:', error.message);
+    }
+}
+
+async function storagePublicAction(kbToken, value) {
+    if (!value || !['true', 'false'].includes(value.toLowerCase())) {
+        return console.red('Usage: openkbs storage public <true|false>');
+    }
+
+    const makePublic = value.toLowerCase() === 'true';
+
+    try {
+        console.log(makePublic ? 'Making storage public...' : 'Making storage private...');
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'setElasticStoragePublic',
+            isPublic: makePublic
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        if (makePublic) {
+            console.green('Storage is now public!');
+            console.log(`Public URL: ${response.publicUrl}`);
+        } else {
+            console.green('Storage is now private.');
+        }
+    } catch (error) {
+        console.red('Error:', error.message);
+    }
+}
+
+async function storageCloudFrontAction(kbToken, pathOrRemove, pathArg) {
+    // Handle "storage cloudfront remove <path>" vs "storage cloudfront <path>"
+    let pathPrefix;
+    let enable = true;
+
+    if (pathOrRemove === 'remove' || pathOrRemove === 'rm') {
+        if (!pathArg) {
+            return console.red('Usage: openkbs storage cloudfront remove <path>');
+        }
+        pathPrefix = pathArg;
+        enable = false;
+    } else {
+        if (!pathOrRemove) {
+            console.log('Usage: openkbs storage cloudfront <path>');
+            console.log('       openkbs storage cloudfront remove <path>');
+            console.log('');
+            console.log('Examples:');
+            console.log('  openkbs storage cloudfront media    # Makes storage available at /media/*');
+            console.log('  openkbs storage cloudfront files    # Makes storage available at /files/*');
+            console.log('  openkbs storage cloudfront remove media  # Remove from CloudFront');
+            return;
+        }
+        pathPrefix = pathOrRemove;
+    }
+
+    try {
+        if (enable) {
+            console.log(`Adding storage to CloudFront at /${pathPrefix}/*...`);
+        } else {
+            console.log(`Removing storage from CloudFront at /${pathPrefix}/*...`);
+        }
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'setStorageCloudFront',
+            pathPrefix,
+            enable
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        if (enable) {
+            console.green('Storage added to CloudFront!');
+            console.log(`  Custom URL: ${response.customUrl}`);
+            console.log(`  Path: /${response.path}/*`);
+            console.yellow('\n  Note: CloudFront changes take 2-5 minutes to propagate.');
+        } else {
+            console.green('Storage removed from CloudFront.');
+            console.yellow('  Note: CloudFront changes take 2-5 minutes to propagate.');
+        }
+    } catch (error) {
+        console.red('Error:', error.message);
+    }
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+// ===== Elastic Postgres Commands =====
+
+async function postgresAction(subCommand, args = []) {
+    // Find kbId from settings.json (current dir, app/, functions/, site/)
+    let kbId = findKbId();
+
+    if (!kbId) {
+        const localKBData = await fetchLocalKBData();
+        kbId = localKBData?.kbId;
+    }
+
+    if (!kbId) {
+        return console.red('No KB found. Create settings.json with {"kbId": "..."} or run from a KB project directory.');
+    }
+
+    const { kbToken } = await fetchKBJWT(kbId);
+
+    switch (subCommand) {
+        case 'enable':
+            return await postgresEnableAction(kbToken);
+        case 'status':
+            return await postgresStatusAction(kbToken);
+        case 'connection':
+        case 'conn':
+            return await postgresConnectionAction(kbToken);
+        case 'disable':
+            return await postgresDisableAction(kbToken);
+        default:
+            console.log('Usage: openkbs postgres <command>');
+            console.log('');
+            console.log('Commands:');
+            console.log('  enable      Enable Postgres database for this KB');
+            console.log('  status      Show Postgres status and info');
+            console.log('  connection  Show connection string');
+            console.log('  disable     Disable Postgres (deletes database)');
+    }
+}
+
+async function postgresEnableAction(kbToken) {
+    try {
+        console.log('Enabling Elastic Postgres...');
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'enableElasticPostgres'
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        if (response.alreadyEnabled) {
+            console.yellow('Postgres already enabled.');
+        } else {
+            console.green('Postgres enabled successfully!');
+        }
+
+        console.log(`  Host: ${response.host}`);
+        console.log(`  Port: ${response.port}`);
+        console.log(`  Database: ${response.dbName}`);
+        console.log(`  Region: ${response.region}`);
+
+        if (response.functionsUpdated > 0) {
+            console.log(`  Updated ${response.functionsUpdated} function(s) with DATABASE_URL`);
+        }
+    } catch (error) {
+        console.red('Error enabling Postgres:', error.message);
+    }
+}
+
+async function postgresStatusAction(kbToken) {
+    try {
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'getElasticPostgres'
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        if (!response.enabled) {
+            console.yellow('Postgres is not enabled.');
+            console.log('Run: openkbs postgres enable');
+            return;
+        }
+
+        console.green('Postgres Status: Enabled');
+        console.log(`  Host: ${response.host}`);
+        console.log(`  Port: ${response.port}`);
+        console.log(`  Database: ${response.dbName}`);
+        console.log(`  Region: ${response.region}`);
+        console.log(`  Project: ${response.projectId}`);
+    } catch (error) {
+        console.red('Error getting Postgres status:', error.message);
+    }
+}
+
+async function postgresConnectionAction(kbToken) {
+    try {
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'getElasticPostgresConnection'
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        console.log('Connection String:');
+        console.log(response.connectionString);
+    } catch (error) {
+        console.red('Error getting connection:', error.message);
+    }
+}
+
+async function postgresDisableAction(kbToken) {
+    try {
+        console.log('Disabling Elastic Postgres...');
+        console.yellow('Warning: This will permanently delete the database and all data!');
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'deleteElasticPostgres'
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        console.green('Postgres disabled successfully.');
+
+        if (response.functionsUpdated > 0) {
+            console.log(`Removed DATABASE_URL from ${response.functionsUpdated} function(s)`);
+        }
+    } catch (error) {
+        console.red('Error disabling Postgres:', error.message);
+    }
+}
+
+// ===== Site Commands =====
+
+async function siteAction(subCommand, args = []) {
+    // Find kbId and site directory
+    let kbId = findKbId();
+    let siteDir = process.cwd();
+
+    // If no settings.json in current dir, check site/ subdirectory
+    if (!fs.existsSync(path.join(process.cwd(), 'settings.json'))) {
+        const siteDirPath = path.join(process.cwd(), 'site');
+        const siteSettingsPath = path.join(siteDirPath, 'settings.json');
+        if (fs.existsSync(siteSettingsPath)) {
+            siteDir = siteDirPath;
+            try {
+                const settings = JSON.parse(fs.readFileSync(siteSettingsPath, 'utf8'));
+                kbId = settings.kbId;
+            } catch (e) {}
+        }
+    }
+
+    if (!kbId) {
+        const localKBData = await fetchLocalKBData();
+        kbId = localKBData?.kbId;
+    }
+
+    if (!kbId) {
+        return console.red('No KB found. Create settings.json with {"kbId": "..."} in current dir or site/ subdirectory.');
+    }
+
+    const { kbToken } = await fetchKBJWT(kbId);
+
+    switch (subCommand) {
+        case 'deploy':
+            return await siteDeployAction(kbToken, kbId, siteDir, args);
+        default:
+            console.log('Site management commands:\n');
+            console.log('  openkbs site deploy     Upload all files to S3');
+            console.log('\nRun from a folder containing settings.json with kbId, or from parent with site/ subdirectory');
+    }
+}
+
+async function siteDeployAction(kbToken, kbId, siteDir, args) {
+
+    // Walk directory and get all files (excluding settings.json and hidden files)
+    const walkDir = async (dir, baseDir = dir) => {
+        const files = [];
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name);
+            const relativePath = path.relative(baseDir, fullPath);
+
+            // Skip hidden files, settings.json, and node_modules
+            if (entry.name.startsWith('.') ||
+                entry.name === 'settings.json' ||
+                entry.name === 'node_modules') {
+                continue;
+            }
+
+            if (entry.isDirectory()) {
+                files.push(...await walkDir(fullPath, baseDir));
+            } else {
+                files.push(relativePath);
+            }
+        }
+        return files;
+    };
+
+    try {
+        console.log(`Uploading site files for KB ${kbId}...`);
+
+        const files = await walkDir(siteDir);
+
+        if (files.length === 0) {
+            return console.yellow('No files found to upload.');
+        }
+
+        console.log(`Found ${files.length} files to upload.`);
+
+        let uploaded = 0;
+        for (const file of files) {
+            const filePath = path.join(siteDir, file);
+            const fileContent = fs.readFileSync(filePath);
+
+            // Get presigned URL for 'files' namespace with correct Content-Type
+            const contentType = getMimeType(file);
+            const response = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                namespace: 'files',
+                kbId,
+                fileName: file,
+                fileType: contentType,
+                presignedOperation: 'putObject',
+                action: 'createPresignedURL'
+            });
+
+            if (response.error) {
+                console.red(`Failed to get presigned URL for ${file}:`, response.error);
+                continue;
+            }
+
+            // Upload file with correct Content-Type
+            await fetch(response, {
+                method: 'PUT',
+                body: fileContent,
+                headers: { 'Content-Type': contentType }
+            });
+            uploaded++;
+            console.log(`Uploaded: ${file} (${contentType})`);
+        }
+
+        console.green(`\nUpload complete! ${uploaded}/${files.length} files uploaded.`);
+        console.log(`Files accessible at: https://files.openkbs.com/${kbId}/`);
+
+    } catch (error) {
+        console.red('Upload failed:', error.message);
+    }
+}
+
+// ===== Elastic Pulse Commands =====
+
+async function pulseAction(subCommand, args = []) {
+    // Find kbId from settings.json (current dir, app/, functions/, site/)
+    let kbId = findKbId();
+
+    if (!kbId) {
+        const localKBData = await fetchLocalKBData();
+        kbId = localKBData?.kbId;
+    }
+
+    if (!kbId) {
+        return console.red('No KB found. Create settings.json with {"kbId": "..."} or run from a KB project directory.');
+    }
+
+    const { kbToken } = await fetchKBJWT(kbId);
+
+    switch (subCommand) {
+        case 'enable':
+            return await pulseEnableAction(kbToken);
+        case 'status':
+            return await pulseStatusAction(kbToken);
+        case 'disable':
+            return await pulseDisableAction(kbToken);
+        case 'channels':
+            return await pulseChannelsAction(kbToken);
+        case 'presence':
+            return await pulsePresenceAction(kbToken, args[0]);
+        case 'publish':
+        case 'send':
+            return await pulsePublishAction(kbToken, args[0], args.slice(1).join(' '));
+        default:
+            console.log('Usage: openkbs pulse <command>');
+            console.log('');
+            console.log('Commands:');
+            console.log('  enable                Enable Pulse (WebSocket) for this KB');
+            console.log('  status                Show Pulse status and endpoint');
+            console.log('  disable               Disable Pulse');
+            console.log('  channels              List active channels');
+            console.log('  presence <channel>    Show connected clients in channel');
+            console.log('  publish <channel> <message>  Send message to channel');
+    }
+}
+
+async function pulseEnableAction(kbToken) {
+    try {
+        console.log('Enabling Elastic Pulse...');
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'enableElasticPulse'
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        if (response.alreadyEnabled) {
+            console.yellow('Pulse already enabled.');
+        } else {
+            console.green('Pulse enabled successfully!');
+        }
+
+        console.log(`  Endpoint: ${response.endpoint}`);
+        console.log(`  Region: ${response.region}`);
+    } catch (error) {
+        console.red('Error enabling Pulse:', error.message);
+    }
+}
+
+async function pulseStatusAction(kbToken) {
+    try {
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'getElasticPulse'
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        if (!response.enabled) {
+            console.log('Elastic Pulse: disabled');
+            console.log('  Use "openkbs pulse enable" to enable WebSocket messaging.');
+            return;
+        }
+
+        console.log('Elastic Pulse: enabled');
+        console.log(`  Endpoint: ${response.endpoint}`);
+        console.log(`  Region: ${response.region}`);
+    } catch (error) {
+        console.red('Error getting Pulse status:', error.message);
+    }
+}
+
+async function pulseDisableAction(kbToken) {
+    try {
+        console.log('Disabling Elastic Pulse...');
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'disableElasticPulse'
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        console.green('Pulse disabled successfully.');
+    } catch (error) {
+        console.red('Error disabling Pulse:', error.message);
+    }
+}
+
+async function pulseChannelsAction(kbToken) {
+    try {
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'pulseChannels'
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        if (!response.channels || response.channels.length === 0) {
+            console.log('No active channels');
+            return;
+        }
+
+        console.log(`Active channels (${response.totalConnections} total connections):\n`);
+        for (const ch of response.channels) {
+            console.log(`  ${ch.channel}: ${ch.count} connection(s)`);
+        }
+    } catch (error) {
+        console.red('Error getting channels:', error.message);
+    }
+}
+
+async function pulsePresenceAction(kbToken, channel) {
+    try {
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'pulsePresence',
+            channel: channel || 'default'
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        console.log(`Channel: ${response.channel}`);
+        console.log(`Connected: ${response.count}`);
+
+        if (response.members && response.members.length > 0) {
+            console.log('\nMembers:');
+            for (const m of response.members) {
+                const time = new Date(m.connectedAt).toISOString();
+                console.log(`  ${m.userId || 'anonymous'} (since ${time})`);
+            }
+        }
+    } catch (error) {
+        console.red('Error getting presence:', error.message);
+    }
+}
+
+async function pulsePublishAction(kbToken, channel, message) {
+    if (!channel || !message) {
+        return console.red('Usage: openkbs pulse publish <channel> <message>');
+    }
+
+    try {
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'pulsePublish',
+            channel,
+            message
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        console.green(`Message sent to ${response.sent} client(s) on channel "${response.channel}"`);
+    } catch (error) {
+        console.red('Error publishing message:', error.message);
+    }
+}
+
 module.exports = {
     signAction,
     loginAction,
@@ -1201,5 +2135,9 @@ module.exports = {
     updateCliAction,
     publishAction,
     unpublishAction,
-    fnAction
+    fnAction,
+    siteAction,
+    storageAction,
+    postgresAction,
+    pulseAction
 };
