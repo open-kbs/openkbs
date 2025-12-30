@@ -1005,6 +1005,8 @@ async function fnDeployAction(kbToken, functionName, args) {
     let region = findRegion();
     let memorySize = 256;
     let timeout = 30;
+    let runtime = null;  // null = use default (nodejs24.x)
+    let handler = null;  // null = use default (index.handler)
 
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--region' && args[i + 1]) {
@@ -1013,6 +1015,10 @@ async function fnDeployAction(kbToken, functionName, args) {
             memorySize = parseInt(args[++i]);
         } else if (args[i] === '--timeout' && args[i + 1]) {
             timeout = parseInt(args[++i]);
+        } else if (args[i] === '--runtime' && args[i + 1]) {
+            runtime = args[++i];
+        } else if (args[i] === '--handler' && args[i + 1]) {
+            handler = args[++i];
         }
     }
 
@@ -1082,7 +1088,7 @@ async function fnDeployAction(kbToken, functionName, args) {
         } else {
             // Create new function
             console.log('Creating new function...');
-            response = await makePostRequest(KB_API_URL, {
+            const createParams = {
                 token: kbToken,
                 action: 'createElasticFunction',
                 functionName,
@@ -1090,7 +1096,10 @@ async function fnDeployAction(kbToken, functionName, args) {
                 region,
                 memorySize,
                 timeout
-            });
+            };
+            if (runtime) createParams.runtime = runtime;
+            if (handler) createParams.handler = handler;
+            response = await makePostRequest(KB_API_URL, createParams);
         }
 
         if (response.error) {
