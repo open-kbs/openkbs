@@ -210,7 +210,7 @@ program
     .addHelpText('after', `
 Examples:
   $ openkbs fn list                           List all functions
-  $ openkbs fn deploy hello --region us-east-1  Deploy function from ./functions/hello/
+  $ openkbs fn push hello --region us-east-1  Push function from ./functions/hello/
   $ openkbs fn delete hello                   Delete a function
   $ openkbs fn logs hello                     View function logs
   $ openkbs fn env hello                      View environment variables
@@ -224,10 +224,10 @@ program
     .action((subCommand, args) => siteAction(subCommand, args))
     .addHelpText('after', `
 Examples:
-  $ openkbs site deploy                       Deploy all files to S3
+  $ openkbs site push              Push site/ folder (or current dir) to S3
+  $ openkbs site push ./dist       Push specific folder to S3
 
 Run from a directory containing settings.json with kbId.
-Files are uploaded to the whitelabel domain's files bucket.
 `);
 
 program

@@ -931,7 +931,7 @@ async function fnAction(subCommand, args = []) {
     switch (subCommand) {
         case 'list':
             return await fnListAction(kbToken);
-        case 'deploy':
+        case 'push':
             return await fnDeployAction(kbToken, args[0], args.slice(1));
         case 'delete':
             return await fnDeleteAction(kbToken, args[0]);
@@ -946,13 +946,13 @@ async function fnAction(subCommand, args = []) {
             console.log('');
             console.log('Commands:');
             console.log('  list                    List all elastic functions');
-            console.log('  deploy <name>           Deploy a function from ./functions/<name>/');
+            console.log('  push <name>             Push a function from ./functions/<name>/');
             console.log('  delete <name>           Delete a function');
             console.log('  logs <name>             View function logs');
             console.log('  env <name> [KEY=value]  View or set environment variables');
             console.log('  invoke <name> [payload] Invoke a function');
             console.log('');
-            console.log('Options for deploy:');
+            console.log('Options for push:');
             console.log('  --region <region>       Region (us-east-1, eu-central-1, ap-southeast-1)');
             console.log('  --memory <mb>           Memory size (128-3008 MB)');
             console.log('  --timeout <seconds>     Timeout (1-900 seconds)');
@@ -1837,11 +1837,20 @@ async function siteAction(subCommand, args = []) {
     const { kbToken } = await fetchKBJWT(kbId);
 
     switch (subCommand) {
-        case 'deploy':
+        case 'push':
+            // If a folder path is provided, use it
+            if (args.length > 0 && args[0] && !args[0].startsWith('-')) {
+                const customDir = path.resolve(process.cwd(), args[0]);
+                if (fs.existsSync(customDir) && fs.statSync(customDir).isDirectory()) {
+                    siteDir = customDir;
+                } else {
+                    return console.red(`Directory not found: ${args[0]}`);
+                }
+            }
             return await siteDeployAction(kbToken, kbId, siteDir, args);
         default:
             console.log('Site management commands:\n');
-            console.log('  openkbs site deploy     Upload all files to S3');
+            console.log('  openkbs site push [folder]    Upload files to S3 (defaults to current dir or site/)');
             console.log('\nRun from a folder containing settings.json with kbId, or from parent with site/ subdirectory');
     }
 }
