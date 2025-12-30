@@ -2131,6 +2131,94 @@ async function pulsePublishAction(kbToken, channel, message) {
     }
 }
 
+/**
+ * Deploy from openkbs.json config file
+ * Enables elastic services and deploys functions/site
+ */
+async function elasticDeployAction() {
+    // Find openkbs.json
+    const configPaths = [
+        path.join(process.cwd(), 'openkbs.json'),
+        path.join(process.cwd(), '..', 'openkbs.json')
+    ];
+
+    let configPath = null;
+    for (const p of configPaths) {
+        if (fs.existsSync(p)) {
+            configPath = p;
+            break;
+        }
+    }
+
+    if (!configPath) {
+        return console.red('openkbs.json not found. Create one with your deployment config.');
+    }
+
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const projectDir = path.dirname(configPath);
+    const region = config.region || findRegion() || 'us-east-1';
+
+    console.log(`Deploying ${config.name || 'project'} to ${region}...`);
+
+    // Get KB token
+    const settings = findSettings();
+    if (!settings?.kbId) {
+        return console.red('No kbId found. Run from a directory with settings.json');
+    }
+
+    const res = await fetchKBJWT(settings.kbId);
+    if (!res?.kbToken) {
+        return console.red(`KB ${settings.kbId} not found`);
+    }
+    const kbToken = res.kbToken;
+
+    // Deploy elastic services if configured
+    if (config.elastic) {
+        console.log('\nEnabling Elastic services...');
+        const elasticRes = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'deployElastic',
+            elastic: config.elastic
+        });
+
+        if (elasticRes.error) {
+            console.red('Elastic deploy error:', elasticRes.error);
+        } else {
+            if (elasticRes.pulse?.enabled) console.green('  ✓ Pulse enabled');
+            if (elasticRes.postgres?.enabled) console.green('  ✓ Postgres enabled');
+            if (elasticRes.storage?.enabled) console.green('  ✓ Storage enabled');
+            if (elasticRes.storage?.cloudfront) console.green('  ✓ CloudFront configured');
+        }
+    }
+
+    // Deploy functions if configured
+    if (config.functions && config.functions.length > 0) {
+        console.log('\nDeploying functions...');
+        for (const fnName of config.functions) {
+            const fnConfig = typeof fnName === 'object' ? fnName : { name: fnName };
+            const name = fnConfig.name || fnName;
+
+            const args = ['--region', region];
+            if (fnConfig.memory) args.push('--memory', String(fnConfig.memory));
+            if (fnConfig.timeout) args.push('--timeout', String(fnConfig.timeout));
+            if (fnConfig.runtime) args.push('--runtime', fnConfig.runtime);
+            if (fnConfig.handler) args.push('--handler', fnConfig.handler);
+
+            console.log(`  Deploying ${name}...`);
+            await fnDeployAction(kbToken, name, args);
+        }
+    }
+
+    // Deploy site if configured
+    if (config.site) {
+        console.log('\nDeploying site...');
+        const sitePath = path.resolve(projectDir, config.site);
+        await siteDeployAction(kbToken, settings.kbId, sitePath, []);
+    }
+
+    console.green('\nDeploy complete!');
+}
+
 module.exports = {
     signAction,
     loginAction,
@@ -2156,5 +2244,6 @@ module.exports = {
     siteAction,
     storageAction,
     postgresAction,
-    pulseAction
+    pulseAction,
+    elasticDeployAction
 };

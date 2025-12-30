@@ -18,7 +18,8 @@ const {
     siteAction,
     storageAction,
     postgresAction,
-    pulseAction
+    pulseAction,
+    elasticDeployAction
 } = require('./actions');
 
 
@@ -113,16 +114,17 @@ program
     .action(describeAction);
 
 program
-    .command('deploy [moduleName]')
-    .description('Builds and deploys a specified moduleName to "dist" module folder. If moduleName is not provided, deploys all modules.')
-    .action(deployAction)
+    .command('deploy')
+    .description('Deploy from openkbs.json - enables elastic services, deploys functions and site')
+    .action(elasticDeployAction)
     .addHelpText('after', `
 Examples:
   $ openkbs deploy
-  $ openkbs deploy onRequest
-  $ openkbs deploy onResponse
-  $ openkbs deploy onAddMessages
-  $ openkbs deploy contentRender
+
+Reads openkbs.json and deploys:
+  - Elastic services (pulse, postgres, storage)
+  - Functions
+  - Site
 `);
 
 // program
