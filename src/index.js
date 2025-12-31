@@ -19,6 +19,7 @@ const {
     storageAction,
     postgresAction,
     pulseAction,
+    stackAction,
     elasticDeployAction
 } = require('./actions');
 
@@ -125,6 +126,22 @@ Reads openkbs.json and deploys:
   - Elastic services (pulse, postgres, storage)
   - Functions
   - Site
+`);
+
+program
+    .command('stack <subcommand>')
+    .description('Manage stack resources (deploy, destroy, status)')
+    .action((subCommand) => stackAction(subCommand))
+    .addHelpText('after', `
+Commands:
+  deploy     Deploy all resources from openkbs.json
+  destroy    Delete all resources (DANGEROUS)
+  status     Show status of all resources
+
+Examples:
+  $ openkbs stack deploy
+  $ openkbs stack status
+  $ openkbs stack destroy
 `);
 
 // program

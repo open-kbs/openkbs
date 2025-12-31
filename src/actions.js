@@ -2219,6 +2219,233 @@ async function elasticDeployAction() {
     console.green('\nDeploy complete!');
 }
 
+/**
+ * Destroy all resources defined in openkbs.json
+ */
+async function elasticDestroyAction() {
+    // Find openkbs.json
+    const configPaths = [
+        path.join(process.cwd(), 'openkbs.json'),
+        path.join(process.cwd(), '..', 'openkbs.json')
+    ];
+
+    let configPath = null;
+    for (const p of configPaths) {
+        if (fs.existsSync(p)) {
+            configPath = p;
+            break;
+        }
+    }
+
+    if (!configPath) {
+        return console.red('openkbs.json not found.');
+    }
+
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+    console.log(`Destroying ${config.name || 'project'} resources...`);
+    console.yellow('Warning: This will permanently delete all resources!\n');
+
+    // Get KB token
+    const settings = findSettings();
+    if (!settings?.kbId) {
+        return console.red('No kbId found. Run from a directory with settings.json');
+    }
+
+    const res = await fetchKBJWT(settings.kbId);
+    if (!res?.kbToken) {
+        return console.red(`KB ${settings.kbId} not found`);
+    }
+    const kbToken = res.kbToken;
+
+    // Delete functions
+    if (config.functions && config.functions.length > 0) {
+        console.log('Deleting functions...');
+        for (const fnName of config.functions) {
+            const name = typeof fnName === 'object' ? fnName.name : fnName;
+            try {
+                await fnDeleteAction(kbToken, name);
+                console.green(`  ✓ Deleted ${name}`);
+            } catch (e) {
+                console.yellow(`  ⚠ ${name}: ${e.message}`);
+            }
+        }
+    }
+
+    // Disable elastic services
+    if (config.elastic) {
+        console.log('\nDisabling Elastic services...');
+
+        if (config.elastic.storage) {
+            try {
+                await makePostRequest(KB_API_URL, {
+                    token: kbToken,
+                    action: 'deleteElasticStorage',
+                    force: true
+                });
+                console.green('  ✓ Storage disabled');
+            } catch (e) {
+                console.yellow(`  ⚠ Storage: ${e.message}`);
+            }
+        }
+
+        if (config.elastic.postgres) {
+            try {
+                await makePostRequest(KB_API_URL, {
+                    token: kbToken,
+                    action: 'deleteElasticPostgres'
+                });
+                console.green('  ✓ Postgres disabled');
+            } catch (e) {
+                console.yellow(`  ⚠ Postgres: ${e.message}`);
+            }
+        }
+
+        if (config.elastic.pulse) {
+            try {
+                await makePostRequest(KB_API_URL, {
+                    token: kbToken,
+                    action: 'disableElasticPulse'
+                });
+                console.green('  ✓ Pulse disabled');
+            } catch (e) {
+                console.yellow(`  ⚠ Pulse: ${e.message}`);
+            }
+        }
+    }
+
+    console.green('\nDestroy complete!');
+}
+
+/**
+ * Show status of all resources defined in openkbs.json
+ */
+async function elasticStatusAction() {
+    // Find openkbs.json
+    const configPaths = [
+        path.join(process.cwd(), 'openkbs.json'),
+        path.join(process.cwd(), '..', 'openkbs.json')
+    ];
+
+    let configPath = null;
+    for (const p of configPaths) {
+        if (fs.existsSync(p)) {
+            configPath = p;
+            break;
+        }
+    }
+
+    if (!configPath) {
+        return console.red('openkbs.json not found.');
+    }
+
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+    console.log(`Stack: ${config.name || 'unnamed'}`);
+    console.log(`Region: ${config.region || 'us-east-1'}\n`);
+
+    // Get KB token
+    const settings = findSettings();
+    if (!settings?.kbId) {
+        return console.red('No kbId found. Run from a directory with settings.json');
+    }
+
+    const res = await fetchKBJWT(settings.kbId);
+    if (!res?.kbToken) {
+        return console.red(`KB ${settings.kbId} not found`);
+    }
+    const kbToken = res.kbToken;
+
+    // Check functions
+    if (config.functions && config.functions.length > 0) {
+        console.log('Functions:');
+        const listRes = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'listElasticFunctions'
+        });
+        const deployed = listRes.functions?.map(f => f.functionName) || [];
+
+        for (const fnName of config.functions) {
+            const name = typeof fnName === 'object' ? fnName.name : fnName;
+            if (deployed.includes(name)) {
+                const fn = listRes.functions.find(f => f.functionName === name);
+                console.green(`  ✓ ${name} (${fn.customUrl || fn.functionUrl})`);
+            } else {
+                console.yellow(`  ○ ${name} (not deployed)`);
+            }
+        }
+        console.log('');
+    }
+
+    // Check elastic services
+    if (config.elastic) {
+        console.log('Elastic Services:');
+
+        if (config.elastic.storage) {
+            const storageRes = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                action: 'getElasticStorage'
+            });
+            if (storageRes.enabled) {
+                console.green(`  ✓ Storage (${storageRes.bucket})`);
+            } else {
+                console.yellow('  ○ Storage (not enabled)');
+            }
+        }
+
+        if (config.elastic.postgres) {
+            const pgRes = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                action: 'getElasticPostgres'
+            });
+            if (pgRes.enabled) {
+                console.green(`  ✓ Postgres (${pgRes.host})`);
+            } else {
+                console.yellow('  ○ Postgres (not enabled)');
+            }
+        }
+
+        if (config.elastic.pulse) {
+            const pulseRes = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                action: 'getElasticPulse'
+            });
+            if (pulseRes.enabled) {
+                console.green(`  ✓ Pulse (${pulseRes.endpoint})`);
+            } else {
+                console.yellow('  ○ Pulse (not enabled)');
+            }
+        }
+    }
+
+    // Site info
+    if (config.site) {
+        console.log('');
+        console.log(`Site: https://files.openkbs.com/${settings.kbId}/`);
+    }
+}
+
+/**
+ * Stack command handler
+ */
+async function stackAction(subCommand, args = []) {
+    switch (subCommand) {
+        case 'deploy':
+            return await elasticDeployAction();
+        case 'destroy':
+            return await elasticDestroyAction();
+        case 'status':
+            return await elasticStatusAction();
+        default:
+            console.log('Usage: openkbs stack <command>');
+            console.log('');
+            console.log('Commands:');
+            console.log('  deploy     Deploy all resources from openkbs.json');
+            console.log('  destroy    Delete all resources (DANGEROUS)');
+            console.log('  status     Show status of all resources');
+    }
+}
+
 module.exports = {
     signAction,
     loginAction,
@@ -2245,5 +2472,6 @@ module.exports = {
     storageAction,
     postgresAction,
     pulseAction,
+    stackAction,
     elasticDeployAction
 };
