@@ -1935,7 +1935,7 @@ async function siteDeployAction(kbToken, kbId, siteDir, args) {
         }
 
         console.green(`\nUpload complete! ${uploaded}/${files.length} files uploaded.`);
-        console.log(`Files accessible at: https://files.openkbs.com/${kbId}/`);
+        // console.log(`Files accessible at: https://files.openkbs.com/${kbId}/`);
 
     } catch (error) {
         console.red('Upload failed:', error.message);
