@@ -20,7 +20,8 @@ const {
     postgresAction,
     pulseAction,
     stackAction,
-    elasticDeployAction
+    elasticDeployAction,
+    elasticDestroyAction
 } = require('./actions');
 
 
@@ -126,6 +127,19 @@ Reads openkbs.json and deploys:
   - Elastic services (pulse, postgres, storage)
   - Functions
   - Site
+`);
+
+program
+    .command('destroy')
+    .description('Destroy all resources from openkbs.json (DANGEROUS)')
+    .action(elasticDestroyAction)
+    .addHelpText('after', `
+Examples:
+  $ openkbs destroy
+
+Reads openkbs.json and deletes:
+  - Functions
+  - Elastic services (storage, postgres, pulse)
 `);
 
 program

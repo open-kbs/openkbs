@@ -166,14 +166,18 @@ function makePostRequest(url, data) {
                     try {
                         const parsed = JSON.parse(body);
                         if (parsed.error) {
-                            console.red(parsed.error);
+                            console.red(`Error: ${parsed.error}`);
                         } else if (parsed.message) {
-                            console.red(parsed.message);
+                            console.red(`Error: ${parsed.message}`);
                         } else {
-                            console.red(`Invalid Request`);
+                            // Show the full response body if no error/message field
+                            console.red(`Request failed (HTTP ${res.statusCode}):`);
+                            console.red(JSON.stringify(parsed, null, 2));
                         }
                     } catch (e) {
-                        console.red(`Invalid Request`);
+                        // Could not parse JSON, show raw body
+                        console.red(`Request failed (HTTP ${res.statusCode}):`);
+                        console.red(body || 'No response body');
                     }
 
                     process.exit(1);

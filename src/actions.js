@@ -2184,9 +2184,12 @@ async function elasticDeployAction() {
         if (elasticRes.error) {
             console.red('Elastic deploy error:', elasticRes.error);
         } else {
-            if (elasticRes.pulse?.enabled) console.green('  ✓ Pulse enabled');
-            if (elasticRes.postgres?.enabled) console.green('  ✓ Postgres enabled');
-            if (elasticRes.storage?.enabled) console.green('  ✓ Storage enabled');
+            if (elasticRes.pulse?.enabled || elasticRes.pulse?.alreadyEnabled) console.green('  ✓ Pulse enabled');
+            if (elasticRes.pulse?.error) console.yellow('  ⚠ Pulse:', elasticRes.pulse.error);
+            if (elasticRes.postgres?.enabled || elasticRes.postgres?.alreadyEnabled || elasticRes.postgres?.host) console.green('  ✓ Postgres enabled');
+            if (elasticRes.postgres?.error) console.yellow('  ⚠ Postgres:', elasticRes.postgres.error);
+            if (elasticRes.storage?.enabled || elasticRes.storage?.alreadyEnabled || elasticRes.storage?.bucket) console.green('  ✓ Storage enabled');
+            if (elasticRes.storage?.error) console.yellow('  ⚠ Storage:', elasticRes.storage.error);
             if (elasticRes.storage?.cloudfront) console.green('  ✓ CloudFront configured');
         }
     }
@@ -2277,13 +2280,37 @@ async function elasticDestroyAction() {
         console.log('\nDisabling Elastic services...');
 
         if (config.elastic.storage) {
+            // First remove CloudFront behavior/origin if configured
+            const cloudfrontPath = typeof config.elastic.storage === 'object'
+                ? config.elastic.storage.cloudfront
+                : null;
+
+            if (cloudfrontPath) {
+                try {
+                    await makePostRequest(KB_API_URL, {
+                        token: kbToken,
+                        action: 'setStorageCloudFront',
+                        pathPrefix: cloudfrontPath,
+                        enable: false
+                    });
+                    console.green(`  ✓ CloudFront behavior removed (/${cloudfrontPath}/*)`);
+                } catch (e) {
+                    console.yellow(`  ⚠ CloudFront: ${e.message}`);
+                }
+            }
+
+            // Then delete storage bucket
             try {
-                await makePostRequest(KB_API_URL, {
+                const storageRes = await makePostRequest(KB_API_URL, {
                     token: kbToken,
                     action: 'deleteElasticStorage',
                     force: true
                 });
-                console.green('  ✓ Storage disabled');
+                if (storageRes.error) {
+                    console.yellow(`  ⚠ Storage: ${storageRes.error}`);
+                } else {
+                    console.green('  ✓ Storage disabled');
+                }
             } catch (e) {
                 console.yellow(`  ⚠ Storage: ${e.message}`);
             }
@@ -2473,5 +2500,6 @@ module.exports = {
     postgresAction,
     pulseAction,
     stackAction,
-    elasticDeployAction
+    elasticDeployAction,
+    elasticDestroyAction
 };
