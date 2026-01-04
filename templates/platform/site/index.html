@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{APP_NAME}}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 { color: #333; margin-bottom: 1rem; }
+        p { color: #666; margin-bottom: 2rem; line-height: 1.6; }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .links { margin-top: 2rem; }
+        .links a { color: #667eea; margin: 0 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{APP_NAME}}</h1>
+        <p>Your OpenKBS platform is ready. Deploy agents, functions, and build your AI-powered application.</p>
+        <a href="#" class="btn" onclick="testAPI()">Test API</a>
+        <div class="links">
+            <a href="https://openkbs.com/docs">Documentation</a>
+            <a href="https://github.com/open-kbs/openkbs">GitHub</a>
+        </div>
+        <pre id="result" style="margin-top: 2rem; text-align: left; background: #f5f5f5; padding: 1rem; border-radius: 8px; display: none;"></pre>
+    </div>
+    <script>
+        async function testAPI() {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            result.textContent = 'Loading...';
+            try {
+                // Replace YOUR_KB_ID with actual kbId after deployment
+                const response = await fetch('/api', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'hello', data: { test: true } })
+                });
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                result.textContent = 'Error: ' + e.message + '\n\nMake sure to deploy the API function first:\nopenkbs fn push api';
+            }
+        }
+    </script>
+</body>
+</html>

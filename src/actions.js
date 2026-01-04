@@ -2413,6 +2413,14 @@ async function elasticStatusAction() {
  */
 async function stackAction(subCommand, args = []) {
     switch (subCommand) {
+        case 'create':
+            const stackName = args[0];
+            if (!stackName) {
+                console.red('Error: Stack name is required');
+                console.log('Usage: openkbs stack create <name>');
+                process.exit(1);
+            }
+            return await stackCreateAction(stackName);
         case 'deploy':
             return await elasticDeployAction();
         case 'destroy':
@@ -2425,7 +2433,51 @@ async function stackAction(subCommand, args = []) {
             console.log('Commands:');
             console.log('  deploy     Deploy all resources from openkbs.json');
             console.log('  destroy    Delete all resources (DANGEROUS)');
+            console.log('  create     Create new platform stack');
             console.log('  status     Show status of all resources');
+    }
+}
+
+/**
+ * Create a new platform stack from template
+ */
+async function stackCreateAction(name) {
+    try {
+        // Download templates from S3 first
+        await downloadTemplates();
+
+        const platformTemplateDir = path.join(TEMPLATE_DIR, 'platform');
+        const targetDir = path.join(process.cwd(), name);
+
+        if (!fs.existsSync(platformTemplateDir)) {
+            console.red('Error: Platform template not found. Run "openkbs update" first.');
+            process.exit(1);
+        }
+
+        if (fs.existsSync(targetDir)) {
+            console.red(`Error: Directory ${name} already exists.`);
+            process.exit(1);
+        }
+
+        // Copy platform template
+        fs.copySync(platformTemplateDir, targetDir);
+
+        // Replace placeholders in all files
+        replacePlaceholderInFiles(targetDir, name);
+
+        console.green(`\nPlatform stack "${name}" created successfully!\n`);
+        console.log('Structure:');
+        console.log(`  ${name}/`);
+        console.log('  ├── agents/           # AI agents (each with app/ and src/)');
+        console.log('  ├── functions/        # Serverless Lambda functions');
+        console.log('  ├── site/             # Static site for whitelabel');
+        console.log('  └── openkbs.json      # Elastic services config\n');
+        console.log('Next steps:');
+        console.log(`  cd ${name}`);
+        console.log('  openkbs deploy        # Deploy elastic services');
+        console.log('  openkbs fn push api   # Deploy the API function');
+    } catch (error) {
+        console.red(`Error during stack create:`, error.message);
     }
 }
 

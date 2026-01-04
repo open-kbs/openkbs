@@ -143,16 +143,18 @@ Reads openkbs.json and deletes:
 `);
 
 program
-    .command('stack <subcommand>')
-    .description('Manage stack resources (deploy, destroy, status)')
-    .action((subCommand) => stackAction(subCommand))
+    .command('stack <subcommand> [args...]')
+    .description('Manage stack resources (create, deploy, destroy, status)')
+    .action((subCommand, args) => stackAction(subCommand, args))
     .addHelpText('after', `
 Commands:
-  deploy     Deploy all resources from openkbs.json
-  destroy    Delete all resources (DANGEROUS)
-  status     Show status of all resources
+  create <name>  Create new platform stack from template
+  deploy         Deploy all resources from openkbs.json
+  destroy        Delete all resources (DANGEROUS)
+  status         Show status of all resources
 
 Examples:
+  $ openkbs stack create my-platform
   $ openkbs stack deploy
   $ openkbs stack status
   $ openkbs stack destroy

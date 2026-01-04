@@ -1,0 +1,14 @@
+{
+  "elastic": {
+    "postgres": true,
+    "storage": true,
+    "pulse": true,
+    "functions": {
+      "api": {
+        "runtime": "nodejs22.x",
+        "memory": 512,
+        "timeout": 30
+      }
+    }
+  }
+}
