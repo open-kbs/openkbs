@@ -31,27 +31,28 @@
             color: white;
             text-decoration: none;
             border-radius: 8px;
+            border: none;
             font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
         }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        .btn:hover { opacity: 0.9; }
+        pre {
+            margin-top: 2rem;
+            text-align: left;
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 8px;
+            display: none;
+            overflow: auto;
         }
-        .links { margin-top: 2rem; }
-        .links a { color: #667eea; margin: 0 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>{{APP_NAME}}</h1>
-        <p>Your OpenKBS platform is ready. Deploy agents, functions, and build your AI-powered application.</p>
-        <a href="#" class="btn" onclick="testAPI()">Test API</a>
-        <div class="links">
-            <a href="https://openkbs.com/docs">Documentation</a>
-            <a href="https://github.com/open-kbs/openkbs">GitHub</a>
-        </div>
-        <pre id="result" style="margin-top: 2rem; text-align: left; background: #f5f5f5; padding: 1rem; border-radius: 8px; display: none;"></pre>
+        <p>Your OpenKBS platform is ready.</p>
+        <button class="btn" onclick="testAPI()">Test API</button>
+        <pre id="result"></pre>
     </div>
     <script>
         async function testAPI() {
@@ -59,16 +60,14 @@
             result.style.display = 'block';
             result.textContent = 'Loading...';
             try {
-                // Replace YOUR_KB_ID with actual kbId after deployment
-                const response = await fetch('/api', {
+                const res = await fetch('/api', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'hello', data: { test: true } })
+                    body: JSON.stringify({ action: 'hello' })
                 });
-                const data = await response.json();
-                result.textContent = JSON.stringify(data, null, 2);
+                result.textContent = JSON.stringify(await res.json(), null, 2);
             } catch (e) {
-                result.textContent = 'Error: ' + e.message + '\n\nMake sure to deploy the API function first:\nopenkbs fn push api';
+                result.textContent = 'Error: ' + e.message;
             }
         }
     </script>

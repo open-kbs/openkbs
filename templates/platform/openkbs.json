@@ -1,7 +1,12 @@
 {
+  "name": "{{APP_NAME}}",
+  "region": "us-east-1",
+
   "elastic": {
     "postgres": true,
-    "storage": true,
+    "storage": {
+      "cloudfront": "media"
+    },
     "pulse": true,
     "functions": {
       "api": {

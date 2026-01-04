@@ -1,6 +1,6 @@
 {
   "name": "openkbs",
-  "version": "0.0.66",
+  "version": "0.0.67",
   "description": "OpenKBS - Command Line Interface",
   "main": "src/index.js",
   "scripts": {

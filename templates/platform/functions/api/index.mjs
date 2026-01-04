@@ -1,51 +1,48 @@
 /**
- * Example API function for {{APP_NAME}} platform
+ * {{APP_NAME}} API
  *
  * Endpoint: https://fn.openkbs.com/YOUR_KB_ID/api
  *
- * This function has access to:
- * - process.env.POSTGRES_URL (if postgres enabled)
- * - process.env.KB_ID (your whitelabel kbId)
+ * Environment variables:
+ * - DATABASE_URL (Postgres connection string)
+ * - STORAGE_BUCKET (S3 bucket name)
+ * - OPENKBS_KB_ID (your kbId)
  */
 
 export const handler = async (event) => {
-    const body = JSON.parse(event.body || '{}');
-    const { action, data } = body;
-
-    // CORS headers
     const headers = {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type'
     };
 
-    // Handle preflight
-    if (event.httpMethod === 'OPTIONS') {
+    if (event.requestContext?.http?.method === 'OPTIONS') {
         return { statusCode: 200, headers, body: '' };
     }
 
     try {
+        const body = JSON.parse(event.body || '{}');
+        const { action } = body;
+
         switch (action) {
             case 'hello':
                 return {
                     statusCode: 200,
                     headers,
                     body: JSON.stringify({
-                        message: 'Hello from {{APP_NAME}} API!',
-                        timestamp: new Date().toISOString(),
-                        input: data
+                        message: 'Hello from {{APP_NAME}}!',
+                        timestamp: new Date().toISOString()
                     })
                 };
 
-            case 'health':
+            case 'status':
                 return {
                     statusCode: 200,
                     headers,
                     body: JSON.stringify({
-                        status: 'healthy',
-                        kbId: process.env.KB_ID,
-                        hasPostgres: !!process.env.POSTGRES_URL
+                        postgres: !!process.env.DATABASE_URL,
+                        storage: !!process.env.STORAGE_BUCKET,
+                        kbId: process.env.OPENKBS_KB_ID
                     })
                 };
 
@@ -53,10 +50,7 @@ export const handler = async (event) => {
                 return {
                     statusCode: 400,
                     headers,
-                    body: JSON.stringify({
-                        error: 'Unknown action',
-                        availableActions: ['hello', 'health']
-                    })
+                    body: JSON.stringify({ error: 'Unknown action', available: ['hello', 'status'] })
                 };
         }
     } catch (error) {
