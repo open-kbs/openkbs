@@ -13,7 +13,7 @@ const {
     deleteFileAction,
     describeAction, deployAction, createByTemplateAction, initByTemplateAction,
     logoutAction, installFrontendPackageAction, modifyAction, downloadModifyAction,
-    updateKnowledgeAction, updateCliAction, publishAction, unpublishAction,
+    updateSkillsAction, updateCliAction, publishAction, unpublishAction,
     fnAction,
     siteAction,
     storageAction,
@@ -194,25 +194,24 @@ This file will be automatically included when you run the 'openkbs modify' comma
 
 program
     .command('update [target]')
-    .description('Update OpenKBS CLI or project components from remote repository')
+    .description('Update OpenKBS CLI or skills (default: CLI)')
     .action((target) => {
         if (!target) {
             updateCliAction();
-        } else if (target === 'knowledge') {
-            updateKnowledgeAction();
+        } else if (target === 'skills') {
+            updateSkillsAction();
         } else {
-            console.error(`Unknown update target: ${target}. Currently supported: knowledge`);
+            console.error(`Unknown update target: ${target}. Supported: skills`);
             process.exit(1);
         }
     })
     .addHelpText('after', `
 Examples:
   $ openkbs update
-  This will check for CLI updates and install them if available.
+  Check for CLI updates and install them.
 
-  $ openkbs update knowledge
-  This will check if your local .openkbs/knowledge directory is up to date with the remote repository
-  and update it if necessary.
+  $ openkbs update skills
+  Update .claude/skills/openkbs/ with latest OpenKBS skill files.
 `);
 
 program

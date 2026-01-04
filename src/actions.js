@@ -611,20 +611,11 @@ async function downloadModifyAction() {
     });
 }
 
-async function updateKnowledgeAction(silent = false) {
+async function updateSkillsAction(silent = false) {
     try {
-        const knowledgeDir = path.join(process.cwd(), '.openkbs', 'knowledge');
-        const metadataPath = path.join(knowledgeDir, 'metadata.json');
-        const claudeMdPath = path.join(process.cwd(), 'CLAUDE.md');
-        
-        // Check if .openkbs/knowledge directory exists
-        if (!fs.existsSync(knowledgeDir)) {
-            if (!silent) {
-                console.red('Knowledge directory not found. Please ensure you are in an OpenKBS project directory.');
-            }
-            return;
-        }
-        
+        const skillsDir = path.join(process.cwd(), '.claude', 'skills', 'openkbs');
+        const metadataPath = path.join(skillsDir, 'metadata.json');
+
         // Get local metadata version
         let localVersion = null;
         if (fs.existsSync(metadataPath)) {
@@ -635,15 +626,14 @@ async function updateKnowledgeAction(silent = false) {
                 if (!silent) {
                     console.red('Error reading local metadata.json:', error.message);
                 }
-                return;
             }
         }
-        
+
         // Check remote version from S3
         const https = require('https');
         const bucket = 'openkbs-downloads';
-        const remoteMetadataKey = 'templates/.openkbs/knowledge/metadata.json';
-        
+        const remoteMetadataKey = 'templates/.claude/skills/openkbs/metadata.json';
+
         let remoteVersion = null;
         try {
             const fileUrl = `https://${bucket}.s3.amazonaws.com/${remoteMetadataKey}`;
@@ -654,7 +644,7 @@ async function updateKnowledgeAction(silent = false) {
                     res.on('end', () => resolve(data));
                 }).on('error', reject);
             });
-            
+
             const remoteMetadata = JSON.parse(remoteMetadataContent);
             remoteVersion = remoteMetadata.version;
         } catch (error) {
@@ -663,26 +653,23 @@ async function updateKnowledgeAction(silent = false) {
             }
             return;
         }
-        
+
         // Compare versions
         if (localVersion === remoteVersion) {
-            console.green('Knowledge base is already up to date.');
+            console.green('OpenKBS skill is already up to date.');
             return;
         }
-        
-        console.log(`Updating knowledge base from version ${localVersion || 'unknown'} to ${remoteVersion}...`);
-        
-        // Download updated knowledge files from S3
-        await downloadKnowledgeFromS3(knowledgeDir);
-        
-        // Download CLAUDE.md file from S3
-        await downloadClaudeMdFromS3(claudeMdPath);
-        
-        console.green('Knowledge base updated successfully!');
-        
+
+        console.log(`Updating OpenKBS skill from version ${localVersion || 'not installed'} to ${remoteVersion}...`);
+
+        // Download updated skill files from S3
+        await downloadSkillsFromS3(skillsDir);
+
+        console.green('OpenKBS skill updated successfully!');
+
     } catch (error) {
         if (!silent) {
-            console.red('Error updating knowledge base:', error.message);
+            console.red('Error updating skills:', error.message);
         }
     }
 }
@@ -744,8 +731,8 @@ async function updateCliAction() {
             console.red('Error fetching CLI version metadata:', error.message);
         }
 
-        // Also update knowledge base silently if it exists
-        await updateKnowledgeAction(true);
+        // Also update skills silently
+        await updateSkillsAction(true);
 
     } catch (error) {
         console.red('Error updating CLI:', error.message);
@@ -816,14 +803,17 @@ function compareVersions(version1, version2) {
 }
 
 
-async function downloadKnowledgeFromS3(targetDir) {
+async function downloadSkillsFromS3(targetDir) {
     const https = require('https');
     const bucket = 'openkbs-downloads';
-    const prefix = 'templates/.openkbs/knowledge/';
+    const prefix = 'templates/.claude/skills/openkbs/';
     const baseUrl = `https://${bucket}.s3.amazonaws.com`;
-    
+
     try {
-        // List all objects in knowledge folder
+        // Ensure directory exists
+        await fs.ensureDir(targetDir);
+
+        // List all objects in skills folder
         const listUrl = `${baseUrl}/?list-type=2&prefix=${prefix}`;
         const listXml = await new Promise((resolve, reject) => {
             https.get(listUrl, (res) => {
@@ -832,28 +822,28 @@ async function downloadKnowledgeFromS3(targetDir) {
                 res.on('end', () => resolve(data));
             }).on('error', reject);
         });
-        
+
         // Parse XML to extract object keys
         const keyMatches = listXml.match(/<Key>([^<]+)<\/Key>/g) || [];
         const keys = keyMatches.map(match => match.replace(/<\/?Key>/g, ''));
-        
+
         if (keys.length === 0) {
-            console.yellow('No knowledge files found in remote repository.');
+            console.yellow('No skill files found in remote repository.');
             return;
         }
-        
+
         // Download all files in parallel
         const downloadPromises = keys.map(async (key) => {
             const relativePath = key.substring(prefix.length);
-            
+
             // Skip if it's a directory marker
             if (relativePath.endsWith('/') || relativePath === '') return;
-            
+
             const localPath = path.join(targetDir, relativePath);
-            
+
             // Ensure directory exists
             await fs.ensureDir(path.dirname(localPath));
-            
+
             // Download file
             const fileUrl = `${baseUrl}/${key}`;
             const fileContent = await new Promise((resolve, reject) => {
@@ -864,49 +854,15 @@ async function downloadKnowledgeFromS3(targetDir) {
                 }).on('error', reject);
             });
             await fs.writeFile(localPath, fileContent);
-            
+
             console.log(`Downloaded: ${relativePath}`);
         });
-        
-        await Promise.all(downloadPromises);
-        
-    } catch (error) {
-        console.red('Error downloading knowledge files from S3:', error.message);
-        throw error;
-    }
-}
 
-async function downloadClaudeMdFromS3(claudeMdPath) {
-    const https = require('https');
-    const bucket = 'openkbs-downloads';
-    const claudeMdKey = 'templates/CLAUDE.md';
-    
-    try {
-        // Download CLAUDE.md file from S3
-        const fileUrl = `https://${bucket}.s3.amazonaws.com/${claudeMdKey}`;
-        const fileContent = await new Promise((resolve, reject) => {
-            https.get(fileUrl, (res) => {
-                if (res.statusCode === 404) {
-                    reject(new Error('NoSuchKey'));
-                    return;
-                }
-                const chunks = [];
-                res.on('data', (chunk) => chunks.push(chunk));
-                res.on('end', () => resolve(Buffer.concat(chunks)));
-            }).on('error', reject);
-        });
-        
-        await fs.writeFile(claudeMdPath, fileContent);
-        
-        console.log('Downloaded: CLAUDE.md');
-        
+        await Promise.all(downloadPromises);
+
     } catch (error) {
-        if (error.message === 'NoSuchKey') {
-            console.yellow('CLAUDE.md not found in remote repository, skipping...');
-        } else {
-            console.red('Error downloading CLAUDE.md:', error.message);
-            throw error;
-        }
+        console.red('Error downloading skill files from S3:', error.message);
+        throw error;
     }
 }
 
@@ -2490,7 +2446,7 @@ module.exports = {
     installFrontendPackageAction,
     modifyAction,
     downloadModifyAction,
-    updateKnowledgeAction,
+    updateSkillsAction,
     updateCliAction,
     publishAction,
     unpublishAction,
