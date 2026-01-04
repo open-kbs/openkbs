@@ -80,13 +80,21 @@ openkbs fn invoke hello '{"test": true}'  # Invoke function
 - `python3.12`, `python3.11`
 - `java21`, `java17`
 
-### Access from Agent
+### Access URLs
+
+Functions are accessible via CloudFront on your whitelabel domain:
+
+```
+https://yourdomain.com/functionName
+```
+
+From frontend (site/), use relative paths:
 
 ```javascript
-// In actions.js
-const response = await fetch('https://fn.openkbs.com/YOUR_KB_ID/hello', {
+const response = await fetch('/api', {
     method: 'POST',
-    body: JSON.stringify({ data: 'value' })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'hello' })
 });
 ```
 
@@ -106,7 +114,7 @@ openkbs postgres status             # Show database info
 
 ### Access from Agent
 
-Connection string is available as `POSTGRES_URL` environment variable:
+Connection string is available as `DATABASE_URL` environment variable:
 
 ```javascript
 // In onRequest.js or actions.js
@@ -114,7 +122,7 @@ import pg from 'pg';
 const { Pool } = pg;
 
 const pool = new Pool({
-    connectionString: process.env.POSTGRES_URL,
+    connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
 
@@ -173,7 +181,7 @@ const presigned = await openkbs.kb({
 
 ## Pulse (WebSocket)
 
-Real-time messaging and pub/sub.
+Real-time messaging and pub/sub via SDK.
 
 ### CLI Commands
 
@@ -182,21 +190,43 @@ openkbs pulse status   # Show Pulse status
 openkbs pulse channels # List channels
 ```
 
-### Access from Agent
+### Backend (Lambda functions)
 
 ```javascript
-// Publish message
-await openkbs.pulse.publish('channel-name', {
-    type: 'notification',
-    data: { message: 'Hello subscribers!' }
+import pulse from 'openkbs-pulse/server';
+
+// Get token for frontend
+const tokenData = await pulse.getToken(kbId, apiKey, userId);
+// Returns: { token, endpoint }
+
+// Publish to channel
+await pulse.publish('posts', 'new_post', { post }, { kbId, apiKey });
+
+// Get presence
+const presence = await pulse.presence('posts', { kbId, apiKey });
+```
+
+### Frontend (Browser)
+
+```html
+<script src="https://unpkg.com/openkbs-pulse/pulse.js"></script>
+```
+
+```javascript
+// Connect (token from backend)
+const realtime = new Pulse.Realtime({ kbId, token, endpoint, clientId });
+
+// Subscribe to channel
+const channel = realtime.channels.get('posts');
+channel.subscribe('new_post', (message) => {
+    console.log('New post:', message.data);
 });
 
-// Subscribe (frontend)
-const ws = new WebSocket(`wss://pulse.openkbs.com/${kbId}/channel-name`);
-ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    console.log('Received:', data);
-};
+// Presence
+channel.presence.enter({ name: 'Alice' });
+channel.presence.subscribe((members) => {
+    console.log('Online:', members.length);
+});
 ```
 
 ### Use Cases
@@ -234,7 +264,7 @@ import pg from 'pg';
 const { Pool } = pg;
 
 const pool = new Pool({
-    connectionString: process.env.POSTGRES_URL,
+    connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
 
@@ -304,7 +334,7 @@ import psycopg2
 import os
 
 def handler(event, context):
-    conn = psycopg2.connect(os.environ['POSTGRES_URL'])
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
     cur.execute("SELECT * FROM items")
     rows = cur.fetchall()

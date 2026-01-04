@@ -34,7 +34,7 @@ openkbs pulse enable
 ### Install
 
 ```html
-<script src="https://unpkg.com/openkbs-pulse@2.0.1/pulse.js"></script>
+<script src="https://unpkg.com/openkbs-pulse/pulse.js"></script>
 ```
 
 Or with npm:
@@ -263,7 +263,7 @@ export async function handler(event) {
 <html>
 <head>
     <title>Live Posts</title>
-    <script src="https://unpkg.com/openkbs-pulse@2.0.1/pulse.js"></script>
+    <script src="https://unpkg.com/openkbs-pulse/pulse.js"></script>
 </head>
 <body>
     <div id="online">Online: 0</div>

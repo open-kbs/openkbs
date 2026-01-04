@@ -131,7 +131,7 @@ cd functions/api && npm install && cd ../..
 openkbs fn push api
 ```
 
-Your function is live at `https://your-kb.openkbs.com/api`.
+Your function is live at `https://yourdomain.com/api`.
 
 ## Test Your Function
 
@@ -157,7 +157,7 @@ console.log(data); // { message: "Hello, OpenKBS!" }
 ### With curl
 
 ```bash
-curl -X POST https://your-kb.openkbs.com/api \
+curl -X POST https://yourdomain.com/api \
   -H "Content-Type: application/json" \
   -d '{"action":"hello","name":"OpenKBS"}'
 ```
@@ -286,9 +286,9 @@ openkbs fn list
 Output:
 ```
 Functions:
-  api      128MB  30s  https://your-kb.openkbs.com/api
-  auth     256MB  30s  https://your-kb.openkbs.com/auth
-  posts    512MB  60s  https://your-kb.openkbs.com/posts
+  api      128MB  30s  https://yourdomain.com/api
+  auth     256MB  30s  https://yourdomain.com/auth
+  posts    512MB  60s  https://yourdomain.com/posts
 ```
 
 ## Delete Function

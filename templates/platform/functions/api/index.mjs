@@ -1,7 +1,7 @@
 /**
  * {{APP_NAME}} API
  *
- * Endpoint: https://fn.openkbs.com/YOUR_KB_ID/api
+ * Endpoint: https://yourdomain.com/api
  *
  * Environment variables:
  * - DATABASE_URL (Postgres connection string)
