@@ -32,7 +32,7 @@ Platform mode extends agent capabilities with:
 - **Elastic Pulse**: Real-time WebSocket pub/sub
 - **Whitelabel**: Custom domains (`example.com`) with static site (`site/` folder)
 
-**Architecture Note**: The whitelabel itself is a KB with its own `kbId` (a service agent, not user-facing). This "parent" kbId is used throughout the stack for elastic services. Each agent in `agents/` has its own separate `kbId`. All agents share the platform's elastic services via the parent kbId.
+**Architecture Note**: The whitelabel itself is an app with its own `kbId` (a service agent, not user-facing). This "parent" kbId is used throughout the stack for elastic services. Each agent in `agents/` has its own separate `kbId`.
 
 ## Project Structure
 
@@ -52,7 +52,7 @@ my-agent/
 │   └── Frontend/
 │       ├── contentRender.js    # Custom React UI
 │       └── contentRender.json  # Frontend dependencies
-└── openkbs.json            # Elastic services config
+│
 ```
 
 ### Platform Structure
