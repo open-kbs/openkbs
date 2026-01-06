@@ -177,8 +177,37 @@ Priority items are auto-injected into LLM context.
 
 ## Additional Resources
 
-- For backend SDK methods, see [reference/backend-sdk.md](reference/backend-sdk.md)
-- For frontend React patterns, see [reference/frontend-sdk.md](reference/frontend-sdk.md)
-- For XML command definitions, see [reference/commands.md](reference/commands.md)
-- For elastic services, see [reference/elastic-services.md](reference/elastic-services.md)
-- For complete examples, see [examples/](examples/)
+### Reference Documentation
+- [reference/backend-sdk.md](reference/backend-sdk.md) - Backend SDK methods (openkbs.*)
+- [reference/frontend-sdk.md](reference/frontend-sdk.md) - Frontend React patterns
+- [reference/commands.md](reference/commands.md) - XML command definitions
+- [reference/elastic-services.md](reference/elastic-services.md) - Functions, Postgres, Storage, Pulse
+
+### Ready-to-Use Patterns
+Production-tested code blocks for common tasks:
+
+**Content & Media:**
+- [patterns/image-generation.md](patterns/image-generation.md) - AI image generation with upload
+- [patterns/video-generation.md](patterns/video-generation.md) - Async video generation with polling
+- [patterns/file-upload.md](patterns/file-upload.md) - Presigned URL file uploads
+- [patterns/web-publishing.md](patterns/web-publishing.md) - HTML page publishing
+
+**Memory & Storage:**
+- [patterns/memory-system.md](patterns/memory-system.md) - Memory CRUD with settings.json config
+- [patterns/vectordb-archive.md](patterns/vectordb-archive.md) - Long-term archive with semantic search
+
+**Scheduling & Automation:**
+- [patterns/scheduled-tasks.md](patterns/scheduled-tasks.md) - Task scheduling (one-time & recurring)
+- [patterns/cronjob-batch-processing.md](patterns/cronjob-batch-processing.md) - Batch file processing with state
+- [patterns/cronjob-monitoring.md](patterns/cronjob-monitoring.md) - Continuous monitoring with pulse control
+
+**External Integrations:**
+- [patterns/telegram.md](patterns/telegram.md) - Telegram bot commands (send messages)
+- [patterns/telegram-webhook.md](patterns/telegram-webhook.md) - Telegram webhook (receive messages)
+- [patterns/public-api-item-proxy.md](patterns/public-api-item-proxy.md) - Public API with geolocation
+
+### Complete Examples
+- [examples/ai-copywriter-agent/](examples/ai-copywriter-agent/) - Content generation agent
+- [examples/ai-marketing-agent/](examples/ai-marketing-agent/) - Marketing automation agent
+- [examples/monitoring-bot/](examples/monitoring-bot/) - Cronjob + Telegram monitoring agent
+- [examples/nodejs-demo/](examples/nodejs-demo/) - Platform with elastic functions

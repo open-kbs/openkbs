@@ -170,11 +170,13 @@ console.log(uploaded.url);  // Public URL
 
 // Get presigned URL for upload
 const presigned = await openkbs.kb({
-    action: 'getPresignedUploadUrl',
-    filename: 'document.pdf',
-    contentType: 'application/pdf'
+    action: 'createPresignedURL',
+    namespace: 'files',
+    fileName: 'document.pdf',
+    fileType: 'application/pdf',
+    presignedOperation: 'putObject'
 });
-// Returns: { uploadUrl, publicUrl }
+// Returns presigned URL string - upload with axios.put()
 ```
 
 ---

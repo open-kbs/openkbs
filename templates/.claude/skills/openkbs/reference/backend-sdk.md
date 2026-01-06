@@ -357,8 +357,9 @@ await axios.put(presignedUrl, fileBuffer, {
     }
 });
 
-// Public URL pattern
-const publicUrl = `https://web.file.vpc1.us/files/${openkbs.kbId}/${fileName}`;
+// Public URL pattern (varies by deployment)
+// For whitelabel: https://yourdomain.file.vpc1.us/files/kbId/filename
+// Generic: https://file.openkbs.com/files/kbId/filename
 ```
 
 ## VectorDB (Semantic Search)
@@ -416,6 +417,16 @@ const data = openkbs.parseJSONFromText('Some text {"key": "value"} more text');
 ```javascript
 const rates = await openkbs.getExchangeRates('USD');
 // Returns: { EUR: 0.92, GBP: 0.79, ... }
+```
+
+## Global Objects
+
+These are available globally in all backend handlers (no import needed):
+
+```javascript
+openkbs     // OpenKBS SDK (this document)
+axios       // HTTP client (axios.get, axios.post, etc.)
+crypto      // Node.js crypto module
 ```
 
 ## Properties
