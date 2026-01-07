@@ -18,7 +18,7 @@ OpenKBS provides managed cloud infrastructure that scales automatically.
   "elastic": {
     "functions": {
       "hello": {
-        "runtime": "nodejs22.x",
+        "runtime": "nodejs24.x",
         "memory": 512,
         "timeout": 30
       }
@@ -76,9 +76,9 @@ openkbs fn invoke hello '{"test": true}'  # Invoke function
 
 ### Supported Runtimes
 
-- `nodejs22.x`, `nodejs20.x`, `nodejs18.x`
-- `python3.12`, `python3.11`
-- `java21`, `java17`
+- `nodejs24.x`, `nodejs22.x`, `nodejs20.x`
+- `python3.14`, `python3.13`
+- `java25`, `java21`
 
 ### Access URLs
 
@@ -250,7 +250,7 @@ Complete Node.js application with all services:
 {
   "elastic": {
     "functions": {
-      "api": { "runtime": "nodejs22.x", "memory": 512 }
+      "api": { "runtime": "nodejs24.x", "memory": 512 }
     },
     "postgres": true,
     "storage": true,

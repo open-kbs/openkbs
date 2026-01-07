@@ -89,7 +89,7 @@ my-platform/
     "storage": true,
     "pulse": true,
     "functions": {
-      "api": { "runtime": "nodejs22.x", "memory": 512 }
+      "api": { "runtime": "nodejs24.x", "memory": 512 }
     }
   }
 }

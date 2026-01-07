@@ -10,7 +10,7 @@
     "pulse": true,
     "functions": {
       "api": {
-        "runtime": "nodejs22.x",
+        "runtime": "nodejs24.x",
         "memory": 512,
         "timeout": 30
       }
