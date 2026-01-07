@@ -717,7 +717,8 @@ async function updateCliAction() {
                 const { spawn } = require('child_process');
                 const updateProcess = spawn('npm', ['update', '-g', 'openkbs'], {
                     detached: true,
-                    stdio: 'inherit'
+                    stdio: 'inherit',
+                    shell: true
                 });
 
                 updateProcess.unref(); // Allow parent to exit
