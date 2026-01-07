@@ -1,0 +1,16 @@
+{
+  "name": "nodejs-demo",
+  "region": "us-east-1",
+
+  "elastic": {
+    "pulse": true,
+    "postgres": true,
+    "storage": {
+      "cloudfront": "media"
+    }
+  },
+
+  "functions": ["auth", "posts"],
+
+  "site": "./site"
+}
