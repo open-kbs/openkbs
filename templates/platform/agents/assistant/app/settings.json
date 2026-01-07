@@ -1,0 +1,13 @@
+{
+  "chatVendor": "google",
+  "kbDescription": "{{{openkbsAppName}}}",
+  "kbTitle": "{{{openkbsAppName}}}",
+  "model": "gemini-3-pro",
+  "inputTools": [
+    "speechToText"
+  ],
+  "embeddingModel": "text-embedding-3-large",
+  "embeddingDimension": 3072,
+  "searchEngine": "VectorDB",
+  "itemTypes": {}
+}

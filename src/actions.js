@@ -2462,6 +2462,13 @@ async function stackCreateAction(name) {
         // Copy platform template
         fs.copySync(platformTemplateDir, targetDir);
 
+        // Copy .claude folder with skills
+        const claudeTemplateDir = path.join(TEMPLATE_DIR, '.claude');
+        const claudeTargetDir = path.join(targetDir, '.claude');
+        if (fs.existsSync(claudeTemplateDir)) {
+            fs.copySync(claudeTemplateDir, claudeTargetDir);
+        }
+
         // Replace placeholders in all files
         replacePlaceholderInFiles(targetDir, name);
 
