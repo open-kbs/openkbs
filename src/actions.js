@@ -4,6 +4,8 @@ const path = require('path');
 const express = require('express');
 const { exec, execSync } = require('child_process');
 const https = require('https');
+const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
 const {
     fetchLocalKBData, fetchKBJWT, createAccountIdFromPublicKey, signPayload, getUserProfile, getKB,
@@ -16,6 +18,16 @@ const {
 const TEMPLATE_DIR = path.join(os.homedir(), '.openkbs', 'templates');
 const jwtPath = path.join(os.homedir(), '.openkbs', 'clientJWT');
 const generateTransactionId = () => `${+new Date()}-${Math.floor(100000 + Math.random() * 900000)}`;
+
+// Service registry for OpenKBS AI services (image generation)
+const SERVICES = {
+    // Short aliases (recommended)
+    "gpt-image": { accountId: "e69424d275873af94993240df041ed78", model: "gpt-image-1" },
+    "gemini-image": { accountId: "bc7ab06216fa2bf6db5d8e573d4d2415", model: "gemini-2.5-flash-image" },
+    // Full names
+    "gpt-image-1": { accountId: "e69424d275873af94993240df041ed78", model: "gpt-image-1" },
+    "gemini-2.5-flash-image": { accountId: "bc7ab06216fa2bf6db5d8e573d4d2415", model: "gemini-2.5-flash-image" }
+};
 
 /**
  * Find settings from settings.json - checks current dir, then functions/ or site/ subdirs
@@ -88,6 +100,140 @@ const MIME_TYPES = {
 function getMimeType(filePath) {
     const ext = path.extname(filePath).toLowerCase();
     return MIME_TYPES[ext] || 'application/octet-stream';
+}
+
+/**
+ * Read JSON payload from --data option or stdin
+ */
+async function getPayloadFromInput(dataOption) {
+    if (dataOption) {
+        return JSON.parse(dataOption);
+    }
+
+    // Read from stdin if not a TTY
+    if (!process.stdin.isTTY) {
+        const chunks = [];
+        for await (const chunk of process.stdin) {
+            chunks.push(chunk);
+        }
+        const input = Buffer.concat(chunks).toString('utf8').trim();
+        if (input) {
+            return JSON.parse(input);
+        }
+    }
+
+    throw new Error('No payload provided. Use --data or pipe JSON to stdin.');
+}
+
+/**
+ * Call OpenKBS AI services directly with transactionJWT
+ */
+async function serviceAction(options) {
+    try {
+        // 1. Get and validate payload
+        let payload;
+        try {
+            payload = await getPayloadFromInput(options.data);
+        } catch (e) {
+            console.red(`Error parsing payload: ${e.message}`);
+            process.exit(1);
+        }
+
+        // 2. Validate model
+        const model = options.model;
+        if (!SERVICES[model]) {
+            console.red(`Unknown model: ${model}`);
+            console.log(`Available models: ${Object.keys(SERVICES).join(', ')}`);
+            process.exit(1);
+        }
+
+        // 3. Add model to payload if not present (use actual model name from registry)
+        if (!payload.model) {
+            payload.model = SERVICES[model].model;
+        }
+
+        // 4. Get user profile and generate transactionJWT
+        const userProfile = await getUserProfile();
+        const publicKey = userProfile.walletPublicKey;
+        const privateKey = userProfile.walletPrivateKey;
+        const accountId = createAccountIdFromPublicKey(publicKey);
+
+        if (!publicKey || !privateKey) {
+            console.red('Wallet keys not found. Please login first with: openkbs login');
+            process.exit(1);
+        }
+
+        const txPayload = {
+            operation: "transfer",
+            resourceId: "credits",
+            transactionId: generateTransactionId(),
+            fromAccountId: accountId,
+            fromAccountPublicKey: publicKey,
+            toAccountId: SERVICES[model].accountId,
+            message: "",
+            maxAmount: parseInt(options.maxAmount || '300000'),
+            iat: Math.floor(Date.now() / 1000)
+        };
+
+        // Create private key object for jwt.sign()
+        const privateKeyObj = crypto.createPrivateKey({
+            key: Buffer.from(privateKey, 'base64'),
+            format: 'der',
+            type: 'pkcs8'
+        });
+
+        const transactionJWT = jwt.sign(txPayload, privateKeyObj, {
+            algorithm: 'ES256',
+            expiresIn: 60
+        });
+
+        // 5. Make POST request to openai.openkbs.com
+        const response = await fetch('https://openai.openkbs.com', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'transaction-jwt': transactionJWT
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        // 6. Handle errors
+        if (!response.ok) {
+            if (response.status === 498) {
+                console.red('Invalid service transaction');
+            } else if (response.status === 499) {
+                console.red('Insufficient credits. Check your balance at https://openkbs.com');
+            } else {
+                console.red(`Service error (${response.status}): ${JSON.stringify(data)}`);
+            }
+            process.exit(1);
+        }
+
+        // 7. Handle image output - save to file if -o specified
+        // Support both {data:[{b64_json}]} and [{b64_json}] formats
+        const imageData = data?.data?.[0]?.b64_json || data?.[0]?.b64_json;
+        if (options.output && imageData) {
+            const buffer = Buffer.from(imageData, 'base64');
+            const outputPath = path.resolve(options.output);
+
+            // Ensure directory exists
+            await fs.ensureDir(path.dirname(outputPath));
+            await fs.writeFile(outputPath, buffer);
+
+            console.green(`Image saved: ${outputPath}`);
+            console.log(`Size: ${(buffer.length / 1024).toFixed(1)} KB`);
+            return;
+        }
+
+        // 8. Output response as JSON (for non-image or no -o flag)
+        console.log(JSON.stringify(data, null, 2));
+
+    } catch (error) {
+        console.red(`Error: ${error.message}`);
+        process.exit(1);
+    }
 }
 
 async function signAction(options) {
@@ -2491,6 +2637,7 @@ async function stackCreateAction(name) {
 
 module.exports = {
     signAction,
+    serviceAction,
     loginAction,
     pullAction,
     pushAction,

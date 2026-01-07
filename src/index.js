@@ -4,6 +4,7 @@ const packageJson = require('../package.json');
 
 const {
     signAction,
+    serviceAction,
     loginAction,
     pullAction,
     pushAction,
@@ -306,6 +307,45 @@ Examples:
   $ openkbs pulse presence chat               Show clients connected to 'chat' channel
   $ openkbs pulse publish chat "Hello!"       Send message to 'chat' channel
   $ openkbs pulse disable                     Disable Pulse
+`);
+
+program
+    .command('service')
+    .description('Generate images using OpenKBS AI services')
+    .requiredOption('-m, --model <model>', 'Model: gpt-image or gemini-image')
+    .option('-d, --data <json>', 'JSON payload (or pipe via stdin)')
+    .option('-o, --output <path>', 'Save image output to file (for image generation)')
+    .option('--max-amount <amount>', 'Max credits to authorize', '300000')
+    .action(serviceAction)
+    .addHelpText('after', `
+Examples:
+  # Generate image with GPT
+  $ openkbs service -m gpt-image -d '{"action":"createImage","prompt":"a cat"}' -o cat.png
+
+  # Generate with Gemini
+  $ openkbs service -m gemini-image -d '{"action":"createImage","prompt":"logo"}' -o logo.png
+
+  # Edit image (provide reference URL)
+  $ openkbs service -m gpt-image -d '{"action":"createImage","prompt":"make it blue","imageUrls":["https://..."]}' -o edited.png
+
+Available models:
+  gpt-image      OpenAI GPT Image (gpt-image-1.5)
+  gemini-image   Google Gemini Flash (gemini-2.5-flash-image)
+
+Options for gpt-image:
+  prompt             (required) Text description of the image
+  size               "1024x1024", "1024x1536", "1536x1024", "auto" (default: "auto")
+  quality            "low", "medium", "high", "auto" (default: "auto")
+  n                  Number of images (default: 1)
+  output_format      "png", "jpg", "webp" (default: "png")
+  background         "transparent", "opaque", "auto" (default: "auto")
+  output_compression 0-100 for jpg/webp (default: 100)
+  imageUrls          Array of URLs for editing/reference
+
+Options for gemini-image:
+  prompt             (required) Text description of the image
+  aspect_ratio       "1:1", "16:9", "9:16", "4:3", "3:4" (default: "1:1")
+  imageUrls          Array of URLs for reference
 `);
 
 program.parse(process.argv);

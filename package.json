@@ -41,7 +41,8 @@
     "cli-spinner": "^0.2.10",
     "commander": "^12.1.0",
     "express": "^4.21.0",
-    "fs-extra": "^11.2.0"
+    "fs-extra": "^11.2.0",
+    "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
     "pkg": "^5.8.1"

@@ -123,6 +123,43 @@ openkbs pulse status     # WebSocket status
 openkbs site push        # Deploy static site
 ```
 
+### Image Generation Service
+Generate images directly from CLI using OpenKBS AI services:
+
+```bash
+# Generate with GPT
+openkbs service -m gpt-image -d '{"action":"createImage","prompt":"a logo"}' -o logo.png
+
+# Generate with Gemini
+openkbs service -m gemini-image -d '{"action":"createImage","prompt":"hero image"}' -o hero.png
+
+# Edit existing image
+openkbs service -m gpt-image -d '{"action":"createImage","prompt":"make it blue","imageUrls":["https://..."]}' -o edited.png
+```
+
+**Available models:**
+- `gpt-image` - OpenAI GPT Image (gpt-image-1.5)
+- `gemini-image` - Google Gemini Flash (gemini-2.5-flash-image)
+
+**Options for gpt-image:**
+| Option | Values | Default |
+|--------|--------|---------|
+| prompt | (required) | - |
+| size | "1024x1024", "1024x1536", "1536x1024", "auto" | "auto" |
+| quality | "low", "medium", "high", "auto" | "auto" |
+| n | Number of images | 1 |
+| output_format | "png", "jpg", "webp" | "png" |
+| background | "transparent", "opaque", "auto" | "auto" |
+| output_compression | 0-100 | 100 |
+| imageUrls | Array of URLs for editing | - |
+
+**Options for gemini-image:**
+| Option | Values | Default |
+|--------|--------|---------|
+| prompt | (required) | - |
+| aspect_ratio | "1:1", "16:9", "9:16", "4:3", "3:4" | "1:1" |
+| imageUrls | Array of URLs for reference | - |
+
 ## Backend Handler Pattern
 
 Commands are XML tags with JSON content that the LLM outputs:
