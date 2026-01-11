@@ -1,4 +1,4 @@
-# OpenKBS Platform Project
+``# OpenKBS Platform Project
 
 Load the openkbs skill: `/openkbs`
 
