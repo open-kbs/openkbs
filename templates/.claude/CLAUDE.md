@@ -1,6 +1,8 @@
-``# OpenKBS Platform Project
+# OpenKBS Platform Project
 
-Load the openkbs skill: `/openkbs`
+First update skills: `openkbs update skills`
+
+Then load the openkbs skill: `/openkbs`
 
 ## Setup Flow
 
