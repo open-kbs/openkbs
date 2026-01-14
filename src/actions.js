@@ -1960,9 +1960,13 @@ async function siteAction(subCommand, args = []) {
                 }
             }
             return await siteDeployAction(kbToken, kbId, siteDir, args);
+        case 'spa':
+            return await siteSpaAction(kbToken, args);
         default:
             console.log('Site management commands:\n');
             console.log('  openkbs site push [folder]    Upload files to S3 (defaults to current dir or site/)');
+            console.log('  openkbs site spa <path>       Enable SPA fallback (e.g., /app/index.html)');
+            console.log('  openkbs site spa --disable    Disable SPA fallback');
             console.log('\nRun from a folder containing settings.json with kbId, or from parent with site/ subdirectory');
     }
 }
@@ -2042,6 +2046,50 @@ async function siteDeployAction(kbToken, kbId, siteDir, args) {
 
     } catch (error) {
         console.red('Upload failed:', error.message);
+    }
+}
+
+/**
+ * Configure SPA fallback for whitelabel domain
+ */
+async function siteSpaAction(kbToken, args) {
+    const disable = args.includes('--disable');
+    const spaPath = args.find(a => !a.startsWith('-'));
+
+    if (!disable && !spaPath) {
+        console.log('Usage:');
+        console.log('  openkbs site spa /app/index.html    Enable SPA fallback');
+        console.log('  openkbs site spa --disable          Disable SPA fallback');
+        return;
+    }
+
+    try {
+        console.log(disable ? 'Disabling SPA fallback...' : `Enabling SPA fallback: ${spaPath}`);
+
+        const response = await makePostRequest(KB_API_URL, {
+            token: kbToken,
+            action: 'deployElastic',
+            elastic: {},
+            spa: disable ? null : spaPath
+        });
+
+        if (response.error) {
+            return console.red('Error:', response.error);
+        }
+
+        if (response.spa?.error) {
+            return console.red('SPA Error:', response.spa.error);
+        }
+
+        if (response.spa?.enabled) {
+            console.green(`✓ SPA fallback enabled: ${response.spa.spaFallback}`);
+            console.log(`  Domain: ${response.spa.domain}`);
+            console.log('  Changes may take 2-5 minutes to propagate.');
+        } else if (disable) {
+            console.green('✓ SPA fallback disabled');
+        }
+    } catch (error) {
+        console.red('Failed:', error.message);
     }
 }
 
@@ -2276,12 +2324,13 @@ async function elasticDeployAction() {
     const kbToken = res.kbToken;
 
     // Deploy elastic services if configured
-    if (config.elastic) {
+    if (config.elastic || config.spa) {
         console.log('\nEnabling Elastic services...');
         const elasticRes = await makePostRequest(KB_API_URL, {
             token: kbToken,
             action: 'deployElastic',
-            elastic: config.elastic
+            elastic: config.elastic || {},
+            spa: config.spa
         });
 
         if (elasticRes.error) {
@@ -2294,6 +2343,8 @@ async function elasticDeployAction() {
             if (elasticRes.storage?.enabled || elasticRes.storage?.alreadyEnabled || elasticRes.storage?.bucket) console.green('  ✓ Storage enabled');
             if (elasticRes.storage?.error) console.yellow('  ⚠ Storage:', elasticRes.storage.error);
             if (elasticRes.storage?.cloudfront) console.green('  ✓ CloudFront configured');
+            if (elasticRes.spa?.enabled) console.green(`  ✓ SPA fallback: ${elasticRes.spa.spaFallback}`);
+            if (elasticRes.spa?.error) console.yellow('  ⚠ SPA:', elasticRes.spa.error);
         }
     }
 
