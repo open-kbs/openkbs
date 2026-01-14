@@ -121,6 +121,7 @@ openkbs postgres shell   # Connect to Postgres
 openkbs storage ls       # List S3 objects
 openkbs pulse status     # WebSocket status
 openkbs site push        # Deploy static site
+openkbs site spa /app/index.html  # Enable SPA routing
 ```
 
 ### Image Generation Service

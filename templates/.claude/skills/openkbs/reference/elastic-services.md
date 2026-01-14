@@ -240,6 +240,102 @@ channel.presence.subscribe((members) => {
 
 ---
 
+## SPA (Single Page Application) Support
+
+Host React, Vue, or Angular apps on your whitelabel domain with client-side routing.
+
+### Enable SPA Mode
+
+```bash
+openkbs site spa /app/index.html    # Enable SPA fallback
+openkbs site spa --disable          # Disable SPA mode
+```
+
+### How It Works
+
+When SPA mode is enabled, CloudFront catches 403/404 errors and serves your fallback file with HTTP 200. This allows client-side routing to handle all `/app/*` paths.
+
+```
+yourdomain.com/              → serves /index.html (landing page)
+yourdomain.com/app/          → serves /app/index.html (SPA)
+yourdomain.com/app/dashboard → serves /app/index.html (SPA handles route)
+yourdomain.com/app/profile   → serves /app/index.html (SPA handles route)
+```
+
+### Project Structure
+
+```
+my-platform/
+├── site/
+│   ├── index.html           # Static landing page
+│   └── app/                  # Built React app (copied from spa/dist)
+│       ├── index.html
+│       └── assets/
+├── spa/                      # React source (not deployed)
+│   ├── package.json
+│   ├── vite.config.js
+│   └── src/
+│       ├── main.jsx
+│       └── App.jsx
+└── openkbs.json
+```
+
+### Example: React + Vite SPA
+
+**1. Create React app:**
+
+```bash
+npm create vite@latest spa -- --template react
+cd spa
+npm install react-router-dom
+```
+
+**2. Configure Vite for /app base path:**
+
+```javascript
+// spa/vite.config.js
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  base: '/app/'
+})
+```
+
+**3. Add routing:**
+
+```jsx
+// spa/src/App.jsx
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+
+function App() {
+  return (
+    <BrowserRouter basename="/app">
+      <nav>
+        <Link to="/">Home</Link>
+        <Link to="/dashboard">Dashboard</Link>
+      </nav>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </BrowserRouter>
+  )
+}
+```
+
+**4. Build and deploy:**
+
+```bash
+cd spa && npm run build
+cp -r dist/* ../site/app/
+cd .. && openkbs site push
+openkbs site spa /app/index.html
+```
+
+---
+
 ## Full-Stack Example
 
 Complete Node.js application with all services:
