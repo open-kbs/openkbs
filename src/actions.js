@@ -519,14 +519,18 @@ async function createByTemplateAction(name) {
     try {
         // Download templates from S3 first
         await downloadTemplates();
-        
+
         const targetDir = path.join(process.cwd(), name);
 
         if (fs.existsSync(targetDir)) {
             console.error(`Error: Directory ${name} already exists.`);
             process.exit(1);
         }
-        fs.copySync(TEMPLATE_DIR, targetDir);
+
+        // Copy template but exclude 'platform' folder (that's only for stack create)
+        fs.copySync(TEMPLATE_DIR, targetDir, {
+            filter: (src) => !src.includes('/platform')
+        });
         replacePlaceholderInFiles(targetDir, name);
 
         console.log(`Application ${name} created successfully.`);
