@@ -1,7 +1,0 @@
-{
-  "userId": "public",
-  "kbTitle": "AI Marketing Agent",
-  "kbDescription": "AI assistant for marketing content creation, image/video generation, and task scheduling",
-  "model": "anthropic.claude-3-5-sonnet-20241022-v2:0",
-  "inputTools": ["speechToText"]
-}
