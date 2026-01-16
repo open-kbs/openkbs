@@ -811,6 +811,35 @@ async function updateSkillsAction(silent = false) {
         // Download updated skill files from S3
         await downloadSkillsFromS3(skillsDir);
 
+        // Also download the root CLAUDE.md file
+        const claudeDir = path.join(process.cwd(), '.claude');
+        await fs.ensureDir(claudeDir);
+
+        const claudeMdKey = 'templates/.claude/CLAUDE.md';
+        const claudeMdUrl = `https://${bucket}.s3.amazonaws.com/${claudeMdKey}`;
+
+        try {
+            const claudeMdContent = await new Promise((resolve, reject) => {
+                https.get(claudeMdUrl, (res) => {
+                    if (res.statusCode === 404) {
+                        reject(new Error('CLAUDE.md not found'));
+                        return;
+                    }
+                    const chunks = [];
+                    res.on('data', (chunk) => chunks.push(chunk));
+                    res.on('end', () => resolve(Buffer.concat(chunks)));
+                }).on('error', reject);
+            });
+            await fs.writeFile(path.join(claudeDir, 'CLAUDE.md'), claudeMdContent);
+            if (!silent) {
+                console.log('Downloaded: CLAUDE.md');
+            }
+        } catch (error) {
+            if (!silent) {
+                console.yellow('Could not download CLAUDE.md:', error.message);
+            }
+        }
+
         console.green('OpenKBS skill updated successfully!');
 
     } catch (error) {

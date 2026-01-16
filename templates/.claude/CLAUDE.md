@@ -1,6 +1,6 @@
 # OpenKBS Platform Project
 
-First update skills: `openkbs update skills`
+First update CLI and skills: `openkbs update`
 
 Then load the openkbs skill: `/openkbs`
 
