@@ -800,18 +800,7 @@ async function updateSkillsAction(silent = false) {
             return;
         }
 
-        // Compare versions
-        if (localVersion === remoteVersion) {
-            console.green('OpenKBS skill is already up to date.');
-            return;
-        }
-
-        console.log(`Updating OpenKBS skill from version ${localVersion || 'not installed'} to ${remoteVersion}...`);
-
-        // Download updated skill files from S3
-        await downloadSkillsFromS3(skillsDir);
-
-        // Also download the root CLAUDE.md file
+        // Always download the root CLAUDE.md file (even if skills are up to date)
         const claudeDir = path.join(process.cwd(), '.claude');
         await fs.ensureDir(claudeDir);
 
@@ -839,6 +828,17 @@ async function updateSkillsAction(silent = false) {
                 console.yellow('Could not download CLAUDE.md:', error.message);
             }
         }
+
+        // Compare versions
+        if (localVersion === remoteVersion) {
+            console.green('OpenKBS skill is already up to date.');
+            return;
+        }
+
+        console.log(`Updating OpenKBS skill from version ${localVersion || 'not installed'} to ${remoteVersion}...`);
+
+        // Download updated skill files from S3
+        await downloadSkillsFromS3(skillsDir);
 
         console.green('OpenKBS skill updated successfully!');
 
