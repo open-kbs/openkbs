@@ -2363,7 +2363,8 @@ async function elasticDeployAction() {
             token: kbToken,
             action: 'deployElastic',
             elastic: config.elastic || {},
-            spa: config.spa
+            spa: config.spa,
+            region
         });
 
         if (elasticRes.error) {
