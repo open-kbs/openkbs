@@ -84,14 +84,18 @@ my-platform/
 ### openkbs.json
 ```json
 {
+  "region": "us-east-1",
+  "spa": "/app/index.html",
   "elastic": {
     "postgres": true,
-    "storage": true,
-    "pulse": true,
-    "functions": {
-      "api": { "runtime": "nodejs24.x", "memory": 512 }
-    }
-  }
+    "storage": {
+      "cloudfront": "media"
+    },
+    "pulse": true
+  },
+  "functions": [
+    { "name": "api", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 }
+  ]
 }
 ```
 
