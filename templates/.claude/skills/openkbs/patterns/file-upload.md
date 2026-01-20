@@ -157,25 +157,72 @@ const uploadHtmlContent = async (htmlContent, filename) => {
 
 ## Frontend File Upload (contentRender.js)
 
+**IMPORTANT:** `openkbs` is passed as a **prop** to components - it's NOT global!
+
 ```javascript
-// Using openkbs.Files API in frontend
-const handleFileUpload = async (file, onProgress) => {
-    try {
-        await openkbs.Files.uploadFileAPI(file, 'files', onProgress);
-        const publicUrl = `https://yourdomain.com/media/${file.name}`;
-        return publicUrl;
-    } catch (error) {
-        console.error('Upload failed:', error);
-        throw error;
-    }
+// File upload button component - receives openkbs as prop
+const FileUploadButton = ({ openkbs, setSystemAlert }) => {
+    const [uploading, setUploading] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const fileInputRef = useRef(null);
+
+    const handleUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        try {
+            // Upload file to storage with progress callback
+            await openkbs.Files.uploadFileAPI(file, 'files', (percent) => {
+                setProgress(percent);
+            });
+
+            setSystemAlert?.({ severity: 'success', message: `Uploaded ${file.name}` });
+        } catch (error) {
+            setSystemAlert?.({ severity: 'error', message: error.message });
+        } finally {
+            setUploading(false);
+            setProgress(0);
+        }
+    };
+
+    return (
+        <div>
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                {uploading ? `Uploading ${progress}%` : 'Upload File'}
+            </button>
+            <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleUpload}
+                style={{ display: 'none' }}
+            />
+        </div>
+    );
 };
 
-// List files
+// Header must pass openkbs to child components
+const Header = ({ setRenderSettings, openkbs, setSystemAlert }) => {
+    return (
+        <div>
+            <FileUploadButton openkbs={openkbs} setSystemAlert={setSystemAlert} />
+        </div>
+    );
+};
+```
+
+### Other Files API Methods
+
+```javascript
+// List files (inside a component that receives openkbs as prop)
 const files = await openkbs.Files.listFiles('files');
-// Returns: [{ Key: 'files/kbId/filename.jpg', Size: 12345 }]
+// Returns: [{ Key: 'files/kbId/filename.jpg', Size: 12345, LastModified }]
 
 // Delete file
 await openkbs.Files.deleteRawKBFile('filename.jpg', 'files');
+
+// Rename file
+await openkbs.Files.renameFile('old.jpg', 'new.jpg', 'files');
 ```
 
 ## instructions.txt (LLM prompt)

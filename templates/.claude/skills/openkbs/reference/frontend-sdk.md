@@ -61,10 +61,10 @@ return JSON.stringify({ type: 'HIDDEN_MESSAGE' });
 
 ## Header Component
 
-Customize the chat header:
+Customize the chat header. **Important:** Receive `openkbs` and `setSystemAlert` as props!
 
 ```javascript
-const Header = ({ setRenderSettings }) => {
+const Header = ({ setRenderSettings, openkbs, setSystemAlert }) => {
     useEffect(() => {
         setRenderSettings({
             disableShareButton: true,
@@ -72,9 +72,21 @@ const Header = ({ setRenderSettings }) => {
         });
     }, [setRenderSettings]);
 
+    // Now you can use openkbs.Files, openkbs.createItem, etc.
+    // Pass openkbs to child components that need it
+
     return <div>Custom Header</div>;
 };
 ```
+
+### Available Header Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `setRenderSettings` | function | Configure UI options |
+| `openkbs` | object | SDK object with Files, createItem, etc. |
+| `setSystemAlert` | function | Show alerts: `{ severity: 'success'/'error', message }` |
+| `setBlockingLoading` | function | Show/hide loading overlay |
 
 ## Command Rendering Pattern
 
@@ -205,7 +217,21 @@ The `(fixed)` suffix indicates built-in libraries that don't need bundling.
 
 ## Frontend openkbs Object
 
-The `openkbs` object is available globally in frontend code.
+**IMPORTANT:** The `openkbs` object is passed as a **prop** to Header and other components - it is NOT a global variable.
+
+```javascript
+// CORRECT - receive openkbs as prop
+const Header = ({ setRenderSettings, openkbs, setSystemAlert }) => {
+    // Now you can use openkbs.Files, openkbs.createItem, etc.
+};
+
+// WRONG - openkbs is not global in frontend
+const Header = ({ setRenderSettings }) => {
+    await openkbs.Files.listFiles(); // ERROR: openkbs is undefined
+};
+```
+
+Always destructure `openkbs` from props before using it.
 
 ### Item CRUD
 
