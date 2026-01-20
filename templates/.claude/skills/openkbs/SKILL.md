@@ -137,16 +137,25 @@ openkbs site spa /app/index.html  # Enable SPA routing
 
 ### Domain & Whitelabel
 ```bash
-openkbs ls                     # List all agents (KB-ta)
-openkbs ls <kbId>              # View agent details (domain, elastic services, etc.)
-openkbs publish example.com    # Link agent to custom domain
-openkbs unpublish example.com  # Unlink agent from domain
+openkbs ls                        # List all agents - find whitelabel kbId here
+openkbs ls <kbId>                 # View full agent details
+openkbs ls <kbId> domain          # Get just the domain name
+openkbs ls <kbId> domainParkingState  # Get domain setup details
+openkbs publish example.com       # Link agent to custom domain
+openkbs unpublish example.com     # Unlink agent from domain
 ```
 
-The whitelabel agent's `domainParkingState` contains full domain setup:
-- `domain`, `step` (completed/pending), `status` (active)
-- `filesDistributionId`, `appsDistributionId` - CloudFront IDs
-- `certificateArn` - SSL certificate
+**Quick domain lookup:**
+```bash
+# 1. Find the whitelabel agent (usually named "AI White Label" or similar)
+openkbs ls
+
+# 2. Get its domain
+openkbs ls 1ya6foz1a7q3 domain
+# -> jobavion.com
+```
+
+Available fields: `domain`, `domainParkingState`, `elasticPostgresHost`, `elasticStorageBucket`, `spaFallback`, etc.
 
 ### Image Generation Service
 Generate images directly from CLI using OpenKBS AI services:
