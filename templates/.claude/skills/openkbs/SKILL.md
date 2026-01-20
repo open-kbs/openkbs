@@ -7,6 +7,8 @@ description: OpenKBS AI agent development framework. Use when creating, modifyin
 
 OpenKBS is a framework for building AI-powered applications - from simple agents to full-stack platforms.
 
+> **Note:** In OpenKBS, "KB" (Knowledge Base) and "Agent" are used interchangeably. Every agent has a unique `kbId`.
+
 ## Two Usage Modes
 
 ### 1. Agent-Only Mode
@@ -32,7 +34,13 @@ Platform mode extends agent capabilities with:
 - **Elastic Pulse**: Real-time WebSocket pub/sub
 - **Whitelabel**: Custom domains (`example.com`) with static site (`site/` folder)
 
-**Architecture Note**: The whitelabel itself is an app with its own `kbId` (a service agent, not user-facing). This "parent" kbId is used throughout the stack for elastic services. Each agent in `agents/` has its own separate `kbId`.
+**Architecture Note**: The whitelabel is a special "service agent" with its own `kbId` that holds the entire cloud setup:
+- Domain configuration (`domainParkingState`)
+- Elastic services (Postgres, Storage, Pulse, Functions)
+- CloudFront distributions
+- SSL certificates
+
+This whitelabel `kbId` is used in `settings.json` files throughout the project. User-facing agents in `agents/` folder each get their own separate `kbId` when pushed.
 
 ## Project Structure
 
@@ -126,6 +134,19 @@ openkbs pulse status     # WebSocket status
 openkbs site push        # Deploy static site
 openkbs site spa /app/index.html  # Enable SPA routing
 ```
+
+### Domain & Whitelabel
+```bash
+openkbs ls                     # List all agents (KB-ta)
+openkbs ls <kbId>              # View agent details (domain, elastic services, etc.)
+openkbs publish example.com    # Link agent to custom domain
+openkbs unpublish example.com  # Unlink agent from domain
+```
+
+The whitelabel agent's `domainParkingState` contains full domain setup:
+- `domain`, `step` (completed/pending), `status` (active)
+- `filesDistributionId`, `appsDistributionId` - CloudFront IDs
+- `certificateArn` - SSL certificate
 
 ### Image Generation Service
 Generate images directly from CLI using OpenKBS AI services:
