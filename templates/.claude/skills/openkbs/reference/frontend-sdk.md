@@ -88,6 +88,83 @@ const Header = ({ setRenderSettings, openkbs, setSystemAlert }) => {
 | `setSystemAlert` | function | Show alerts: `{ severity: 'success'/'error', message }` |
 | `setBlockingLoading` | function | Show/hide loading overlay |
 
+### Render Settings Options
+
+Configure UI behavior via `setRenderSettings()`:
+
+```javascript
+setRenderSettings({
+    // UI toggles
+    disableShareButton: true,
+    disableBalanceView: true,
+    disableChatModelsSelect: true,
+    disableEmojiButton: true,
+    disableCodeExecuteButton: true,
+    disableSentLabel: true,
+    disableChatAvatar: true,
+    disableAutoscroll: true,
+    disableInitialScroll: true,
+    disableAutoFocusChatInput: true,
+    disableContextItems: true,
+    disableCopyButton: true,
+    disableTextToSpeechButton: true,
+    disablePushNotificationsButton: true,
+    disableMultichat: true,
+    disableImageUploadText: true,
+
+    // Layout
+    setMessageWidth: () => '85%',
+    chatContainerHeight: 600,
+    backgroundOpacity: 0.5,
+
+    // Behavior
+    inputLabelsQuickSend: true,        // Quick send on label click
+    chatTimeoutMs: 30000,              // Chat timeout in ms
+    onChatTimeout: () => {},           // Callback on timeout
+
+    // Message transform hook
+    onBeforeSendMessage: (message) => message,
+
+    // Custom components
+    sendIcon: () => <span>Send</span>,
+    formatMessageTime: (timestamp) => '...'
+});
+```
+
+### onBeforeSendMessage Hook
+
+Transform user messages before sending to the LLM. Useful for adding prefixes, filters, or modifying content.
+
+```javascript
+const Header = ({ setRenderSettings, openkbs }) => {
+    const [filter, setFilter] = useState('all');
+
+    useEffect(() => {
+        setRenderSettings({
+            onBeforeSendMessage: (message) => {
+                // Add prefix based on filter selection
+                if (filter === 'all') return message;
+                return `[Category: ${filter}] ${message}`;
+            }
+        });
+    }, [setRenderSettings, filter]);
+
+    return (
+        <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+            <option value="all">All</option>
+            <option value="tech">Tech</option>
+            <option value="sales">Sales</option>
+        </select>
+    );
+};
+```
+
+**Use cases:**
+- Add category/filter prefixes to messages
+- Inject context or metadata
+- Transform or sanitize user input
+- Add routing hints for the LLM
+
 ## Command Rendering Pattern
 
 Define commands with icons:
