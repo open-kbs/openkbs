@@ -364,43 +364,159 @@ await axios.put(presignedUrl, fileBuffer, {
 
 ## VectorDB (Semantic Search)
 
-### items() - VectorDB Operations
+### items() - Create Items with Filterable Attributes
 
-Create and search items with embeddings for semantic search.
+For filtering to work, items must be created with filterable attributes (keyword, integer, boolean, etc.).
 
 ```javascript
-// Create embeddings first
+// 1. Create embeddings from content
 const { embeddings, totalTokens } = await openkbs.createEmbeddings(
-    'text to embed',
-    'text-embedding-3-large'  // 3072 dimensions
+    'Fix login bug - users cannot login with SSO',
+    'text-embedding-3-large'
 );
 
-// Create item with embeddings
+// 2. Create item with filterable attributes
 await openkbs.items({
     action: 'createItem',
-    itemType: 'archive',
-    itemId: 'archive_doc_123',
+    itemType: 'task',
+    itemId: `task_${Date.now()}`,
     attributes: [
         { attrType: 'itemId', attrName: 'itemId', encrypted: false },
-        { attrType: 'body', attrName: 'body', encrypted: true }
+        { attrType: 'body', attrName: 'body', encrypted: true },
+        // Filterable attributes - map user-friendly names to generic types
+        { attrType: 'keyword1', attrName: 'category', encrypted: false },
+        { attrType: 'keyword2', attrName: 'status', encrypted: false },
+        { attrType: 'integer1', attrName: 'priority', encrypted: false },
+        { attrType: 'boolean1', attrName: 'isUrgent', encrypted: false }
     ],
-    item: { body: await openkbs.encrypt(JSON.stringify(data)) },
+    item: {
+        body: await openkbs.encrypt(JSON.stringify({
+            title: 'Fix login bug',
+            description: 'Users cannot login with SSO'
+        })),
+        // Filterable field values
+        category: 'bug',
+        status: 'open',
+        priority: 1,
+        isUrgent: true
+    },
     totalTokens,
     embeddings: embeddings.slice(0, 3072),
     embeddingModel: 'text-embedding-3-large',
     embeddingDimension: 3072
 });
+```
 
-// Semantic search
+### Filterable Attribute Types
+
+| attrType | S3 Vectors Type | Operators |
+|----------|-----------------|-----------|
+| keyword1-20 | String | $eq, $ne, $in, $nin |
+| text1-20 | String | $eq, $ne, $in, $nin |
+| integer1-20 | Number | $eq, $ne, $gt, $gte, $lt, $lte |
+| float1-20 | Number | $eq, $ne, $gt, $gte, $lt, $lte |
+| boolean1-9 | Boolean | $eq, $ne |
+| date1-9 | Number | $gt, $gte, $lt, $lte |
+
+### searchVectorDBItems - Vector Search with Filter
+
+```javascript
+// Simple search (no filter)
 const results = await openkbs.items({
     action: 'searchVectorDBItems',
-    queryText: 'find similar documents',
-    topK: 10,
-    minScore: 0
+    queryText: 'login issues',
+    topK: 10
 });
 
-// Results: { items: [{ itemId, body, score }, ...] }
-// Note: body is encrypted, use openkbs.decrypt() to read
+// Search with filter - use user-friendly field names
+const filtered = await openkbs.items({
+    action: 'searchVectorDBItems',
+    queryText: 'login authentication issues',
+    topK: 20,
+    minScore: 70,
+    itemType: 'task',  // Required for filter translation!
+    filter: {
+        category: 'bug',
+        status: 'open'
+    }
+});
+
+// Comparison operators
+const highPriority = await openkbs.items({
+    action: 'searchVectorDBItems',
+    queryText: 'performance problems',
+    itemType: 'task',
+    filter: {
+        priority: { "$lte": 2 },
+        status: { "$ne": "done" }
+    }
+});
+
+// Complex filter with $or
+const urgentOrHighPriority = await openkbs.items({
+    action: 'searchVectorDBItems',
+    queryText: 'critical issues',
+    itemType: 'task',
+    filter: {
+        "$or": [
+            { priority: 1 },
+            { isUrgent: true }
+        ]
+    }
+});
+
+// $in operator - match any value in array
+const multipleCats = await openkbs.items({
+    action: 'searchVectorDBItems',
+    queryText: 'issues',
+    itemType: 'task',
+    filter: {
+        category: { "$in": ["bug", "hotfix"] },
+        status: { "$nin": ["done", "cancelled"] }
+    }
+});
+```
+
+### Response Format
+
+```javascript
+{
+    items: [
+        {
+            itemId: 'task_1705123456789',
+            body: 'encrypted...',       // Use openkbs.decrypt()
+            category: 'bug',            // Filterable fields returned
+            status: 'open',
+            priority: 1,
+            isUrgent: true,
+            score: 0.92,                // Similarity score (0-1)
+            distance: 0.08,
+            totalTokens: 45
+        }
+    ]
+}
+```
+
+### settings.json - itemTypes Configuration
+
+Define attribute mappings in KB settings for automatic filter translation:
+
+```json
+{
+    "itemTypes": {
+        "task": {
+            "attributes": [
+                { "attrName": "itemId", "attrType": "itemId", "encrypted": false },
+                { "attrName": "body", "attrType": "body", "encrypted": true },
+                { "attrName": "category", "attrType": "keyword1", "encrypted": false },
+                { "attrName": "status", "attrType": "keyword2", "encrypted": false },
+                { "attrName": "priority", "attrType": "integer1", "encrypted": false },
+                { "attrName": "isUrgent", "attrType": "boolean1", "encrypted": false }
+            ],
+            "embeddingTemplate": "${item.body.title} ${item.body.description}"
+        }
+    }
+}
 ```
 
 ## Utilities
