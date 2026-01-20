@@ -418,6 +418,43 @@ await openkbs.items({
 | boolean1-9 | Boolean | $eq, $ne |
 | date1-9 | Number | $gt, $gte, $lt, $lte |
 
+### vectorMetadata - Control Vector Storage
+
+By default, the entire item (including body) is stored in vector metadata. For large items (body > 2KB), use `vectorMetadata` to store only what's needed for filtering and display. The full item is always stored in DynamoDB.
+
+```javascript
+// Large document with full text - store only filterable fields in vector
+await openkbs.items({
+    action: 'createItem',
+    itemType: 'document',
+    itemId: `doc_${Date.now()}`,
+    attributes: [
+        { attrType: 'itemId', attrName: 'itemId', encrypted: false },
+        { attrType: 'body', attrName: 'body', encrypted: false },
+        { attrType: 'keyword1', attrName: 'standard', encrypted: false },
+        { attrType: 'keyword2', attrName: 'fileType', encrypted: false }
+    ],
+    item: {
+        body: JSON.stringify({ fileName, fileUrl, text }), // Full text for DynamoDB
+        standard: 'IFS',
+        fileType: 'pdf'
+    },
+    // Only these fields stored in vector metadata (avoids 2KB limit)
+    vectorMetadata: {
+        standard: 'IFS',
+        fileType: 'pdf',
+        fileName: 'ifs-standard.pdf',
+        fileUrl: 'https://...'
+    },
+    totalTokens,
+    embeddings,
+    embeddingModel: 'text-embedding-3-large',
+    embeddingDimension: 3072
+});
+```
+
+**Important**: S3 Vectors has a 2048 byte limit on filterable metadata. Use `vectorMetadata` when storing large body content to avoid this limit.
+
 ### searchVectorDBItems - Vector Search with Filter
 
 ```javascript
