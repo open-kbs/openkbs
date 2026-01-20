@@ -1152,8 +1152,11 @@ async function initByTemplateAction(params) {
         
         const targetDir = process.cwd();
 
-        // Copy all files and folders, skipping existing ones
+        // Copy all files and folders, skipping existing ones and platform folder
         fs.readdirSync(TEMPLATE_DIR).forEach(item => {
+            // Skip platform folder (only for stack create)
+            if (item === 'platform') return;
+
             const srcPath = path.join(TEMPLATE_DIR, item);
             const destPath = path.join(targetDir, item);
 
