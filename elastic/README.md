@@ -91,14 +91,15 @@ Create `openkbs.json`:
 {
   "name": "my-app",
   "region": "us-east-1",
-  "elastic": {
-    "postgres": true,
-    "storage": {
-      "cloudfront": "media"
-    },
-    "pulse": true
+  "spa": "/app/index.html",
+  "postgres": true,
+  "storage": {
+    "cloudfront": "media"
   },
-  "functions": ["api"],
+  "pulse": true,
+  "functions": [
+    { "name": "api", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 }
+  ],
   "site": "./site"
 }
 ```
@@ -839,8 +840,15 @@ functions/
 ```json
 {
   "name": "my-app",
-  "elastic": { "postgres": true },
-  "functions": ["auth", "posts", "payments"]
+  "region": "us-east-1",
+  "spa": "/app/index.html",
+  "postgres": true,
+  "functions": [
+    { "name": "auth", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 },
+    { "name": "posts", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 },
+    { "name": "payments", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 }
+  ],
+  "site": "./site"
 }
 ```
 

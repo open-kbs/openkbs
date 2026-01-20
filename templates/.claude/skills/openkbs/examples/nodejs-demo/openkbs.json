@@ -1,16 +1,15 @@
 {
   "name": "nodejs-demo",
   "region": "us-east-1",
-
-  "elastic": {
-    "pulse": true,
-    "postgres": true,
-    "storage": {
-      "cloudfront": "media"
-    }
+  "spa": "/app/index.html",
+  "postgres": true,
+  "storage": {
+    "cloudfront": "media"
   },
-
-  "functions": ["auth", "posts"],
-
+  "pulse": true,
+  "functions": [
+    { "name": "auth", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 },
+    { "name": "posts", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 }
+  ],
   "site": "./site"
 }

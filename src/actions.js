@@ -2316,6 +2316,35 @@ async function pulsePublishAction(kbToken, channel, message) {
 }
 
 /**
+ * Normalize openkbs.json config - supports both flat and elastic wrapper formats
+ * Flat format (preferred): { postgres: true, storage: {...}, pulse: true }
+ * Legacy format: { elastic: { postgres: true, storage: {...}, pulse: true } }
+ */
+function normalizeElasticConfig(config) {
+    // If using legacy elastic wrapper, return as-is
+    if (config.elastic) {
+        return {
+            postgres: config.elastic.postgres,
+            storage: config.elastic.storage,
+            pulse: config.elastic.pulse
+        };
+    }
+    // Flat format - read directly from config
+    return {
+        postgres: config.postgres,
+        storage: config.storage,
+        pulse: config.pulse
+    };
+}
+
+/**
+ * Check if config has any elastic services configured
+ */
+function hasElasticServices(config) {
+    return config.elastic || config.postgres || config.storage || config.pulse;
+}
+
+/**
  * Deploy from openkbs.json config file
  * Enables elastic services and deploys functions/site
  */
@@ -2357,12 +2386,16 @@ async function elasticDeployAction() {
     const kbToken = res.kbToken;
 
     // Deploy elastic services if configured
-    if (config.elastic || config.spa) {
+    const elasticConfig = normalizeElasticConfig(config);
+    if (hasElasticServices(config) || config.spa) {
         console.log('\nEnabling Elastic services...');
         const elasticRes = await makePostRequest(KB_API_URL, {
             token: kbToken,
             action: 'deployElastic',
-            elastic: config.elastic || {},
+            // Send flat format to backend
+            postgres: elasticConfig.postgres,
+            storage: elasticConfig.storage,
+            pulse: elasticConfig.pulse,
             spa: config.spa,
             region
         });
@@ -2464,13 +2497,14 @@ async function elasticDestroyAction() {
     }
 
     // Disable elastic services
-    if (config.elastic) {
+    const elasticConfig = normalizeElasticConfig(config);
+    if (hasElasticServices(config)) {
         console.log('\nDisabling Elastic services...');
 
-        if (config.elastic.storage) {
+        if (elasticConfig.storage) {
             // First remove CloudFront behavior/origin if configured
-            const cloudfrontPath = typeof config.elastic.storage === 'object'
-                ? config.elastic.storage.cloudfront
+            const cloudfrontPath = typeof elasticConfig.storage === 'object'
+                ? elasticConfig.storage.cloudfront
                 : null;
 
             if (cloudfrontPath) {
@@ -2504,7 +2538,7 @@ async function elasticDestroyAction() {
             }
         }
 
-        if (config.elastic.postgres) {
+        if (elasticConfig.postgres) {
             try {
                 await makePostRequest(KB_API_URL, {
                     token: kbToken,
@@ -2516,7 +2550,7 @@ async function elasticDestroyAction() {
             }
         }
 
-        if (config.elastic.pulse) {
+        if (elasticConfig.pulse) {
             try {
                 await makePostRequest(KB_API_URL, {
                     token: kbToken,
@@ -2593,10 +2627,11 @@ async function elasticStatusAction() {
     }
 
     // Check elastic services
-    if (config.elastic) {
+    const elasticConfig = normalizeElasticConfig(config);
+    if (hasElasticServices(config)) {
         console.log('Elastic Services:');
 
-        if (config.elastic.storage) {
+        if (elasticConfig.storage) {
             const storageRes = await makePostRequest(KB_API_URL, {
                 token: kbToken,
                 action: 'getElasticStorage'
@@ -2608,7 +2643,7 @@ async function elasticStatusAction() {
             }
         }
 
-        if (config.elastic.postgres) {
+        if (elasticConfig.postgres) {
             const pgRes = await makePostRequest(KB_API_URL, {
                 token: kbToken,
                 action: 'getElasticPostgres'
@@ -2620,7 +2655,7 @@ async function elasticStatusAction() {
             }
         }
 
-        if (config.elastic.pulse) {
+        if (elasticConfig.pulse) {
             const pulseRes = await makePostRequest(KB_API_URL, {
                 token: kbToken,
                 action: 'getElasticPulse'

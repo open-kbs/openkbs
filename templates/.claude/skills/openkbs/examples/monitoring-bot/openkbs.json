@@ -1,3 +1,6 @@
 {
-  "elastic": {}
+  "name": "monitoring-bot",
+  "region": "us-east-1",
+  "spa": "/app/index.html",
+  "site": "./site"
 }

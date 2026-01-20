@@ -17,16 +17,15 @@ OpenKBS provides managed cloud infrastructure that scales automatically.
 {
   "region": "us-east-1",
   "spa": "/app/index.html",
-  "elastic": {
-    "postgres": true,
-    "storage": {
-      "cloudfront": "media"
-    },
-    "pulse": true
+  "postgres": true,
+  "storage": {
+    "cloudfront": "media"
   },
+  "pulse": true,
   "functions": [
     { "name": "hello", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 }
-  ]
+  ],
+  "site": "./site"
 }
 ```
 
@@ -346,16 +345,15 @@ Complete Node.js application with all services:
 {
   "region": "us-east-1",
   "spa": "/app/index.html",
-  "elastic": {
-    "postgres": true,
-    "storage": {
-      "cloudfront": "media"
-    },
-    "pulse": true
+  "postgres": true,
+  "storage": {
+    "cloudfront": "media"
   },
+  "pulse": true,
   "functions": [
     { "name": "api", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 }
-  ]
+  ],
+  "site": "./site"
 }
 ```
 
