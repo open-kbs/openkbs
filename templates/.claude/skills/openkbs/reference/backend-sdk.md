@@ -418,33 +418,34 @@ await openkbs.items({
 | boolean1-9 | Boolean | $eq, $ne |
 | date1-9 | Number | $gt, $gte, $lt, $lte |
 
-### vectorMetadata - Control Vector Storage
+### Vector Metadata Limits
 
-By default, the entire item (including body) is stored in vector metadata. For large items (body > 2KB), use `vectorMetadata` to store only what's needed for filtering and display. The full item is always stored in DynamoDB.
+S3 Vectors has two types of metadata:
+- **Filterable** (keyword1, integer1, etc.): 2KB limit - used for filtering in queries
+- **Non-filterable** (itemData): 40KB limit - stored for retrieval only
+
+By default, `itemData` is configured as non-filterable, so full item content (up to 40KB) is stored and returned in search results.
+
+### vectorMetadata - Optional Override (Advanced)
+
+For items > 40KB, use `vectorMetadata` to control what gets stored in S3 Vectors. The full item is always stored in DynamoDB.
 
 ```javascript
-// Large document with full text - store only filterable fields in vector
+// Very large document (> 40KB) - store only essential fields in vector
 await openkbs.items({
     action: 'createItem',
     itemType: 'document',
     itemId: `doc_${Date.now()}`,
-    attributes: [
-        { attrType: 'itemId', attrName: 'itemId', encrypted: false },
-        { attrType: 'body', attrName: 'body', encrypted: false },
-        { attrType: 'keyword1', attrName: 'standard', encrypted: false },
-        { attrType: 'keyword2', attrName: 'fileType', encrypted: false }
-    ],
+    attributes: [...],
     item: {
-        body: JSON.stringify({ fileName, fileUrl, text }), // Full text for DynamoDB
-        standard: 'IFS',
-        fileType: 'pdf'
+        body: JSON.stringify({ fileName, fileUrl, hugeText }), // Full in DynamoDB
+        standard: 'IFS'
     },
-    // Only these fields stored in vector metadata (avoids 2KB limit)
+    // Only these fields in S3 Vectors (for items > 40KB)
     vectorMetadata: {
         standard: 'IFS',
-        fileType: 'pdf',
-        fileName: 'ifs-standard.pdf',
-        fileUrl: 'https://...'
+        fileName: 'large-doc.pdf',
+        textPreview: hugeText.substring(0, 5000)
     },
     totalTokens,
     embeddings,
@@ -453,7 +454,7 @@ await openkbs.items({
 });
 ```
 
-**Important**: S3 Vectors has a 2048 byte limit on filterable metadata. Use `vectorMetadata` when storing large body content to avoid this limit.
+**Note**: For most use cases (items < 40KB), `vectorMetadata` is not needed.
 
 ### searchVectorDBItems - Vector Search with Filter
 
