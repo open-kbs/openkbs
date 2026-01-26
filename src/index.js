@@ -6,6 +6,7 @@ const {
     signAction,
     serviceAction,
     loginAction,
+    authAction,
     pullAction,
     pushAction,
     cloneAction,
@@ -50,6 +51,11 @@ program
     .command('login')
     .description('Login to OpenKBS and store session locally.')
     .action(loginAction);
+
+program
+    .command('auth <kbJWT>')
+    .description('Authenticate CLI using a kbJWT token (for container/CI environments)')
+    .action(authAction);
 
 program
     .command('create <app-name>')

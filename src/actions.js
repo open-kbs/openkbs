@@ -307,6 +307,63 @@ async function loginAction() {
     });
 }
 
+async function authAction(kbJWT) {
+    try {
+        // Decode JWT to validate format (without verification - that's done server-side)
+        const parts = kbJWT.split('.');
+        if (parts.length !== 3) {
+            return console.red('Invalid token format. Expected a JWT token.');
+        }
+
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+
+        // Basic validation
+        if (!payload.kbUserId || !payload.myUserId) {
+            return console.red('Invalid token. Missing required fields (kbUserId, myUserId).');
+        }
+
+        if (!payload.serverURL) {
+            return console.red('Invalid token. Missing serverURL field. Token must be from a hosted studio.');
+        }
+
+        if (payload.kbUserId !== payload.myUserId) {
+            return console.red('Only KB owners can use this command. The token must be from the KB owner.');
+        }
+
+        console.log(`Server: ${payload.serverURL}`);
+
+        console.log('Exchanging kbJWT for clientJWT...');
+
+        // Call lambda-auth to exchange the token
+        const response = await fetch('https://auth.openkbs.com/exchangeKbToken', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: kbJWT })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            return console.red(`Authentication failed: ${error.error || error.message || 'Unknown error'}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.clientJWT) {
+            return console.red('Authentication failed: No clientJWT received.');
+        }
+
+        // Save the clientJWT
+        await fs.ensureDir(path.dirname(jwtPath));
+        await fs.writeFile(jwtPath, data.clientJWT, 'utf8');
+
+        console.green('Authentication successful! CLI is now authenticated.');
+        console.log('You can now use all OpenKBS CLI commands.');
+
+    } catch (error) {
+        console.red(`Authentication failed: ${error.message}`);
+    }
+}
+
 async function pullAction(location = 'origin', targetFile) {
     try {
         // Remove './' prefix if present
@@ -2759,6 +2816,7 @@ module.exports = {
     signAction,
     serviceAction,
     loginAction,
+    authAction,
     pullAction,
     pushAction,
     cloneAction,
