@@ -1104,12 +1104,19 @@ async function downloadTemplatesFromS3(targetDir) {
     // Wait for all downloads to complete
     await Promise.all(downloadPromises);
     
-    // Add .openkbs/* to .gitignore
+    // Add .openkbs/* and .claude to .gitignore
     const gitignorePath = path.join(targetDir, '.gitignore');
     if (await fs.pathExists(gitignorePath)) {
         let content = await fs.readFile(gitignorePath, 'utf8');
+        let additions = '';
         if (!content.includes('.openkbs/*')) {
-            await fs.writeFile(gitignorePath, content.trim() + '\n.openkbs/*\n');
+            additions += '.openkbs/*\n';
+        }
+        if (!content.includes('.claude')) {
+            additions += '.claude\n';
+        }
+        if (additions) {
+            await fs.writeFile(gitignorePath, content.trim() + '\n' + additions);
         }
     }
 }
