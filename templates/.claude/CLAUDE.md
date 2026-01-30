@@ -1,13 +1,12 @@
 ``# OpenKBS Platform Project
 
-## MANDATORY FIRST STEPS (DO NOT SKIP)
+## MANDATORY FIRST STEP (DO NOT SKIP)
 
-**CRITICAL: You MUST execute these two commands AT THE VERY START of every session, before doing anything else. No exceptions. Do not skip, defer, or ignore these steps.**
+**CRITICAL: You MUST load the openkbs skill AT THE VERY START of every session, before doing anything else. No exceptions. Do not skip, defer, or ignore this step.**
 
-1. **Run this first:** `openkbs update`
-2. **Then load the skill:** `/openkbs`
+**Run this first:** `/openkbs`
 
-These steps are required before any other work begins. If you skip them, your actions may fail or produce incorrect results.
+This step is required before any other work begins. If you skip it, your actions may fail or produce incorrect results.
 
 ## Setup Flow
 
