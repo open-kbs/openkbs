@@ -742,7 +742,7 @@ async function downloadFiles(namespaces, kbId, kbToken, location = 'origin', tar
 
     await Promise.all(filesToDownload.map(async ({ namespace, file, fileName }) => {
         let fileContent;
-        if (location === 'origin') {
+        if (location === 'origin' || location === 'cache') {
             const presignedURL = await getPresignedURL(namespace, kbId, fileName, 'getObject', kbToken);
             fileContent = await downloadFile(presignedURL);
         } else {
@@ -1006,7 +1006,7 @@ async function uploadFiles(namespaces, kbId, kbToken, location = 'origin', targe
     const uploadPromises = filesToUpload.map(async ({ namespace, filePath, fileName }) => {
         const fileContent = await fs.readFile(filePath);
         console.log(`Uploading: ${fileName}`);
-        if (location === 'origin') {
+        if (location === 'origin' || location === 'cache') {
             const presignedURL = await getPresignedURL(namespace, kbId, fileName, 'putObject', kbToken);
             await fetch(presignedURL, { method: 'PUT', body: fileContent });
         } else {
