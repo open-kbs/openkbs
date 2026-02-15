@@ -616,7 +616,7 @@ async function registerKBAndPush(options) {
 
         await saveLocalKBData({ ...localKBData, kbId });
         console.log(`KB ${kbId} created!`);
-        await pushAction(fs.existsSync(path.join(process.cwd(), 'cache')) ? 'cache' : undefined);
+        await pushAction(fs.existsSync(path.join(process.cwd(), 'cache')) ? 'cache' : 'origin');
     } catch (error) {
         console.error(`Error during create operation:`, error.message);
     }
