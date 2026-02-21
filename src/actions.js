@@ -32,15 +32,16 @@ const SERVICES = {
 };
 
 /**
- * Find settings from settings.json - checks current dir, then functions/ or site/ subdirs
- * Returns full settings object with kbId, region, etc.
+ * Find settings (kbId, region) - checks settings.json locations and openkbs.json
+ * Returns object with kbId, region, etc.
  */
 function findSettings() {
     const paths = [
         path.join(process.cwd(), 'settings.json'),
         path.join(process.cwd(), 'app', 'settings.json'),
         path.join(process.cwd(), 'functions', 'settings.json'),
-        path.join(process.cwd(), 'site', 'settings.json')
+        path.join(process.cwd(), 'site', 'settings.json'),
+        path.join(process.cwd(), 'openkbs.json')
     ];
 
     for (const settingsPath of paths) {
@@ -1118,7 +1119,7 @@ async function fnAction(subCommand, args = []) {
     }
 
     if (!kbId) {
-        return console.red('No KB found. Create settings.json with {"kbId": "..."} or run from a KB project directory.');
+        return console.red('No KB found. Add kbId to openkbs.json or settings.json.');
     }
 
     const { kbToken } = await fetchKBJWT(kbId);
@@ -1488,7 +1489,7 @@ async function storageAction(subCommand, args = []) {
     }
 
     if (!kbId) {
-        return console.red('No KB found. Create settings.json with {"kbId": "..."} or run from a KB project directory.');
+        return console.red('No KB found. Add kbId to openkbs.json or settings.json.');
     }
 
     const { kbToken } = await fetchKBJWT(kbId);
@@ -1879,7 +1880,7 @@ async function postgresAction(subCommand, args = []) {
     }
 
     if (!kbId) {
-        return console.red('No KB found. Create settings.json with {"kbId": "..."} or run from a KB project directory.');
+        return console.red('No KB found. Add kbId to openkbs.json or settings.json.');
     }
 
     const { kbToken } = await fetchKBJWT(kbId);
@@ -2016,17 +2017,10 @@ async function siteAction(subCommand, args = []) {
     let kbId = findKbId();
     let siteDir = process.cwd();
 
-    // If no settings.json in current dir, check site/ subdirectory
-    if (!fs.existsSync(path.join(process.cwd(), 'settings.json'))) {
-        const siteDirPath = path.join(process.cwd(), 'site');
-        const siteSettingsPath = path.join(siteDirPath, 'settings.json');
-        if (fs.existsSync(siteSettingsPath)) {
-            siteDir = siteDirPath;
-            try {
-                const settings = JSON.parse(fs.readFileSync(siteSettingsPath, 'utf8'));
-                kbId = settings.kbId;
-            } catch (e) {}
-        }
+    // If running from project root, use site/ subdirectory
+    const siteDirPath = path.join(process.cwd(), 'site');
+    if (fs.existsSync(siteDirPath)) {
+        siteDir = siteDirPath;
     }
 
     if (!kbId) {
@@ -2035,7 +2029,7 @@ async function siteAction(subCommand, args = []) {
     }
 
     if (!kbId) {
-        return console.red('No KB found. Create settings.json with {"kbId": "..."} in current dir or site/ subdirectory.');
+        return console.red('No KB found. Add kbId to openkbs.json or settings.json.');
     }
 
     const { kbToken } = await fetchKBJWT(kbId);
@@ -2059,7 +2053,7 @@ async function siteAction(subCommand, args = []) {
             console.log('  openkbs site push [folder]    Upload files to S3 (defaults to current dir or site/)');
             console.log('  openkbs site spa <path>       Enable SPA fallback (e.g., /app/index.html)');
             console.log('  openkbs site spa --disable    Disable SPA fallback');
-            console.log('\nRun from a folder containing settings.json with kbId, or from parent with site/ subdirectory');
+            console.log('\nRun from a directory with openkbs.json or settings.json containing kbId.');
     }
 }
 
@@ -2197,7 +2191,7 @@ async function pulseAction(subCommand, args = []) {
     }
 
     if (!kbId) {
-        return console.red('No KB found. Create settings.json with {"kbId": "..."} or run from a KB project directory.');
+        return console.red('No KB found. Add kbId to openkbs.json or settings.json.');
     }
 
     const { kbToken } = await fetchKBJWT(kbId);
@@ -2435,7 +2429,7 @@ async function elasticDeployAction() {
     // Get KB token
     const settings = findSettings();
     if (!settings?.kbId) {
-        return console.red('No kbId found. Run from a directory with settings.json');
+        return console.red('No kbId found. Add kbId to openkbs.json or settings.json.');
     }
 
     const res = await fetchKBJWT(settings.kbId);
@@ -2532,7 +2526,7 @@ async function elasticDestroyAction() {
     // Get KB token
     const settings = findSettings();
     if (!settings?.kbId) {
-        return console.red('No kbId found. Run from a directory with settings.json');
+        return console.red('No kbId found. Add kbId to openkbs.json or settings.json.');
     }
 
     const res = await fetchKBJWT(settings.kbId);
@@ -2655,7 +2649,7 @@ async function elasticStatusAction() {
     // Get KB token
     const settings = findSettings();
     if (!settings?.kbId) {
-        return console.red('No kbId found. Run from a directory with settings.json');
+        return console.red('No kbId found. Add kbId to openkbs.json or settings.json.');
     }
 
     const res = await fetchKBJWT(settings.kbId);

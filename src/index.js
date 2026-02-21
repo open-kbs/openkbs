@@ -268,7 +268,7 @@ Examples:
   $ openkbs site push              Push site/ folder (or current dir) to S3
   $ openkbs site push ./dist       Push specific folder to S3
 
-Run from a directory containing settings.json with kbId.
+Run from a directory with openkbs.json or settings.json containing kbId.
 `);
 
 program
