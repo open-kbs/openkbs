@@ -1,5 +1,6 @@
 {
   "name": "{{APP_NAME}}",
+  "kbId": "{{WHITELABEL_KB_ID}}",
   "region": "us-east-1",
   "spa": "/app/index.html",
   "postgres": true,

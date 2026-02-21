@@ -40,7 +40,7 @@ Platform mode extends agent capabilities with:
 - CloudFront distributions
 - SSL certificates
 
-This whitelabel `kbId` is used in `settings.json` files throughout the project. User-facing agents in `agents/` folder each get their own separate `kbId` when pushed.
+This whitelabel `kbId` is stored in `openkbs.json` in the project root. User-facing agents in `agents/` folder each get their own separate `kbId` when pushed.
 
 ## Project Structure
 

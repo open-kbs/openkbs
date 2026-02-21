@@ -37,11 +37,9 @@ const SERVICES = {
  */
 function findSettings() {
     const paths = [
+        path.join(process.cwd(), 'openkbs.json'),
         path.join(process.cwd(), 'settings.json'),
-        path.join(process.cwd(), 'app', 'settings.json'),
-        path.join(process.cwd(), 'functions', 'settings.json'),
-        path.join(process.cwd(), 'site', 'settings.json'),
-        path.join(process.cwd(), 'openkbs.json')
+        path.join(process.cwd(), 'app', 'settings.json')
     ];
 
     for (const settingsPath of paths) {
@@ -2068,9 +2066,8 @@ async function siteDeployAction(kbToken, kbId, siteDir, args) {
             const fullPath = path.join(dir, entry.name);
             const relativePath = path.relative(baseDir, fullPath);
 
-            // Skip hidden files, settings.json, and node_modules
+            // Skip hidden files and node_modules
             if (entry.name.startsWith('.') ||
-                entry.name === 'settings.json' ||
                 entry.name === 'node_modules') {
                 continue;
             }
