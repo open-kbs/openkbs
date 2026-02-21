@@ -159,7 +159,7 @@ Available fields: `domain`, `domainParkingState`, `elasticPostgresHost`, `elasti
 
 ### Image Generation Service
 Generate images directly from CLI using OpenKBS AI services:
-
+````
 ```bash
 # Generate with GPT
 openkbs service -m gpt-image -d '{"action":"createImage","prompt":"a logo"}' -o logo.png
@@ -170,7 +170,7 @@ openkbs service -m gemini-image -d '{"action":"createImage","prompt":"hero image
 # Edit existing image
 openkbs service -m gpt-image -d '{"action":"createImage","prompt":"make it blue","imageUrls":["https://..."]}' -o edited.png
 ```
-
+````
 **Available models:**
 - `gpt-image` - OpenAI GPT Image (gpt-image-1.5)
 - `gemini-image` - Google Gemini Flash (gemini-2.5-flash-image)

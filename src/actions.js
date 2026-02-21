@@ -26,7 +26,9 @@ const SERVICES = {
     "gemini-image": { accountId: "bc7ab06216fa2bf6db5d8e573d4d2415", model: "gemini-2.5-flash-image" },
     // Full names
     "gpt-image-1": { accountId: "e69424d275873af94993240df041ed78", model: "gpt-image-1" },
-    "gemini-2.5-flash-image": { accountId: "bc7ab06216fa2bf6db5d8e573d4d2415", model: "gemini-2.5-flash-image" }
+    "gemini-2.5-flash-image": { accountId: "bc7ab06216fa2bf6db5d8e573d4d2415", model: "gemini-2.5-flash-image" },
+    // Speech-to-text
+    "whisperLargeV3": { accountId: "a3d08121d9bd3b0723e3bdd2046d0368", model: "whisperLargeV3" }
 };
 
 /**
