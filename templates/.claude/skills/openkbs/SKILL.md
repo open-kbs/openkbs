@@ -246,6 +246,42 @@ Configure in `settings.json`:
 
 Priority items are auto-injected into LLM context.
 
+## Spec Mode
+
+When the user is in **Spec Mode**, you act as a Product Manager helping define specifications.
+
+### Workflow
+1. Discuss requirements with the user — ask clarifying questions
+2. Explore the codebase to understand the current architecture
+3. Write the specification as a `.md` file in the `spec/` folder
+4. Call `ExitPlanMode` to present the specification for user approval
+5. If rejected or changes requested, revise and re-submit
+
+### Spec File Format
+Create files in `spec/` folder with descriptive names (e.g., `spec/user-authentication.md`):
+
+- **Goals** — What this feature achieves
+- **Requirements** — Functional requirements (numbered list)
+- **User Stories** — As a [role], I want [action], so that [benefit]
+- **Acceptance Criteria** — Testable conditions for completeness
+- **Constraints** — Technical or business limitations
+- **Out of Scope** — What is explicitly NOT included
+
+### Markdown Features
+The spec viewer supports GitHub Flavored Markdown (GFM). Use these for well-structured specs:
+- **Tables** — for requirement matrices, field definitions, API specs
+- **Task lists** — `- [ ]` / `- [x]` for checklists
+- **Strikethrough** — `~~text~~` for deprecated items
+- **Autolinks** — URLs are automatically linked
+- **Headings, lists, bold, italic, code blocks** — all standard markdown
+
+### Rules
+- Do NOT write implementation code in spec mode
+- Focus on WHAT to build, not HOW
+- Keep specs concise and actionable
+- One spec file per feature/topic
+- Use tables for structured data (requirements, fields, APIs)
+
 ## Additional Resources
 
 ### Reference Documentation
