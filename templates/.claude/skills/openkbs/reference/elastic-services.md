@@ -23,7 +23,9 @@ OpenKBS provides managed cloud infrastructure that scales automatically.
   },
   "pulse": true,
   "functions": [
-    { "name": "hello", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 }
+    { "name": "api", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 },
+    { "name": "cleanup", "runtime": "nodejs24.x", "memory": 256, "timeout": 900, "schedule": "rate(1 hour)" },
+    { "name": "reports", "runtime": "nodejs24.x", "memory": 512, "timeout": 300, "schedule": "cron(0 12 * * ? *)" }
   ],
   "site": "./site"
 }
@@ -66,11 +68,62 @@ export const handler = async (event) => {
 ```bash
 openkbs fn list                           # List all functions
 openkbs fn push hello --region us-east-1  # Deploy function
+openkbs fn push hello --schedule "rate(1 hour)"  # Deploy with schedule
+openkbs fn push hello --schedule "rate(1 hour)" --http-access  # Schedule + HTTP
 openkbs fn delete hello                   # Delete function
 openkbs fn logs hello                     # View logs
 openkbs fn env hello                      # View env vars
 openkbs fn env hello API_KEY=secret       # Set env var
 openkbs fn invoke hello '{"test": true}'  # Invoke function
+openkbs fn schedule hello                 # View current schedule
+openkbs fn schedule hello "rate(5 minutes)"  # Set schedule
+openkbs fn schedule hello enable          # Enable schedule
+openkbs fn schedule hello disable         # Disable schedule
+openkbs fn schedule hello remove          # Remove schedule
+```
+
+### Scheduled Functions
+
+Functions with a `schedule` field are invoked automatically by EventBridge Scheduler. By default, scheduled functions do **not** get HTTP access (no Function URL / CloudFront). Add `"httpAccess": true` to enable both.
+
+**Schedule expressions:**
+- `rate(1 hour)`, `rate(5 minutes)`, `rate(1 day)`
+- `cron(0 12 * * ? *)` — daily at 12:00 UTC
+- `cron(0/15 * * * ? *)` — every 15 minutes
+
+**openkbs.json example:**
+```json
+{
+  "functions": [
+    { "name": "api", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 },
+    { "name": "cleanup", "schedule": "rate(1 hour)", "timeout": 900 },
+    { "name": "reports", "schedule": "cron(0 12 * * ? *)", "httpAccess": true }
+  ]
+}
+```
+
+**Event payload** received by the Lambda handler:
+```json
+{
+  "source": "openkbs.scheduler",
+  "kbId": "abc123",
+  "functionName": "cleanup",
+  "scheduleExpression": "rate(1 hour)"
+}
+```
+
+**Handler example:**
+```javascript
+export const handler = async (event) => {
+    if (event.source === 'openkbs.scheduler') {
+        // Invoked by schedule
+        console.log(`Running scheduled task: ${event.functionName}`);
+        // ... do work ...
+        return { statusCode: 200, body: 'OK' };
+    }
+    // Invoked via HTTP (if httpAccess is enabled)
+    return { statusCode: 200, body: JSON.stringify({ message: 'Hello' }) };
+};
 ```
 
 ### Supported Runtimes

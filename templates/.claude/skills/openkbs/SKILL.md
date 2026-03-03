@@ -100,7 +100,8 @@ my-platform/
   },
   "pulse": true,
   "functions": [
-    { "name": "api", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 }
+    { "name": "api", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 },
+    { "name": "cleanup", "schedule": "rate(1 hour)", "timeout": 900 }
   ],
   "site": "./site"
 }
@@ -127,7 +128,10 @@ openkbs destroy          # Remove all resources (DANGEROUS)
 ```bash
 openkbs fn list          # List Lambda functions
 openkbs fn push api      # Deploy function
+openkbs fn push cleanup --schedule "rate(1 hour)"  # Deploy with schedule
 openkbs fn logs api      # View function logs
+openkbs fn schedule cleanup          # View schedule
+openkbs fn schedule cleanup disable  # Disable schedule
 openkbs postgres shell   # Connect to Postgres
 openkbs storage ls       # List S3 objects
 openkbs pulse status     # WebSocket status

@@ -1135,6 +1135,8 @@ async function fnAction(subCommand, args = []) {
             return await fnEnvAction(kbToken, args[0], args.slice(1));
         case 'invoke':
             return await fnInvokeAction(kbToken, args[0], args.slice(1));
+        case 'schedule':
+            return await fnScheduleAction(kbToken, args[0], args.slice(1));
         default:
             console.log('Usage: openkbs fn <command> [options]');
             console.log('');
@@ -1145,11 +1147,14 @@ async function fnAction(subCommand, args = []) {
             console.log('  logs <name>             View function logs');
             console.log('  env <name> [KEY=value]  View or set environment variables');
             console.log('  invoke <name> [payload] Invoke a function');
+            console.log('  schedule <name> [expr]  View/set/enable/disable/remove schedule');
             console.log('');
             console.log('Options for push:');
             console.log('  --region <region>       Region (us-east-1, eu-central-1, ap-southeast-1)');
             console.log('  --memory <mb>           Memory size (128-3008 MB)');
             console.log('  --timeout <seconds>     Timeout (1-900 seconds)');
+            console.log('  --schedule <expr>       Schedule expression (e.g. "rate(1 hour)")');
+            console.log('  --http-access           Enable HTTP access for scheduled functions');
     }
 }
 
@@ -1182,8 +1187,9 @@ async function fnListAction(kbToken) {
         functions.forEach(f => {
             const name = f.functionName.padEnd(maxNameLen);
             const region = f.region || 'unknown';
-            const url = f.customUrl || f.functionUrl || 'N/A';
-            console.log(`  ${name}  ${region}  ${url}`);
+            const url = f.customUrl || f.functionUrl || (f.schedule ? '(scheduled)' : 'N/A');
+            const scheduleInfo = f.schedule ? ` [${f.schedule}]` : '';
+            console.log(`  ${name}  ${region}  ${url}${scheduleInfo}`);
         });
     } catch (error) {
         console.red('Error listing functions:', error.message);
@@ -1201,6 +1207,8 @@ async function fnDeployAction(kbToken, functionName, args) {
     let timeout = 30;
     let runtime = null;  // null = use default (nodejs24.x)
     let handler = null;  // null = use default (index.handler)
+    let schedule = null;
+    let httpAccess = null;
 
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--region' && args[i + 1]) {
@@ -1213,6 +1221,10 @@ async function fnDeployAction(kbToken, functionName, args) {
             runtime = args[++i];
         } else if (args[i] === '--handler' && args[i + 1]) {
             handler = args[++i];
+        } else if (args[i] === '--schedule' && args[i + 1]) {
+            schedule = args[++i];
+        } else if (args[i] === '--http-access') {
+            httpAccess = true;
         }
     }
 
@@ -1273,12 +1285,14 @@ async function fnDeployAction(kbToken, functionName, args) {
         if (existingFunc) {
             // Update existing function
             console.log('Updating existing function...');
-            response = await makePostRequest(KB_API_URL, {
+            const updateParams = {
                 token: kbToken,
                 action: 'updateElasticFunction',
                 functionName,
                 code
-            });
+            };
+            if (schedule) updateParams.schedule = schedule;
+            response = await makePostRequest(KB_API_URL, updateParams);
         } else {
             // Create new function
             console.log('Creating new function...');
@@ -1293,6 +1307,8 @@ async function fnDeployAction(kbToken, functionName, args) {
             };
             if (runtime) createParams.runtime = runtime;
             if (handler) createParams.handler = handler;
+            if (schedule) createParams.schedule = schedule;
+            if (httpAccess !== null) createParams.httpAccess = httpAccess;
             response = await makePostRequest(KB_API_URL, createParams);
         }
 
@@ -1306,6 +1322,9 @@ async function fnDeployAction(kbToken, functionName, args) {
         }
         if (response.customUrl) {
             console.log(`Custom URL: ${response.customUrl}`);
+        }
+        if (response.schedule) {
+            console.log(`Schedule: ${response.schedule}`);
         }
     } catch (error) {
         console.red('Deploy failed:', error.message);
@@ -1333,6 +1352,71 @@ async function fnDeleteAction(kbToken, functionName) {
         console.green(`Function '${functionName}' deleted successfully.`);
     } catch (error) {
         console.red('Delete failed:', error.message);
+    }
+}
+
+async function fnScheduleAction(kbToken, functionName, args) {
+    if (!functionName) {
+        return console.red('Function name required. Usage: openkbs fn schedule <name> [expression|enable|disable|remove]');
+    }
+
+    const subCommand = args[0];
+
+    try {
+        if (!subCommand) {
+            // Show current schedule
+            const response = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                action: 'getElasticFunction',
+                functionName
+            });
+            if (response.error) return console.red('Error:', response.error);
+            if (response.schedule) {
+                console.log(`Schedule: ${response.schedule}`);
+                console.log(`Name: ${response.scheduleName || 'N/A'}`);
+            } else {
+                console.log(`No schedule set for '${functionName}'.`);
+            }
+        } else if (subCommand === 'enable') {
+            const response = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                action: 'updateElasticFunctionSchedule',
+                functionName,
+                enabled: true
+            });
+            if (response.error) return console.red('Error:', response.error);
+            console.green(`Schedule for '${functionName}' enabled.`);
+        } else if (subCommand === 'disable') {
+            const response = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                action: 'updateElasticFunctionSchedule',
+                functionName,
+                enabled: false
+            });
+            if (response.error) return console.red('Error:', response.error);
+            console.green(`Schedule for '${functionName}' disabled.`);
+        } else if (subCommand === 'remove') {
+            const response = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                action: 'updateElasticFunctionSchedule',
+                functionName,
+                schedule: null
+            });
+            if (response.error) return console.red('Error:', response.error);
+            console.green(`Schedule for '${functionName}' removed.`);
+        } else {
+            // Set schedule expression
+            const response = await makePostRequest(KB_API_URL, {
+                token: kbToken,
+                action: 'updateElasticFunctionSchedule',
+                functionName,
+                schedule: subCommand
+            });
+            if (response.error) return console.red('Error:', response.error);
+            console.green(`Schedule for '${functionName}' set to: ${subCommand}`);
+        }
+    } catch (error) {
+        console.red('Schedule operation failed:', error.message);
     }
 }
 
@@ -2477,6 +2561,8 @@ async function elasticDeployAction() {
             if (fnConfig.timeout) args.push('--timeout', String(fnConfig.timeout));
             if (fnConfig.runtime) args.push('--runtime', fnConfig.runtime);
             if (fnConfig.handler) args.push('--handler', fnConfig.handler);
+            if (fnConfig.schedule) args.push('--schedule', fnConfig.schedule);
+            if (fnConfig.httpAccess) args.push('--http-access');
 
             console.log(`  Deploying ${name}...`);
             await fnDeployAction(kbToken, name, args);
