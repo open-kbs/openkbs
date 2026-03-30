@@ -1,6 +1,6 @@
-# OpenKBS Composable Modules
+# OpenKBS — Fullstack Apps That Fit in One LLM Context
 
-Not a framework. A folder convention with pre-built starting code.
+900 lines. Zero abstractions. The LLM reads your entire app in one pass, edits any file directly, and deploys with one command. No framework to learn — for you or for the AI.
 
 ```
 functions/api/
