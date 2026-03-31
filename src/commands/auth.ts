@@ -1,9 +1,9 @@
 import { createServer } from 'http';
+import { execSync } from 'child_process';
 import { userApi } from '../lib/api.js';
 import { saveUserJwt, clearUserJwt, saveProjectJwtGlobal, decodeJwtPayload, config } from '../lib/config.js';
 
 function openBrowser(url: string): void {
-  const { execSync } = require('child_process');
   const cmd = process.platform === 'darwin' ? 'open'
     : process.platform === 'win32' ? 'start'
     : 'xdg-open';
