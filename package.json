@@ -1,0 +1,28 @@
+{
+  "name": "@openkbs/cli",
+  "version": "2.4.5",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "openkbs": "./dist/index.mjs"
+  },
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/index.mjs --banner:js='#!/usr/bin/env node'",
+    "build:bin": "bash build.sh",
+    "deploy": "bash deploy-cli.sh patch",
+    "deploy:patch": "bash deploy-cli.sh patch",
+    "deploy:minor": "bash deploy-cli.sh minor",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-lambda": "^3.1019.0",
+    "@aws-sdk/client-s3": "^3.1019.0",
+    "chalk": "^5.4.0",
+    "commander": "^13.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}

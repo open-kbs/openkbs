@@ -1,0 +1,11 @@
+{
+  "projectId": "{{projectId}}",
+  "region": "{{region}}",
+  "postgres": false,
+  "storage": { "cloudfront": "media" },
+  "mqtt": false,
+  "functions": [
+    { "name": "api", "runtime": "nodejs24.x", "memory": 512, "timeout": 30 }
+  ],
+  "site": "./build"
+}

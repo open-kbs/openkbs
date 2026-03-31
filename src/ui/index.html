@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenKBS - Local Development</title>
+    <link rel="icon" type="image/png" href="https://openkbs.com/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a12;
+            color: hsla(0,0%,100%,.95);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .container {
+            background: hsla(0,0%,100%,.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid hsla(0,0%,100%,.08);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            max-width: 620px;
+            width: 100%;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .logo img {
+            width: 40px;
+            height: 40px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            color: hsla(0,0%,100%,.5);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+        .status-bar {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: hsla(0,0%,100%,.03);
+            border: 1px solid hsla(0,0%,100%,.06);
+            border-radius: 12px;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: hsla(0,0%,100%,.6);
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: hsla(0,0%,100%,.2);
+            flex-shrink: 0;
+        }
+        .dot.green { background: #10b981; box-shadow: 0 0 8px rgba(16,185,129,0.4); }
+        .dot.red { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.4); }
+        .dot.pulse { animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Form */
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: hsla(0,0%,100%,.8);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            background: hsla(0,0%,100%,.05);
+            border: 1px solid hsla(0,0%,100%,.1);
+            border-radius: 10px;
+            font-size: 1rem;
+            color: white;
+            font-family: 'JetBrains Mono', monospace;
+            transition: border-color 0.15s;
+            outline: none;
+        }
+        .form-group input:focus {
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 3px rgba(0,212,255,0.1);
+        }
+        .form-group input::placeholder { color: hsla(0,0%,100%,.25); }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #0066ff, #00d4ff);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+            width: 100%;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(0,102,255,0.3);
+        }
+        .btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn.success {
+            background: #10b981;
+        }
+
+        /* Steps */
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid hsla(0,0%,100%,.06);
+            border-radius: 12px;
+            background: hsla(0,0%,100%,.02);
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .step.active {
+            border-color: rgba(0,212,255,0.3);
+            background: rgba(0,212,255,0.04);
+        }
+        .step.done {
+            border-color: rgba(16,185,129,0.3);
+            background: rgba(16,185,129,0.04);
+        }
+        .step.disabled { opacity: 0.35; }
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: hsla(0,0%,100%,.06);
+            color: hsla(0,0%,100%,.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+        .step.active .step-number {
+            background: linear-gradient(135deg, #0066ff, #00d4ff);
+            color: white;
+        }
+        .step.done .step-number {
+            background: #10b981;
+            color: white;
+        }
+        .step-content { flex: 1; }
+        .step-title {
+            font-weight: 600;
+            color: hsla(0,0%,100%,.9);
+            font-size: 0.95rem;
+        }
+        .step-desc {
+            color: hsla(0,0%,100%,.4);
+            font-size: 0.82rem;
+            margin-top: 2px;
+        }
+        .step-btn {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            width: auto;
+        }
+
+        /* Terminal */
+        .terminal {
+            background: #0e0e1a;
+            border: 1px solid hsla(0,0%,100%,.06);
+            color: hsla(0,0%,100%,.7);
+            padding: 1rem;
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.78rem;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 1rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: none;
+        }
+        .terminal.visible { display: block; }
+
+        /* Screens */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* App list */
+        .app-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .app-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border: 1px solid hsla(0,0%,100%,.06);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            background: hsla(0,0%,100%,.02);
+        }
+        .app-item:hover {
+            border-color: rgba(0,212,255,0.3);
+            background: rgba(0,212,255,0.04);
+        }
+        .app-name {
+            font-weight: 600;
+            color: hsla(0,0%,100%,.9);
+        }
+        .app-id {
+            font-size: 0.8rem;
+            color: hsla(0,0%,100%,.35);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .warning {
+            background: rgba(245,158,11,0.08);
+            border: 1px solid rgba(245,158,11,0.2);
+            color: #f59e0b;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+        .warning code {
+            background: rgba(245,158,11,0.12);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+        }
+
+        .back-link {
+            color: #00d4ff;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            display: inline-block;
+            transition: opacity 0.15s;
+            padding: 4px 0;
+        }
+        .back-link:hover { opacity: 0.7; }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .arrow { color: #00d4ff; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- Screen: Welcome / Dashboard -->
+        <div id="screen-welcome" class="screen active">
+            <div class="logo">
+                <img src="https://openkbs.com/logo.svg" alt="OpenKBS">
+                <h1>OpenKBS</h1>
+            </div>
+            <p class="subtitle">Local Development Environment</p>
+
+            <div class="status-bar">
+                <div class="status-item">
+                    <div id="dot-localstack" class="dot pulse"></div>
+                    <span>LocalStack</span>
+                </div>
+                <div class="status-item">
+                    <div id="dot-postgres" class="dot pulse"></div>
+                    <span>PostgreSQL</span>
+                </div>
+            </div>
+
+            <div id="services-warning" class="warning" style="display: none;">
+                Services not running. Start them with:<br>
+                <code>docker compose up -d</code>
+            </div>
+
+            <div id="app-list-container" class="app-list"></div>
+
+            <!-- Inline create form -->
+            <div id="create-form" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid hsla(0,0%,100%,.06);">
+                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <input type="text" id="app-name" value="" placeholder="App name" oninput="validateAppName()"
+                            style="width:100%; padding:10px 14px; background:hsla(0,0%,100%,.05); border:1px solid hsla(0,0%,100%,.1); border-radius:10px; font-size:0.95rem; color:white; font-family:'JetBrains Mono',monospace; outline:none;" />
+                        <div id="app-name-error" style="color: #ef4444; font-size: 0.82rem; margin-top: 0.4rem; display: none;"></div>
+                    </div>
+                    <button id="btn-do-create" class="btn" onclick="createApp()" disabled
+                        style="width: auto; padding: 10px 20px; font-size: 0.95rem; white-space: nowrap;">
+                        Create App
+                    </button>
+                </div>
+                <div id="terminal-create" class="terminal"></div>
+            </div>
+        </div>
+
+        <!-- Screen: App Dashboard -->
+        <div id="screen-app" class="screen">
+            <span class="back-link" onclick="showScreen('welcome')">&larr; Back</span>
+            <div class="logo">
+                <img src="https://openkbs.com/logo.svg" alt="OpenKBS" style="width:32px;height:32px;">
+                <h1 id="app-title" style="font-size:1.4rem;"></h1>
+            </div>
+            <p class="subtitle" id="app-project-id"></p>
+
+            <div class="steps">
+                <!-- Step 1: Install -->
+                <div id="step-install" class="step active">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Install Dependencies</div>
+                        <div class="step-desc">Install npm packages (React, Vite + function deps)</div>
+                    </div>
+                    <button id="btn-install" class="btn step-btn" onclick="installDeps()">Install</button>
+                </div>
+
+                <!-- Step 2: Dev Server -->
+                <div id="step-dev" class="step disabled">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Start Building</div>
+                        <div class="step-desc">Launch dev server with hot reload</div>
+                    </div>
+                    <button id="btn-dev" class="btn step-btn" onclick="startDev()" disabled>Start</button>
+                </div>
+
+                <!-- Step 3: Deploy -->
+                <div id="step-deploy" class="step disabled">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Deploy Locally</div>
+                        <div class="step-desc">Deploy to LocalStack (Lambda + S3)</div>
+                    </div>
+                    <button id="btn-deploy" class="btn step-btn" onclick="deployLocal()" disabled>Deploy</button>
+                </div>
+            </div>
+
+            <div id="terminal-app" class="terminal"></div>
+
+            <!-- Delete app -->
+            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid hsla(0,0%,100%,.06);">
+                <div id="delete-toggle" style="cursor: pointer; color: #ef4444; font-size: 0.85rem; opacity: 0.6;" onclick="toggleDeleteConfirm()">Delete this app</div>
+                <div id="delete-confirm" style="display: none; margin-top: 1rem;">
+                    <p style="color: hsla(0,0%,100%,.5); font-size: 0.82rem; margin-bottom: 0.5rem;">Type <strong id="delete-app-name-hint" style="color: #ef4444;"></strong> to confirm deletion:</p>
+                    <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                        <input type="text" id="delete-confirm-input" placeholder="" oninput="validateDelete()"
+                            style="flex:1; padding:10px 14px; background:hsla(0,0%,100%,.05); border:1px solid rgba(239,68,68,0.3); border-radius:10px; font-size:0.9rem; color:white; font-family:'JetBrains Mono',monospace; outline:none;" />
+                        <button id="btn-delete" class="btn" onclick="deleteApp()" disabled
+                            style="width:auto; padding:10px 20px; font-size:0.9rem; background:#ef4444; white-space:nowrap;">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // State
+        let currentApp = null;
+        let servicesReady = false;
+
+        // Screen management
+        function showScreen(name) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-' + name).classList.add('active');
+
+            if (name === 'welcome') {
+                loadApps();
+                checkStatus();
+            }
+        }
+
+        // Check infrastructure status
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+
+                const lsDot = document.getElementById('dot-localstack');
+                const pgDot = document.getElementById('dot-postgres');
+
+                lsDot.className = 'dot ' + (data.localstack ? 'green' : 'red');
+                pgDot.className = 'dot ' + (data.postgres ? 'green' : 'red');
+
+                servicesReady = data.localstack && data.postgres;
+                document.getElementById('services-warning').style.display = servicesReady ? 'none' : 'block';
+                document.getElementById('create-form').style.display = servicesReady ? 'block' : 'none';
+            } catch {
+                document.getElementById('dot-localstack').className = 'dot red';
+                document.getElementById('dot-postgres').className = 'dot red';
+                servicesReady = false;
+                document.getElementById('services-warning').style.display = 'block';
+                document.getElementById('create-form').style.display = 'none';
+            }
+        }
+
+        // Load existing apps
+        async function loadApps() {
+            try {
+                const res = await fetch('/api/apps');
+                const data = await res.json();
+                const container = document.getElementById('app-list-container');
+
+                if (data.apps.length === 0) {
+                    container.innerHTML = '';
+                    return;
+                }
+
+                container.innerHTML = data.apps.map(app => `
+                    <div class="app-item" onclick="openApp('${app.name}', '${app.projectId}')">
+                        <div>
+                            <div class="app-name">${app.name}</div>
+                            <div class="app-id">${app.projectId}${app.devUrl ? ' &middot; <a href="' + app.devUrl + '" target="_blank" onclick="event.stopPropagation()" style="color:#00d4ff;">' + app.devUrl + '</a>' : ''}</div>
+                        </div>
+                        <span class="arrow">&rarr;</span>
+                    </div>
+                `).join('');
+            } catch {}
+        }
+
+        // Open existing app
+        async function openApp(name, projectId) {
+            currentApp = { name, projectId };
+            document.getElementById('app-title').textContent = name;
+            document.getElementById('app-project-id').textContent = projectId;
+            resetSteps();
+            showScreen('app');
+
+            // Check app status and skip completed steps
+            try {
+                const res = await fetch('/api/apps/' + encodeURIComponent(name) + '/status');
+                const status = await res.json();
+
+                if (status.installed) {
+                    document.getElementById('step-install').className = 'step done';
+                    document.getElementById('btn-install').innerHTML = 'Done';
+                    document.getElementById('btn-install').className = 'btn step-btn success';
+                    document.getElementById('btn-install').disabled = true;
+
+                    document.getElementById('step-dev').className = 'step active';
+                    document.getElementById('btn-dev').disabled = false;
+                }
+
+                if (status.devRunning) {
+                    document.getElementById('step-dev').className = 'step done';
+                    document.getElementById('btn-dev').innerHTML = 'Running';
+                    document.getElementById('btn-dev').className = 'btn step-btn success';
+                    document.getElementById('btn-dev').disabled = true;
+
+                    document.getElementById('step-deploy').className = 'step active';
+                    document.getElementById('btn-deploy').disabled = false;
+                }
+            } catch {}
+        }
+
+        // Reset step UI
+        function resetSteps() {
+            document.getElementById('step-install').className = 'step active';
+            document.getElementById('step-dev').className = 'step disabled';
+            document.getElementById('step-deploy').className = 'step disabled';
+            document.getElementById('btn-install').disabled = false;
+            document.getElementById('btn-install').innerHTML = 'Install';
+            document.getElementById('btn-install').className = 'btn step-btn';
+            document.getElementById('btn-dev').disabled = true;
+            document.getElementById('btn-dev').innerHTML = 'Start';
+            document.getElementById('btn-dev').className = 'btn step-btn';
+            document.getElementById('btn-deploy').disabled = true;
+            document.getElementById('btn-deploy').innerHTML = 'Deploy';
+            document.getElementById('btn-deploy').className = 'btn step-btn';
+            document.getElementById('terminal-app').className = 'terminal';
+            document.getElementById('terminal-app').textContent = '';
+            document.getElementById('delete-confirm').style.display = 'none';
+        }
+
+        // Validate app name
+        function validateAppName() {
+            const input = document.getElementById('app-name');
+            const error = document.getElementById('app-name-error');
+            const btn = document.getElementById('btn-do-create');
+            const name = input.value.trim();
+
+            if (!name) {
+                error.textContent = 'App name is required';
+                error.style.display = 'block';
+                btn.disabled = true;
+                return false;
+            }
+            if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)) {
+                error.textContent = 'Use only letters, numbers, hyphens, and dots. Must start with a letter or number.';
+                error.style.display = 'block';
+                btn.disabled = true;
+                return false;
+            }
+            error.style.display = 'none';
+            btn.disabled = false;
+            return true;
+        }
+
+        // Create app
+        async function createApp() {
+            if (!validateAppName()) return;
+            const name = document.getElementById('app-name').value.trim();
+
+            const btn = document.getElementById('btn-do-create');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Creating...';
+
+            const terminal = document.getElementById('terminal-create');
+            terminal.className = 'terminal visible';
+            terminal.textContent = 'Creating app "' + name + '"...\n';
+
+            try {
+                const res = await fetch('/api/apps/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name }),
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    terminal.textContent += '\nError: ' + data.error;
+                    btn.disabled = false;
+                    btn.innerHTML = 'Create';
+                    return;
+                }
+
+                terminal.textContent += 'App created successfully!\n';
+                terminal.textContent += 'Project ID: ' + data.projectId + '\n';
+                terminal.textContent += 'Directory: ' + name + '/\n';
+
+                setTimeout(() => {
+                    // Reset form
+                    document.getElementById('app-name').value = '';
+                    btn.disabled = true;
+                    btn.innerHTML = 'Create App';
+                    terminal.className = 'terminal';
+                    terminal.textContent = '';
+                    // Refresh app list then open the new app
+                    loadApps();
+                    openApp(name, data.projectId);
+                }, 1500);
+
+            } catch (err) {
+                terminal.textContent += '\nError: ' + err.message;
+                btn.disabled = false;
+                btn.innerHTML = 'Create App';
+            }
+        }
+
+        // Install dependencies
+        function installDeps() {
+            const btn = document.getElementById('btn-install');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>';
+
+            const terminal = document.getElementById('terminal-app');
+            terminal.className = 'terminal visible';
+            terminal.textContent = '$ npm install\n';
+
+            const source = new EventSource('/api/apps/' + encodeURIComponent(currentApp.name) + '/install');
+
+            source.onmessage = (event) => {
+                const text = JSON.parse(event.data);
+                terminal.textContent += text;
+                terminal.scrollTop = terminal.scrollHeight;
+            };
+
+            source.addEventListener('done', (event) => {
+                const result = JSON.parse(event.data);
+                source.close();
+
+                if (result.code === 0) {
+                    document.getElementById('step-install').className = 'step done';
+                    btn.innerHTML = 'Done';
+                    btn.className = 'btn step-btn success';
+
+                    document.getElementById('step-dev').className = 'step active';
+                    document.getElementById('btn-dev').disabled = false;
+
+                    terminal.textContent += '\nDependencies installed successfully!\n';
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Retry';
+                    terminal.textContent += '\nInstallation failed (exit code: ' + result.code + ')\n';
+                }
+            });
+
+            source.onerror = () => {
+                source.close();
+                btn.disabled = false;
+                btn.innerHTML = 'Retry';
+                terminal.textContent += '\nConnection lost.\n';
+            };
+        }
+
+        // Start dev server
+        async function startDev() {
+            const btn = document.getElementById('btn-dev');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>';
+
+            const terminal = document.getElementById('terminal-app');
+            terminal.textContent += '\n$ npm run dev\n';
+
+            try {
+                const res = await fetch('/api/apps/' + encodeURIComponent(currentApp.name) + '/dev', {
+                    method: 'POST',
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    terminal.textContent += 'Error: ' + data.error + '\n';
+                    btn.disabled = false;
+                    btn.innerHTML = 'Retry';
+                    return;
+                }
+
+                document.getElementById('step-dev').className = 'step done';
+                btn.innerHTML = 'Running';
+                btn.className = 'btn step-btn success';
+
+                terminal.textContent += 'Dev server running at: ' + data.url + '\n';
+
+                if (!data.already) {
+                    window.open(data.url, '_blank');
+                }
+
+                document.getElementById('step-deploy').className = 'step active';
+                document.getElementById('btn-deploy').disabled = false;
+
+            } catch (err) {
+                terminal.textContent += 'Error: ' + err.message + '\n';
+                btn.disabled = false;
+                btn.innerHTML = 'Retry';
+            }
+        }
+
+        // Deploy locally
+        function deployLocal() {
+            const btn = document.getElementById('btn-deploy');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>';
+
+            const terminal = document.getElementById('terminal-app');
+            terminal.className = 'terminal visible';
+            terminal.textContent += '\n$ openkbs deploy\n';
+
+            const source = new EventSource('/api/apps/' + encodeURIComponent(currentApp.name) + '/deploy-local');
+
+            source.onmessage = (event) => {
+                const text = JSON.parse(event.data);
+                terminal.textContent += text;
+                terminal.scrollTop = terminal.scrollHeight;
+            };
+
+            source.addEventListener('done', (event) => {
+                const result = JSON.parse(event.data);
+                source.close();
+
+                if (result.code === 0) {
+                    document.getElementById('step-deploy').className = 'step done';
+                    btn.innerHTML = 'Deployed';
+                    btn.className = 'btn step-btn success';
+                    terminal.textContent += '\nLocal deployment complete!\n';
+
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.innerHTML = 'Redeploy';
+                        btn.className = 'btn step-btn';
+                        document.getElementById('step-deploy').className = 'step active';
+                    }, 2000);
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Retry';
+                    terminal.textContent += '\nDeployment failed (exit code: ' + result.code + ')\n';
+                }
+            });
+
+            source.onerror = () => {
+                source.close();
+                btn.disabled = false;
+                btn.innerHTML = 'Retry';
+                terminal.textContent += '\nConnection lost.\n';
+            };
+        }
+
+        // Delete app
+        function toggleDeleteConfirm() {
+            const confirm = document.getElementById('delete-confirm');
+            const isVisible = confirm.style.display !== 'none';
+            confirm.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                document.getElementById('delete-app-name-hint').textContent = currentApp.name;
+                document.getElementById('delete-confirm-input').value = '';
+                document.getElementById('delete-confirm-input').placeholder = currentApp.name;
+                document.getElementById('btn-delete').disabled = true;
+            }
+        }
+
+        function validateDelete() {
+            const input = document.getElementById('delete-confirm-input').value.trim();
+            const btn = document.getElementById('btn-delete');
+            btn.disabled = input !== currentApp.name;
+            btn.innerHTML = 'Delete';
+        }
+
+        async function deleteApp() {
+            const name = currentApp.name;
+            const btn = document.getElementById('btn-delete');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>';
+
+            try {
+                const res = await fetch('/api/apps/' + encodeURIComponent(name) + '/delete', { method: 'POST' });
+                const data = await res.json();
+                if (data.error) {
+                    alert('Delete failed: ' + data.error);
+                    btn.disabled = false;
+                    btn.innerHTML = 'Delete';
+                    return;
+                }
+                showScreen('welcome');
+            } catch (err) {
+                alert('Delete failed: ' + err.message);
+                btn.disabled = false;
+                btn.innerHTML = 'Delete';
+            }
+        }
+
+        // Initial load
+        checkStatus();
+        loadApps();
+
+        // Poll status every 10 seconds
+        setInterval(checkStatus, 10000);
+    </script>
+</body>
+</html>
