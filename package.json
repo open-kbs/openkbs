@@ -21,6 +21,7 @@
     "commander": "^13.0.0"
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
     "esbuild": "^0.24.0",
     "tsx": "^4.0.0",
     "typescript": "^5.7.0"

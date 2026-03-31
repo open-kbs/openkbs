@@ -52,8 +52,8 @@ function checkPort(host: string, port: number, timeout = 2000): Promise<boolean>
 }
 
 // List apps (directories with openkbs.json) in the apps directory
-function listApps(appsDir: string): Array<{ name: string; projectId: string; target?: string }> {
-  const apps: Array<{ name: string; projectId: string; target?: string }> = [];
+function listApps(appsDir: string): Array<{ name: string; projectId: string; target?: string; devUrl?: string | null }> {
+  const apps: Array<{ name: string; projectId: string; target?: string; devUrl?: string | null }> = [];
   if (!fs.existsSync(appsDir)) return apps;
 
   for (const entry of fs.readdirSync(appsDir, { withFileTypes: true })) {
