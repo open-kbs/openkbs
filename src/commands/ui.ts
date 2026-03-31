@@ -24,7 +24,9 @@ function getCliCommand(): { cmd: string; args: string[] } {
 }
 
 function getAppsDir(): string {
-  return process.cwd();
+  const dir = path.join(process.cwd(), 'projects');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return dir;
 }
 
 function getUiHtmlPath(): string {
