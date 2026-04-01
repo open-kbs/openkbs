@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Internal: builds standalone CLI binaries for release. Used by maintainers only — not needed for development.
 set -euo pipefail
 
 cd "$(dirname "$0")"

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Internal: deploys CLI binaries to openkbs.com CDN. Used by maintainers only — not needed for development.
 set -euo pipefail
 
 cd "$(dirname "$0")"
